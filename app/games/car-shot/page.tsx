@@ -353,6 +353,10 @@ export default function CarShotPage() {
             }
           });
 
+          // Resolve levelDef here so it's available during preload (create() runs later)
+          const levelIdx = this.registry.get("currentLevel") as number;
+          this.levelDef = LEVELS[levelIdx % LEVELS.length];
+
           // City background layers
           const ld = this.levelDef as { cityTheme?: string; layerCount?: number };
           if (ld.cityTheme && ld.layerCount) {
