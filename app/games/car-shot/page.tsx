@@ -20,11 +20,9 @@ export default function CarShotPage() {
 
       // ─── CAR DEFINITIONS ─────────────────────────────────────────────────────
       const CAR_DEFS = [
-        { id: "red",    label: "Blaze",   color: 0xe74c3c, accent: 0xc0392b },
-        { id: "blue",   label: "Comet",   color: 0x3498db, accent: 0x2980b9 },
-        { id: "green",  label: "Viper",   color: 0x2ecc71, accent: 0x27ae60 },
-        { id: "purple", label: "Phantom", color: 0x9b59b6, accent: 0x8e44ad },
-        { id: "gold",   label: "King",    color: 0xf1c40f, accent: 0xd4ac0d },
+        { id: "jeep1",     label: "Bandit",   spriteKey: "jeep1",     previewKey: "jeep1_preview",     tagline: "Built for chaos" },
+        { id: "jeep2",     label: "Wrangler", spriteKey: "jeep2",     previewKey: "jeep2_preview",     tagline: "Tank of the ramp" },
+        { id: "passenger", label: "Cruiser",  spriteKey: "passenger", previewKey: "passenger_preview", tagline: "Loaded for launch" },
       ];
 
       // ─── LEVEL DEFINITIONS ───────────────────────────────────────────────────
@@ -126,6 +124,15 @@ export default function CarShotPage() {
       class CarSelectScene extends Phaser.Scene {
         constructor() { super("CarSelect"); }
 
+        preload() {
+          // Load preview sprites for the selection screen
+          CAR_DEFS.forEach((car) => {
+            if (!this.textures.exists(car.previewKey)) {
+              this.load.image(car.previewKey, `/sprites/${car.previewKey}.png`);
+            }
+          });
+        }
+
         create() {
           const { width, height } = this.scale;
 
@@ -135,56 +142,61 @@ export default function CarShotPage() {
           bg.fillRect(0, 0, width, height);
 
           // Title
-          this.add.text(width / 2, 60, "🚗  CAR SHOT", {
+          this.add.text(width / 2, 52, "🚗  CAR SHOT", {
             fontSize: "42px", fontFamily: "Arial Black, Arial",
             color: "#f1c40f", stroke: "#000", strokeThickness: 6,
           }).setOrigin(0.5);
 
-          this.add.text(width / 2, 110, "Choose your car", {
+          this.add.text(width / 2, 104, "Choose your car", {
             fontSize: "20px", fontFamily: "Arial", color: "#94a3b8",
           }).setOrigin(0.5);
 
-          // Car cards
-          const cardW = 140, cardH = 170, gap = 20;
+          // Car cards — wider to fit real sprites
+          const cardW = 240, cardH = 220, gap = 28;
           const totalW = CAR_DEFS.length * (cardW + gap) - gap;
           const startX = (width - totalW) / 2;
+          const borderColors = [0xe74c3c, 0xf1c40f, 0x3498db];
 
           CAR_DEFS.forEach((car, i) => {
             const cx = startX + i * (cardW + gap) + cardW / 2;
-            const cy = height / 2;
+            const cy = height / 2 + 10;
+            const borderColor = borderColors[i];
 
             const card = this.add.graphics();
-            card.fillStyle(0x1e293b, 1);
-            card.lineStyle(3, car.color, 1);
-            card.strokeRoundedRect(cx - cardW / 2, cy - cardH / 2, cardW, cardH, 12);
-            card.fillRoundedRect(cx - cardW / 2, cy - cardH / 2, cardW, cardH, 12);
+            const drawCard = (hover: boolean) => {
+              card.clear();
+              card.fillStyle(hover ? 0x2d3f55 : 0x1e293b, 1);
+              card.lineStyle(3, borderColor, 1);
+              card.strokeRoundedRect(cx - cardW / 2, cy - cardH / 2, cardW, cardH, 14);
+              card.fillRoundedRect(cx - cardW / 2, cy - cardH / 2, cardW, cardH, 14);
+            };
+            drawCard(false);
 
-            // Draw car icon (simple box car graphic)
-            this.drawCarIcon(cx, cy - 20, car.color, car.accent);
+            // Real sprite image, centered in the card
+            const sprite = this.add.image(cx, cy - 28, car.previewKey);
+            // Scale to fit nicely inside the card (max 180px wide)
+            const scaleW = 180 / sprite.width;
+            const scaleH = 100 / sprite.height;
+            sprite.setScale(Math.min(scaleW, scaleH, 1));
+            // Pixel-art crisp rendering
+            sprite.setTexture(car.previewKey);
 
-            this.add.text(cx, cy + 55, car.label, {
-              fontSize: "16px", fontFamily: "Arial Black, Arial",
-              color: "#" + car.color.toString(16).padStart(6, "0"),
+            // Car name
+            this.add.text(cx, cy + 68, car.label, {
+              fontSize: "18px", fontFamily: "Arial Black, Arial", color: "#f1f5f9",
+            }).setOrigin(0.5);
+
+            // Tagline
+            this.add.text(cx, cy + 92, car.tagline, {
+              fontSize: "12px", fontFamily: "Arial", color: "#64748b",
             }).setOrigin(0.5);
 
             // Hit area
             const btn = this.add.rectangle(cx, cy, cardW, cardH, 0xffffff, 0)
               .setInteractive({ cursor: "pointer" });
 
-            btn.on("pointerover", () => {
-              card.clear();
-              card.fillStyle(0x334155, 1);
-              card.lineStyle(3, car.color, 1);
-              card.strokeRoundedRect(cx - cardW / 2, cy - cardH / 2, cardW, cardH, 12);
-              card.fillRoundedRect(cx - cardW / 2, cy - cardH / 2, cardW, cardH, 12);
-            });
-            btn.on("pointerout", () => {
-              card.clear();
-              card.fillStyle(0x1e293b, 1);
-              card.lineStyle(3, car.color, 1);
-              card.strokeRoundedRect(cx - cardW / 2, cy - cardH / 2, cardW, cardH, 12);
-              card.fillRoundedRect(cx - cardW / 2, cy - cardH / 2, cardW, cardH, 12);
-            });
+            btn.on("pointerover", () => { drawCard(true); sprite.setAlpha(1); });
+            btn.on("pointerout",  () => { drawCard(false); sprite.setAlpha(0.9); });
             btn.on("pointerdown", () => {
               this.registry.set("selectedCar", car);
               this.registry.set("currentLevel", 0);
@@ -194,29 +206,9 @@ export default function CarShotPage() {
           });
 
           // Controls hint
-          this.add.text(width / 2, height - 30, "Click & drag on car to pull back → release to launch!", {
-            fontSize: "14px", fontFamily: "Arial", color: "#64748b",
+          this.add.text(width / 2, height - 24, "Click & drag on the car to pull back → release to launch!", {
+            fontSize: "14px", fontFamily: "Arial", color: "#475569",
           }).setOrigin(0.5);
-        }
-
-        drawCarIcon(cx: number, cy: number, color: number, accent: number) {
-          const g = this.add.graphics();
-          // Body
-          g.fillStyle(color, 1);
-          g.fillRoundedRect(cx - 44, cy - 16, 88, 28, 6);
-          // Roof
-          g.fillStyle(accent, 1);
-          g.fillRoundedRect(cx - 28, cy - 30, 56, 18, 4);
-          // Wheels
-          g.fillStyle(0x1a1a1a, 1);
-          g.fillCircle(cx - 28, cy + 14, 11);
-          g.fillCircle(cx + 28, cy + 14, 11);
-          g.fillStyle(0xaaaaaa, 1);
-          g.fillCircle(cx - 28, cy + 14, 5);
-          g.fillCircle(cx + 28, cy + 14, 5);
-          // Windshield
-          g.fillStyle(0x7ecbff, 0.6);
-          g.fillRoundedRect(cx - 22, cy - 27, 44, 14, 2);
         }
       }
 
@@ -257,7 +249,12 @@ export default function CarShotPage() {
         constructor() { super("Game"); }
 
         preload() {
-          // We'll generate all textures procedurally
+          // Load car sprites from public/sprites/
+          CAR_DEFS.forEach((car) => {
+            if (!this.textures.exists(car.spriteKey)) {
+              this.load.image(car.spriteKey, `/sprites/${car.spriteKey}.png`);
+            }
+          });
         }
 
         create() {
@@ -281,30 +278,8 @@ export default function CarShotPage() {
 
         // ── Texture generation ───────────────────────────────────────────────
         buildTextures() {
-          const key = `car_${this.carDef.id}`;
-          this.carTexKey = key;
-          if (!this.textures.exists(key)) {
-            const g = this.make.graphics({ x: 0, y: 0, add: false });
-            const bw = 64, bh = 28, rx = 32, ry = 14;
-            // body
-            g.fillStyle(this.carDef.color, 1);
-            g.fillRoundedRect(0, ry - 10, bw, bh, 5);
-            // roof
-            g.fillStyle(this.carDef.accent, 1);
-            g.fillRoundedRect(10, 4, 44, 14, 3);
-            // windshield
-            g.fillStyle(0x7ecbff, 0.7);
-            g.fillRoundedRect(12, 6, 40, 10, 2);
-            // wheels
-            g.fillStyle(0x111111, 1);
-            g.fillCircle(14, ry + 16, 10);
-            g.fillCircle(50, ry + 16, 10);
-            g.fillStyle(0xcccccc, 1);
-            g.fillCircle(14, ry + 16, 4);
-            g.fillCircle(50, ry + 16, 4);
-            g.generateTexture(key, bw, bh + 20);
-            g.destroy();
-          }
+          // Car sprite is loaded from public/sprites/ — just use spriteKey directly
+          this.carTexKey = this.carDef.spriteKey;
 
           if (!this.textures.exists("wheel")) {
             const g = this.make.graphics({ x: 0, y: 0, add: false });
@@ -568,8 +543,9 @@ export default function CarShotPage() {
 
         // ── Input ────────────────────────────────────────────────────────────
         setupInput() {
-          // Place car at ramp top
+          // Place car at ramp top — scale sprite so it's ~72px wide in-game
           this.car = this.physics.add.image(this.carStart.x, this.carStart.y, this.carTexKey);
+          this.car.setScale(0.75);
           this.car.setDepth(5);
           this.car.body.enable = false;
 
