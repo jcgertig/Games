@@ -107,7 +107,7 @@ export default function CarShotPage() {
         // ── City levels (5–8) use real layered PNG backgrounds ──────────────
         {
           name: "Level 5 – Neon District",
-          cityTheme: "city 1", layerCount: 10,
+          bgId: 1, bgVariant: "Night", layerCount: 5,
           groundColor: 0x1a0a2e, groundLine: 0x9900ff,
           neonPalette: [0x00e8ff, 0xff00cc, 0x9900ff, 0x00ff99],
           structures: [
@@ -125,7 +125,7 @@ export default function CarShotPage() {
         },
         {
           name: "Level 6 – Purple Heights",
-          cityTheme: "city 2", layerCount: 10,
+          bgId: 2, bgVariant: "Night", layerCount: 5,
           groundColor: 0x160820, groundLine: 0x9966ff,
           neonPalette: [0xcc00ff, 0xff44aa, 0x8800ff, 0x44ffcc],
           structures: [
@@ -147,7 +147,7 @@ export default function CarShotPage() {
         },
         {
           name: "Level 7 – Blue Skyline",
-          cityTheme: "city 3", layerCount: 9,
+          bgId: 3, bgVariant: "Night", layerCount: 5,
           groundColor: 0x0a1028, groundLine: 0x0088ff,
           neonPalette: [0x4488ff, 0x00ccff, 0x0088ff, 0x00ffee],
           structures: [
@@ -168,7 +168,7 @@ export default function CarShotPage() {
         },
         {
           name: "Level 8 – Desert Run",
-          cityTheme: "city 4", layerCount: 10,
+          bgId: 4, bgVariant: "Day", layerCount: 5,
           groundColor: 0x2a1a08, groundLine: 0xcc8800,
           neonPalette: [0xffcc00, 0xff8800, 0xffaa44, 0xcc4400],
           structures: [
@@ -358,13 +358,12 @@ export default function CarShotPage() {
           this.levelDef = LEVELS[levelIdx % LEVELS.length];
 
           // City background layers
-          const ld = this.levelDef as { cityTheme?: string; layerCount?: number };
-          if (ld.cityTheme && ld.layerCount) {
-            const cityEnc = ld.cityTheme.replace(/ /g, "%20");
+          const ld = this.levelDef as { bgId?: number; bgVariant?: string; layerCount?: number };
+          if (ld.bgId && ld.layerCount) {
             for (let i = 1; i <= ld.layerCount; i++) {
-              const key = `${ld.cityTheme}_${i}`;
+              const key = `bg_${ld.bgId}_${ld.bgVariant}_${i}`;
               if (!this.textures.exists(key))
-                this.load.image(key, `/cyperpunk/${cityEnc}/${i}.png`);
+                this.load.image(key, `/car_shot/backgrounds/${ld.bgId}/${ld.bgVariant}/${i}.png`);
             }
           }
 
@@ -438,8 +437,8 @@ export default function CarShotPage() {
         // ── World ──────────────────────────────────────────────────────────────
         buildWorld() {
           const { width, height } = this.scale;
-          const ld = this.levelDef as { cityTheme?: string; groundColor?: number; groundLine?: number };
-          const isCityLevel = !!ld.cityTheme;
+          const ld = this.levelDef as { bgId?: number; groundColor?: number; groundLine?: number };
+          const isCityLevel = !!ld.bgId;
 
           if (isCityLevel) {
             this.buildCityBg();
@@ -517,9 +516,9 @@ export default function CarShotPage() {
 
         buildCityBg() {
           const { width, height } = this.scale;
-          const ld = this.levelDef as { cityTheme: string; layerCount: number };
+          const ld = this.levelDef as { bgId: number; bgVariant: string; layerCount: number };
           for (let i = 1; i <= ld.layerCount; i++) {
-            this.add.image(width / 2, height / 2, `${ld.cityTheme}_${i}`)
+            this.add.image(width / 2, height / 2, `bg_${ld.bgId}_${ld.bgVariant}_${i}`)
               .setDisplaySize(width, height);
           }
         }
