@@ -98,6 +98,109 @@ const CATALOG: AssetDef[] = [
   { id: "plant_simple", label: "Green Plant",   category: "Indoor", path: `${NH}/bushes/Assets/Bush_simple1_1.png`,       scale: 0.55 },
   { id: "decor_rock_s", label: "Stone",         category: "Indoor", path: `${NH}/rocks/Objects_separately/Rock3_1.png`,   scale: 0.45 },
   { id: "decor_rock_m", label: "Pebble",        category: "Indoor", path: `${NH}/rocks/Objects_separately/Rock5_1.png`,   scale: 0.4  },
+
+  // ── Furniture ───────────────────────────────────────────────────────────────
+  { id: "furn_wardrobe",      label: "Wardrobe",          category: "Furniture", path: `${NH}/furniture/wardrobe.png`,        scale: 3 },
+  { id: "furn_bed",           label: "Bed",               category: "Furniture", path: `${NH}/furniture/bed.png`,             scale: 3 },
+  { id: "furn_cabinet_tall",  label: "Tall Cabinet",      category: "Furniture", path: `${NH}/furniture/cabinet_tall.png`,    scale: 3 },
+  { id: "furn_cabinet_alt",   label: "Cabinet",           category: "Furniture", path: `${NH}/furniture/cabinet_alt.png`,     scale: 3 },
+  { id: "furn_chest",         label: "Chest of Drawers",  category: "Furniture", path: `${NH}/furniture/chest.png`,           scale: 3 },
+  { id: "furn_display_table", label: "Display Table",     category: "Furniture", path: `${NH}/furniture/display_table.png`,   scale: 3 },
+  { id: "furn_dresser",       label: "Dresser",           category: "Furniture", path: `${NH}/furniture/dresser.png`,         scale: 3 },
+  { id: "furn_barrel_large",  label: "Barrel",            category: "Furniture", path: `${NH}/furniture/barrel_large.png`,    scale: 3 },
+  { id: "furn_barrel_small",  label: "Small Barrel",      category: "Furniture", path: `${NH}/furniture/barrel_small.png`,    scale: 3 },
+  { id: "furn_shelf_produce", label: "Produce Shelf",     category: "Furniture", path: `${NH}/furniture/shelf_produce.png`,   scale: 3 },
+  { id: "furn_shelf_empty",   label: "Empty Shelf",       category: "Furniture", path: `${NH}/furniture/shelf_empty.png`,     scale: 3 },
+  { id: "furn_bookshelf",     label: "Bookshelf",         category: "Furniture", path: `${NH}/furniture/bookshelf.png`,       scale: 3 },
+  { id: "furn_bookshelf_full",label: "Full Bookshelf",    category: "Furniture", path: `${NH}/furniture/bookshelf_full.png`,  scale: 3 },
+  { id: "furn_bench",         label: "Bench",             category: "Furniture", path: `${NH}/furniture/bench.png`,           scale: 3 },
+  { id: "furn_armchair",      label: "Armchair",          category: "Furniture", path: `${NH}/furniture/armchair.png`,        scale: 3 },
+  { id: "furn_weapon_rack",   label: "Weapon Rack",       category: "Furniture", path: `${NH}/furniture/weapon_rack.png`,     scale: 3 },
+  { id: "furn_weapon_rack_f", label: "Armed Rack",        category: "Furniture", path: `${NH}/furniture/weapon_rack_full.png`,scale: 3 },
+  { id: "furn_chair_side",    label: "Chair",             category: "Furniture", path: `${NH}/furniture/chair_side.png`,      scale: 3 },
+  { id: "furn_dining_set",    label: "Dining Set",        category: "Furniture", path: `${NH}/furniture/dining_set.png`,      scale: 3 },
+  { id: "furn_table_round",   label: "Round Table",       category: "Furniture", path: `${NH}/furniture/table_round.png`,     scale: 3 },
+  { id: "furn_stool",         label: "Stool",             category: "Furniture", path: `${NH}/furniture/stool.png`,           scale: 3 },
+  { id: "furn_plant_leafy",   label: "Leafy Plant",       category: "Furniture", path: `${NH}/furniture/plant_leafy.png`,     scale: 3 },
+  { id: "furn_garlic_hang",   label: "Hanging Garlic",    category: "Furniture", path: `${NH}/furniture/garlic_hang.png`,     scale: 3 },
+  { id: "furn_rug_oval",      label: "Oval Rug",          category: "Furniture", path: `${NH}/furniture/rug_oval.png`,        scale: 3 },
+  { id: "furn_rug_round",     label: "Round Rug",         category: "Furniture", path: `${NH}/furniture/rug_round.png`,       scale: 3 },
+  { id: "furn_rug_runner",    label: "Runner Rug",        category: "Furniture", path: `${NH}/furniture/rug_runner.png`,      scale: 3 },
+  { id: "furn_rug_rect",      label: "Rectangle Rug",     category: "Furniture", path: `${NH}/furniture/rug_rect.png`,        scale: 3 },
+  { id: "furn_sword_long",    label: "Longsword",         category: "Furniture", path: `${NH}/furniture/sword_long.png`,      scale: 3 },
+  { id: "furn_sword_short",   label: "Sword",             category: "Furniture", path: `${NH}/furniture/sword_short.png`,     scale: 3 },
+  { id: "furn_deco_flower",   label: "Flower Vase",       category: "Furniture", path: `${NH}/furniture/deco_flower.png`,     scale: 3 },
+  { id: "furn_deco_jug",      label: "Jug",               category: "Furniture", path: `${NH}/furniture/deco_jug.png`,        scale: 3 },
+  { id: "furn_deco_plant_b",  label: "Plant Pot",         category: "Furniture", path: `${NH}/furniture/deco_plant_big.png`,  scale: 3 },
+  { id: "furn_deco_plant_p",  label: "Small Plant",       category: "Furniture", path: `${NH}/furniture/deco_plant_pot.png`,  scale: 3 },
+  { id: "furn_deco_crystal_g",label: "Green Crystal",     category: "Furniture", path: `${NH}/furniture/deco_crystal_g.png`,  scale: 3 },
+  { id: "furn_deco_crystal_r",label: "Red Crystal",       category: "Furniture", path: `${NH}/furniture/deco_crystal_r.png`,  scale: 3 },
+  { id: "furn_deco_candle",   label: "Candle",            category: "Furniture", path: `${NH}/furniture/deco_candle.png`,     scale: 3 },
+  { id: "furn_deco_ball",     label: "Decorative Ball",   category: "Furniture", path: `${NH}/furniture/deco_ball.png`,       scale: 3 },
+  { id: "furn_deco_mushroom", label: "Mushroom Bunch",    category: "Furniture", path: `${NH}/furniture/deco_mushroom.png`,   scale: 3 },
+  { id: "furn_deco_onion",    label: "Onion Bunch",       category: "Furniture", path: `${NH}/furniture/deco_onion.png`,      scale: 3 },
+
+  // ── Exterior Decorations ────────────────────────────────────────────────────
+  { id: "ext_fence_h",        label: "Fence (H)",         category: "Exterior",  path: `${NH}/exterior_items/fence_h.png`,        scale: 3 },
+  { id: "ext_fence_v",        label: "Fence (V)",         category: "Exterior",  path: `${NH}/exterior_items/fence_v.png`,        scale: 3 },
+  { id: "ext_fence_gate",     label: "Gate",              category: "Exterior",  path: `${NH}/exterior_items/fence_gate.png`,     scale: 3 },
+  { id: "ext_path_stone",     label: "Stone Path",        category: "Exterior",  path: `${NH}/exterior_items/path_stone.png`,     scale: 3 },
+  { id: "ext_path_corner",    label: "Path Corner",       category: "Exterior",  path: `${NH}/exterior_items/path_corner.png`,    scale: 3 },
+  { id: "ext_stone_wall",     label: "Stone Wall",        category: "Exterior",  path: `${NH}/exterior_items/stone_wall.png`,     scale: 3 },
+  { id: "ext_hedge_large",    label: "Large Hedge",       category: "Exterior",  path: `${NH}/exterior_items/hedge_large.png`,    scale: 3 },
+  { id: "ext_hedge_med",      label: "Flower Hedge",      category: "Exterior",  path: `${NH}/exterior_items/hedge_med.png`,      scale: 3 },
+  { id: "ext_hedge_round",    label: "Round Hedge",       category: "Exterior",  path: `${NH}/exterior_items/hedge_round.png`,    scale: 3 },
+  { id: "ext_apple_tree",     label: "Apple Tree",        category: "Exterior",  path: `${NH}/exterior_items/ext_apple_tree.png`, scale: 3 },
+  { id: "ext_fruit_tree",     label: "Berry Tree",        category: "Exterior",  path: `${NH}/exterior_items/ext_fruit_tree.png`, scale: 3 },
+  { id: "ext_tree_lg",        label: "Large Tree",        category: "Exterior",  path: `${NH}/exterior_items/ext_tree_lg.png`,    scale: 3 },
+  { id: "ext_rock_pile_1",    label: "Rock Pile",         category: "Exterior",  path: `${NH}/exterior_items/rock_pile_1.png`,    scale: 3 },
+  { id: "ext_rock_pile_2",    label: "Rock Pile 2",       category: "Exterior",  path: `${NH}/exterior_items/rock_pile_2.png`,    scale: 3 },
+  { id: "ext_rock_pile_3",    label: "Boulder",           category: "Exterior",  path: `${NH}/exterior_items/rock_pile_3.png`,    scale: 3 },
+  { id: "ext_rock_small_1",   label: "Small Rock",        category: "Exterior",  path: `${NH}/exterior_items/rock_small_1.png`,   scale: 3 },
+  { id: "ext_rock_small_2",   label: "Small Rock 2",      category: "Exterior",  path: `${NH}/exterior_items/rock_small_2.png`,   scale: 3 },
+  { id: "ext_rock_small_3",   label: "Pebbles",           category: "Exterior",  path: `${NH}/exterior_items/rock_small_3.png`,   scale: 3 },
+  { id: "ext_well",           label: "Well",              category: "Exterior",  path: `${NH}/exterior_items/well.png`,           scale: 3 },
+  { id: "ext_mushroom_group", label: "Mushroom Patch",    category: "Exterior",  path: `${NH}/exterior_items/mushroom_group.png`, scale: 3 },
+  { id: "ext_mushroom_red",   label: "Red Mushrooms",     category: "Exterior",  path: `${NH}/exterior_items/mushroom_red.png`,   scale: 3 },
+  { id: "ext_fountain",       label: "Fountain",          category: "Exterior",  path: `${NH}/exterior_items/fountain.png`,       scale: 3 },
+  { id: "ext_flower_patch",   label: "Flower Patch",      category: "Exterior",  path: `${NH}/exterior_items/flower_patch.png`,   scale: 3 },
+  { id: "ext_flower_small",   label: "Small Flowers",     category: "Exterior",  path: `${NH}/exterior_items/flower_small.png`,   scale: 3 },
+  { id: "ext_grass_tuft",     label: "Grass Tuft",        category: "Exterior",  path: `${NH}/exterior_items/grass_tuft_1.png`,   scale: 3 },
+  { id: "ext_herbs",          label: "Herbs",             category: "Exterior",  path: `${NH}/exterior_items/herbs.png`,          scale: 3 },
+  { id: "ext_bush_small",     label: "Small Bush",        category: "Exterior",  path: `${NH}/exterior_items/ext_bush_small.png`, scale: 3 },
+
+  // ── Farm ────────────────────────────────────────────────────────────────────
+  { id: "farm_apple_tree",    label: "Farm Apple Tree",   category: "Farm",  path: `${NH}/farm_items/farm_apple_tree.png`,    scale: 1.2 },
+  { id: "farm_berry_tree",    label: "Berry Tree",        category: "Farm",  path: `${NH}/farm_items/farm_berry_tree.png`,    scale: 1.2 },
+  { id: "farm_citrus_tree",   label: "Citrus Tree",       category: "Farm",  path: `${NH}/farm_items/farm_citrus_tree.png`,   scale: 1.2 },
+  { id: "farm_fruit_tree2",   label: "Fruit Tree",        category: "Farm",  path: `${NH}/farm_items/farm_fruit_tree2.png`,   scale: 1.2 },
+  { id: "farm_green_tree",    label: "Green Tree",        category: "Farm",  path: `${NH}/farm_items/farm_green_tree.png`,    scale: 1.2 },
+  { id: "farm_palm_1",        label: "Palm Tree",         category: "Farm",  path: `${NH}/farm_items/farm_palm_1.png`,        scale: 1.2 },
+  { id: "farm_palm_2",        label: "Palm Tree 2",       category: "Farm",  path: `${NH}/farm_items/farm_palm_2.png`,        scale: 1.2 },
+  { id: "farm_palm_3",        label: "Palm Tree 3",       category: "Farm",  path: `${NH}/farm_items/farm_palm_3.png`,        scale: 1.2 },
+  { id: "farm_shrub_1",       label: "Farm Shrub",        category: "Farm",  path: `${NH}/farm_items/farm_shrub_1.png`,       scale: 1.2 },
+  { id: "farm_shrub_2",       label: "Farm Shrub 2",      category: "Farm",  path: `${NH}/farm_items/farm_shrub_2.png`,       scale: 1.2 },
+  { id: "farm_plant_small",   label: "Small Plant",       category: "Farm",  path: `${NH}/farm_items/farm_plant_small.png`,   scale: 1.5 },
+  { id: "farm_flower_1",      label: "Farm Flower",       category: "Farm",  path: `${NH}/farm_items/farm_flower_1.png`,      scale: 1.5 },
+  { id: "farm_flower_2",      label: "Farm Flower 2",     category: "Farm",  path: `${NH}/farm_items/farm_flower_2.png`,      scale: 1.5 },
+  { id: "farm_grass",         label: "Farm Grass",        category: "Farm",  path: `${NH}/farm_items/farm_grass.png`,         scale: 1.5 },
+  { id: "farm_mushroom_s",    label: "Mushroom",          category: "Farm",  path: `${NH}/farm_items/farm_mushroom_s.png`,    scale: 1.5 },
+  { id: "farm_wildflower",    label: "Wildflowers",       category: "Farm",  path: `${NH}/farm_items/farm_wildflower.png`,    scale: 1.5 },
+  { id: "farm_sunflower",     label: "Sunflower",         category: "Farm",  path: `${NH}/farm_items/farm_sunflower.png`,     scale: 1.5 },
+  { id: "farm_banana_crate",  label: "Banana Crate",      category: "Farm",  path: `${NH}/farm_items/banana_crate.png`,       scale: 3   },
+  { id: "farm_pineapple",     label: "Pineapple Crate",   category: "Farm",  path: `${NH}/farm_items/pineapple_crate.png`,    scale: 3   },
+  { id: "farm_melon",         label: "Melon Crate",       category: "Farm",  path: `${NH}/farm_items/melon_crate.png`,        scale: 3   },
+  { id: "farm_corn",          label: "Corn Crate",        category: "Farm",  path: `${NH}/farm_items/corn_crate.png`,         scale: 3   },
+  { id: "farm_garlic",        label: "Garlic Crate",      category: "Farm",  path: `${NH}/farm_items/garlic_crate.png`,       scale: 3   },
+  { id: "farm_potato",        label: "Potato Crate",      category: "Farm",  path: `${NH}/farm_items/potato_crate.png`,       scale: 3   },
+  { id: "farm_grape",         label: "Grape Crate",       category: "Farm",  path: `${NH}/farm_items/grape_crate.png`,        scale: 3   },
+  { id: "farm_tomato",        label: "Tomato Crate",      category: "Farm",  path: `${NH}/farm_items/tomato_crate.png`,       scale: 3   },
+  { id: "farm_greens",        label: "Greens Crate",      category: "Farm",  path: `${NH}/farm_items/greens_crate.png`,       scale: 3   },
+  { id: "farm_pepper",        label: "Pepper Crate",      category: "Farm",  path: `${NH}/farm_items/pepper_crate.png`,       scale: 3   },
+  { id: "farm_onion",         label: "Onion Crate",       category: "Farm",  path: `${NH}/farm_items/onion_crate.png`,        scale: 3   },
+  { id: "farm_spinach",       label: "Spinach Crate",     category: "Farm",  path: `${NH}/farm_items/spinach_crate.png`,      scale: 3   },
+  { id: "farm_orange",        label: "Orange Crate",      category: "Farm",  path: `${NH}/farm_items/orange_crate.png`,       scale: 3   },
+  { id: "farm_strawberry",    label: "Strawberry Crate",  category: "Farm",  path: `${NH}/farm_items/strawberry_crate.png`,   scale: 3   },
 ];
 
 const CATALOG_MAP = Object.fromEntries(CATALOG.map(a => [a.id, a]));
@@ -191,14 +294,23 @@ export default function NewHomePage() {
 
       // ── world / house constants ────────────────────────────────────────────
       const WORLD_W = 2400, WORLD_H = 1800;
-      const HX = WORLD_W / 2, HY = WORLD_H / 2;   // house composite anchor
-      // house_composite.png: 160×168px at 1× → scaled 3× = 480×504px
-      // Door centre in composite: pixel (104, 120) → scaled (312, 360) from top-left
+      const HX = WORLD_W / 2, HY = WORLD_H / 2;
+      // house_composite.png: 131×128px at 1× (house layers only, no smoke)
+      // At 3× = 393×384px. Door approx at composite pixel (84, 116).
       const HOUSE_SCALE = 3;
-      const HOUSE_LEFT = HX - 240;   // composite origin X in world
-      const HOUSE_TOP  = HY - 350;   // composite origin Y in world
-      const DOOR_X = HOUSE_LEFT + 104 * HOUSE_SCALE;   // = HX + 72
-      const DOOR_Y = HOUSE_TOP  + 120 * HOUSE_SCALE;   // = HY + 10
+      const HOUSE_W = 131, HOUSE_H = 128;            // composite px at 1×
+      const HOUSE_LEFT = HX - Math.round(HOUSE_W * HOUSE_SCALE / 2);  // centre house at HX
+      const HOUSE_TOP  = HY - 380;
+      const DOOR_X = HOUSE_LEFT + 84 * HOUSE_SCALE;
+      const DOOR_Y = HOUSE_TOP  + 116 * HOUSE_SCALE;
+      // House wall collision rectangle (wall body, below the roof)
+      const WALL_LEFT   = HOUSE_LEFT + 5  * HOUSE_SCALE;
+      const WALL_RIGHT  = HOUSE_LEFT + 126 * HOUSE_SCALE;
+      const WALL_TOP    = HOUSE_TOP  + 52 * HOUSE_SCALE;   // below roof
+      const WALL_BOTTOM = HOUSE_TOP  + HOUSE_H * HOUSE_SCALE - 10;
+      // Smoke animation offset in world (chimney is top-left of composite)
+      const SMOKE_X = HOUSE_LEFT;
+      const SMOKE_Y = HOUSE_TOP - 30;  // smoke puffs above roof
 
       // ── character spritesheet layout ──────────────────────────────────────
       // Idle  768×256 → 64×64 frames → 12 cols × 4 rows (row=direction)
@@ -339,6 +451,8 @@ export default function NewHomePage() {
           this.load.spritesheet("char_walk", `${NH}/character/PNG/Unarmed/Without_shadow/Unarmed_Walk_without_shadow.png`, { frameWidth: FRAME_W, frameHeight: FRAME_H });
           this.load.image("grass_tile", `${NH}/grass_tile.png`);
           this.load.image("house_composite", `${NH}/house_composite.png`);
+          // Smoke animation: 288×48, 6 frames of 48×48
+          this.load.spritesheet("smoke_anim", `${NH}/home/Smoke_animation.png`, { frameWidth: 48, frameHeight: 48 });
           CATALOG.forEach(a => {
             if (!this.textures.exists(a.id)) this.load.image(a.id, a.path);
           });
@@ -357,10 +471,27 @@ export default function NewHomePage() {
           gfx.fillRect(DOOR_X - 24, DOOR_Y, 48, WORLD_H - DOOR_Y);
 
           // ── House (pixel-art composite from TMX tiles) ─────────────────────
+          // Depth is based on the house south edge (DOOR_Y) for correct Y-sorting
+          const houseDepth = 3 + DOOR_Y / 10000;
           this.add.image(HOUSE_LEFT, HOUSE_TOP, "house_composite")
             .setOrigin(0, 0)
             .setScale(HOUSE_SCALE)
-            .setDepth(2);
+            .setDepth(houseDepth);
+
+          // ── Smoke animation over chimney ──────────────────────────────────
+          if (!this.anims.exists("smoke_loop")) {
+            this.anims.create({
+              key: "smoke_loop",
+              frames: this.anims.generateFrameNumbers("smoke_anim", { start: 0, end: 5 }),
+              frameRate: 7,
+              repeat: -1,
+            });
+          }
+          this.add.sprite(SMOKE_X, SMOKE_Y, "smoke_anim")
+            .setOrigin(0, 0)
+            .setScale(HOUSE_SCALE)
+            .setDepth(houseDepth + 0.01)
+            .play("smoke_loop");
 
           // ── Placed items layer ────────────────────────────────────────────
           this.placedGroup = makePlacedGroup(this);
@@ -418,8 +549,32 @@ export default function NewHomePage() {
             if (asset) placeInGroup(this, this.placedGroup, p.assetId, wx, wy, asset.scale);
           }
 
-          // Move character
+          // Move character (store previous position for collision rollback)
+          const prevX = this.player.x, prevY = this.player.y;
           movePlayer(this.player, this.keys, 200, dt, this.dir, 10, WORLD_W - 10, 10, WORLD_H - 10);
+
+          // ── House collision (wall body below roof) ────────────────────────
+          const pFeetY = this.player.y + 16;
+          const inWallX = this.player.x > WALL_LEFT && this.player.x < WALL_RIGHT;
+          const inWallY = pFeetY > WALL_TOP && pFeetY < WALL_BOTTOM;
+          // Allow passing through only at the door opening
+          const atDoor = Math.abs(this.player.x - DOOR_X) < 30;
+          if (inWallX && inWallY && !atDoor) {
+            this.player.x = prevX;
+            this.player.y = prevY;
+          }
+
+          // ── Placed entity collision (block, allow walking behind via depth) ─
+          for (const child of this.placedGroup.getChildren()) {
+            const obj = child as Phaser.GameObjects.Image;
+            const hw = obj.displayWidth  * 0.25;
+            const hh = obj.displayHeight * 0.15;
+            if (Math.abs(this.player.x - obj.x) < hw && Math.abs(pFeetY - obj.y) < hh) {
+              this.player.x = prevX;
+              this.player.y = prevY;
+              break;
+            }
+          }
 
           // Keep placed items depth-sorted by Y
           this.placedGroup.getChildren().forEach(c => {
@@ -459,7 +614,8 @@ export default function NewHomePage() {
           });
           if (!this.textures.exists("interior_floor"))
             this.load.image("interior_floor", `${NH}/interior_floor.png`);
-          CATALOG.filter(a => a.category === "Indoor").forEach(a => {
+          // Preload all indoor-relevant assets (Indoor + Furniture categories)
+          CATALOG.filter(a => a.category === "Indoor" || a.category === "Furniture").forEach(a => {
             if (!this.textures.exists(a.id)) this.load.image(a.id, a.path);
           });
         }
@@ -524,12 +680,16 @@ export default function NewHomePage() {
             if (asset) placeInGroup(this, this.placedGroup, p.assetId, p.sx, p.sy, asset.scale);
           }
 
+          // interior_floor.png is 416×352. Wall tiles occupy ~4 rows (64px) top,
+          // ~2 cols (32px) each side, ~2 rows (32px) bottom.
           const iScaleMove = Math.min(W / 416, H / 352);
           const iWMove = Math.round(416 * iScaleMove), iHMove = Math.round(352 * iScaleMove);
-          const left   = (W - iWMove) / 2 + 16;
-          const right  = (W + iWMove) / 2 - 16;
-          const top    = (H - iHMove) / 2 + Math.round(iHMove * 0.25); // below wall
-          const bottom = (H + iHMove) / 2 - 16;
+          const iLeft  = (W - iWMove) / 2;
+          const iTop   = (H - iHMove) / 2;
+          const left   = iLeft  + Math.round(36 * iScaleMove);   // ~2 wall tiles + margin
+          const right  = iLeft  + iWMove - Math.round(36 * iScaleMove);
+          const top    = iTop   + Math.round(72 * iScaleMove);   // ~4.5 wall tile rows
+          const bottom = iTop   + iHMove - Math.round(32 * iScaleMove);
           movePlayer(this.player, this.keys, 180, dt, this.dir, left, right, top, bottom);
 
           // Depth-sort placed items
