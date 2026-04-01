@@ -14,6 +14,13 @@ export const games: Game[] = [
     emoji: "⭕",
     tags: ["2-player", "strategy", "classic"],
   },
+  {
+    slug: "car-shot",
+    title: "Car Shot",
+    description: "Pull back a Hot Wheels car, release it down a ramp, and fly through structures to collect golden wheels!",
+    emoji: "🚗",
+    tags: ["physics", "skill", "single-player"],
+  },
   // Add more games here
 ];
 
