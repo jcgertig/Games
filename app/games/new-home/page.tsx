@@ -201,11 +201,11 @@ export default function NewHomePage() {
       const DOOR_Y = HOUSE_TOP  + 120 * HOUSE_SCALE;   // = HY + 10
 
       // ── character spritesheet layout ──────────────────────────────────────
-      // Idle  768×256 → 128×64 frames → 6 cols × 4 rows (row=direction)
-      // Walk  384×256 → 128×64 frames → 3 cols × 4 rows
+      // Idle  768×256 → 64×64 frames → 12 cols × 4 rows (row=direction)
+      // Walk  384×256 → 64×64 frames →  6 cols × 4 rows
       // Row order (top→bottom): 0=down, 1=left, 2=right, 3=up
-      const FRAME_W = 128, FRAME_H = 64;
-      const IDLE_COLS = 6, WALK_COLS = 3;
+      const FRAME_W = 64, FRAME_H = 64;
+      const IDLE_COLS = 12, WALK_COLS = 6;
 
       function makeAnims(anims: Phaser.Animations.AnimationManager) {
         const dirs = ["down", "left", "right", "up"] as const;
