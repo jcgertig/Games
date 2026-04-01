@@ -113,6 +113,36 @@ export default function CarShotPage() {
           ],
           landZone: { x: 880, w: 80 },
         },
+        {
+          name: "Level 5 – Cyberpunk City",
+          bgTheme: "cyberpunk",
+          rampAngle: -30,
+          structures: [
+            // Left neon tower
+            { x: 580, y: 420, w: 32, h: 150 },
+            { x: 580, y: 270, w: 64, h: 32 },
+            // Gate arch right pillar
+            { x: 700, y: 420, w: 32, h: 130 },
+            { x: 700, y: 290, w: 64, h: 32 },
+            // Crates on the arch cap
+            { x: 640, y: 258, w: 32, h: 28 },
+            { x: 640, y: 230, w: 32, h: 28 },
+            // Right cluster
+            { x: 780, y: 420, w: 28, h: 100 },
+            { x: 816, y: 420, w: 28, h: 120 },
+            { x: 798, y: 300, w: 56, h: 28 },
+          ],
+          wheels: [
+            { x: 420, y: 230 },
+            { x: 490, y: 180 },
+            { x: 570, y: 145 },
+            { x: 650, y: 120 },
+            { x: 730, y: 135 },
+            { x: 810, y: 160 },
+            { x: 890, y: 200 },
+          ],
+          landZone: { x: 850, w: 100 },
+        },
       ];
 
       // ─── SHARED STATE (across scenes via game registry) ──────────────────────
@@ -318,19 +348,22 @@ export default function CarShotPage() {
         // ── World building ───────────────────────────────────────────────────
         buildWorld() {
           const { width, height } = this.scale;
+          const isCyberpunk = (this.levelDef as { bgTheme?: string }).bgTheme === "cyberpunk";
 
-          // Sky gradient
-          const bg = this.add.graphics();
-          bg.fillGradientStyle(0x0f0f2a, 0x0f0f2a, 0x1a2a4a, 0x1a2a4a, 1);
-          bg.fillRect(0, 0, width, height);
-
-          // Stars
-          for (let i = 0; i < 80; i++) {
-            const x = Phaser.Math.Between(0, width);
-            const y = Phaser.Math.Between(0, height * 0.7);
-            const r = Math.random() * 1.5 + 0.5;
-            bg.fillStyle(0xffffff, Math.random() * 0.6 + 0.2);
-            bg.fillCircle(x, y, r);
+          if (isCyberpunk) {
+            this.buildCyberpunkBg();
+          } else {
+            // Default: dark space sky + stars
+            const bg = this.add.graphics();
+            bg.fillGradientStyle(0x0f0f2a, 0x0f0f2a, 0x1a2a4a, 0x1a2a4a, 1);
+            bg.fillRect(0, 0, width, height);
+            for (let i = 0; i < 80; i++) {
+              const x = Phaser.Math.Between(0, width);
+              const y = Phaser.Math.Between(0, height * 0.7);
+              const r = Math.random() * 1.5 + 0.5;
+              bg.fillStyle(0xffffff, Math.random() * 0.6 + 0.2);
+              bg.fillCircle(x, y, r);
+            }
           }
 
           // Ground
@@ -338,11 +371,23 @@ export default function CarShotPage() {
           const groundH = 40;
           const groundY = height - groundH / 2;
           const groundGfx = this.add.graphics();
-          groundGfx.fillStyle(0x2d5016, 1);
-          groundGfx.fillRect(0, height - groundH, width, groundH);
-          // dirt stripe
-          groundGfx.fillStyle(0x8B6914, 1);
-          groundGfx.fillRect(0, height - groundH, width, 8);
+          if (isCyberpunk) {
+            // Cyberpunk asphalt ground
+            groundGfx.fillStyle(0x1a0a2e, 1);
+            groundGfx.fillRect(0, height - groundH, width, groundH);
+            groundGfx.lineStyle(2, 0x9900ff, 0.8);
+            groundGfx.lineBetween(0, height - groundH, width, height - groundH);
+            // Neon lane markings
+            groundGfx.lineStyle(1, 0x00e8ff, 0.5);
+            for (let x = 0; x < width; x += 60) {
+              groundGfx.lineBetween(x, height - groundH + 20, x + 30, height - groundH + 20);
+            }
+          } else {
+            groundGfx.fillStyle(0x2d5016, 1);
+            groundGfx.fillRect(0, height - groundH, width, groundH);
+            groundGfx.fillStyle(0x8B6914, 1);
+            groundGfx.fillRect(0, height - groundH, width, 8);
+          }
 
           const groundBody = this.add.rectangle(width / 2, groundY, width, groundH);
           this.ground.add(groundBody);
@@ -374,54 +419,276 @@ export default function CarShotPage() {
           this.particles = this.add.graphics();
         }
 
-        buildRamp() {
+        // ── Cyberpunk city background (10 layered elements) ─────────────────
+        buildCyberpunkBg() {
           const { width, height } = this.scale;
-          const groundH = 40;
 
-          // Ramp: left side, angled surface
+          // ── Layer 1: Sky — solid dusty purple ────────────────────────────
+          const sky = this.add.graphics();
+          sky.fillGradientStyle(0x6b5196, 0x6b5196, 0x3d2060, 0x3d2060, 1);
+          sky.fillRect(0, 0, width, height);
+
+          // ── Layer 2: Moon — large soft circle upper-left ─────────────────
+          const moon = this.add.graphics();
+          // Outer glow
+          moon.fillStyle(0x9b7cc0, 0.18);
+          moon.fillCircle(148, 100, 82);
+          moon.fillStyle(0x9b7cc0, 0.28);
+          moon.fillCircle(148, 100, 70);
+          // Moon body
+          moon.fillStyle(0xa880c8, 1);
+          moon.fillCircle(148, 100, 60);
+          // Subtle crater shading
+          moon.fillStyle(0x9070b8, 0.3);
+          moon.fillCircle(125, 80, 18);
+          moon.fillCircle(162, 110, 12);
+          moon.fillStyle(0xb890d8, 0.4);
+          moon.fillCircle(132, 88, 8);
+
+          // ── Layer 3: Far top clouds — dark indigo blobs at top edge ──────
+          const farClouds = this.add.graphics();
+          farClouds.fillStyle(0x39306a, 1);
+          // Cloud blobs spanning the top ~100px
+          const topCloudBlobs = [
+            [0, 30, 70, 28], [50, 20, 60, 24], [100, 28, 80, 26],
+            [170, 15, 50, 20], [210, 22, 70, 24], [270, 10, 90, 28],
+            [350, 18, 60, 22], [400, 25, 80, 26], [560, 12, 110, 30],
+            [650, 20, 70, 24], [710, 8, 90, 26], [800, 18, 80, 24],
+            [870, 10, 100, 28], [940, 22, 80, 24],
+          ];
+          topCloudBlobs.forEach(([x, y, rx, ry]) => {
+            farClouds.fillEllipse(x, y, rx * 2, ry * 2);
+          });
+
+          // ── Layer 4: Far city silhouette — dark purple building shapes ───
+          const silhouette = this.add.graphics();
+          silhouette.fillStyle(0x482a84, 1);
+          // Rough skyline: array of [x, w, h] from bottom up
+          const skylineBlocks = [
+            [0, 60, 120], [55, 45, 170], [90, 50, 140], [130, 35, 190],
+            [155, 60, 150], [205, 40, 220], [235, 55, 170], [280, 30, 250],
+            [300, 50, 200], [340, 45, 160], [375, 80, 130], [445, 35, 210],
+            [470, 60, 180], [520, 40, 230], [550, 55, 175], [595, 35, 260],
+            [620, 65, 145], [675, 40, 195], [705, 50, 170], [745, 80, 120],
+            [815, 45, 200], [850, 60, 165], [900, 35, 215], [925, 80, 140],
+          ];
+          const groundTop = height - 40;
+          skylineBlocks.forEach(([x, w, h]) => {
+            silhouette.fillRect(x, groundTop - h, w, h);
+          });
+
+          // ── Layer 5: Mid pixel buildings — more detailed, raised ─────────
+          const midBuildings = this.add.graphics();
+          midBuildings.fillStyle(0x5c2d9b, 1);
+          const midBlocks = [
+            { x: 60, w: 55, h: 110, notch: true },
+            { x: 125, w: 35, h: 90 },
+            { x: 170, w: 50, h: 130, notch: true },
+            { x: 230, w: 30, h: 80 },
+            { x: 270, w: 60, h: 155, notch: true },
+            { x: 840, w: 50, h: 100 },
+            { x: 900, w: 35, h: 135, notch: true },
+          ];
+          midBlocks.forEach(({ x, w, h, notch }) => {
+            midBuildings.fillRect(x, groundTop - h, w, h);
+            // Notch (antenna / step at top)
+            if (notch) {
+              midBuildings.fillRect(x + w / 2 - 6, groundTop - h - 20, 12, 22);
+            }
+            // Light rows
+            midBuildings.fillStyle(0x7a42b8, 0.5);
+            for (let row = groundTop - h + 10; row < groundTop - 10; row += 16) {
+              midBuildings.fillRect(x + 5, row, w - 10, 6);
+            }
+            midBuildings.fillStyle(0x5c2d9b, 1);
+          });
+
+          // ── Layer 6: Ground fog (front) — bottom dark clouds ─────────────
+          this.drawFogLayer(0x3d3470, 0.9, height - 40, 60, false);
+
+          // ── Layer 7: Flying cars — small sprites scattered mid-sky ────────
+          const flyCarData = [
+            { x: 120, y: 165, flip: false },
+            { x: 395, y: 130, flip: true },
+            { x: 620, y: 155, flip: false },
+          ];
+          flyCarData.forEach(({ x, y, flip }) => {
+            const fc = this.add.graphics();
+            fc.setAlpha(0.75);
+            // Car body
+            fc.fillStyle(0x2d1a5e, 1);
+            fc.fillRoundedRect(flip ? x - 40 : x, y - 10, 40, 14, 3);
+            // Car roof
+            fc.fillStyle(0x4a2880, 1);
+            fc.fillRoundedRect(flip ? x - 28 : x + 8, y - 18, 22, 10, 2);
+            // Headlights
+            fc.fillStyle(0x00e8ff, 1);
+            fc.fillRect(flip ? x - 41 : x + 38, y - 6, 3, 5);
+            // Neon undercarriage
+            fc.lineStyle(1, 0xff00cc, 0.6);
+            fc.lineBetween(flip ? x - 38 : x + 2, y + 4, flip ? x - 4 : x + 36, y + 4);
+            // Animate float
+            this.tweens.add({
+              targets: fc, y: fc.y - 5, duration: 1800 + Math.random() * 800,
+              yoyo: true, repeat: -1, ease: "Sine.easeInOut",
+            });
+          });
+
+          // ── Layer 8: Close pixel buildings (right half) — neon detailed ──
+          const close = this.add.graphics();
+          // Building 1: Tall left block with screen and details
+          close.fillStyle(0x1a0535, 1);
+          close.fillRect(820, groundTop - 240, 75, 240);
+          close.lineStyle(2, 0x9900ff, 0.8);
+          close.strokeRect(820, groundTop - 240, 75, 240);
+          // Screen / billboard
+          close.fillStyle(0x00e8ff, 0.15);
+          close.fillRect(828, groundTop - 210, 40, 50);
+          close.lineStyle(1, 0x00e8ff, 0.8);
+          close.strokeRect(828, groundTop - 210, 40, 50);
+          // Window rows
+          for (let row = groundTop - 150; row < groundTop - 20; row += 20) {
+            close.fillStyle(0x9900ff, 0.5);
+            close.fillRect(828, row, 10, 10);
+            close.fillRect(848, row, 10, 10);
+            close.fillRect(870, row, 10, 10);
+          }
+          // Building 2: Slim antenna tower
+          close.fillStyle(0x120426, 1);
+          close.fillRect(900, groundTop - 300, 42, 300);
+          close.lineStyle(2, 0xff00cc, 0.8);
+          close.strokeRect(900, groundTop - 300, 42, 300);
+          close.lineStyle(1, 0xff00cc, 0.4);
+          close.lineBetween(921, groundTop - 320, 921, groundTop - 300);
+          close.fillStyle(0xff0000, 0.9);
+          close.fillCircle(921, groundTop - 322, 3);
+          // Window grid
+          for (let row = groundTop - 270; row < groundTop - 20; row += 18) {
+            close.fillStyle(0xff00cc, 0.35);
+            close.fillRect(906, row, 10, 8);
+            close.fillRect(924, row, 10, 8);
+          }
+
+          // ── Layer 9: Ground fog (closer, slightly lighter) ────────────────
+          this.drawFogLayer(0x4a3d80, 0.6, height - 40, 40, true);
+
+          // ── Layer 10: Neon-outline buildings bottom-left ──────────────────
+          const neonOut = this.add.graphics();
+          // Building A: wide with cyan outline
+          neonOut.lineStyle(2, 0x00e8ff, 1);
+          neonOut.fillStyle(0x080215, 1);
+          neonOut.fillRect(10, groundTop - 80, 80, 80);
+          neonOut.strokeRect(10, groundTop - 80, 80, 80);
+          // Door
+          neonOut.lineStyle(2, 0xff4500, 0.9);
+          neonOut.strokeRect(40, groundTop - 36, 20, 36);
+          // Sign strips
+          neonOut.lineStyle(3, 0x00e8ff, 0.7);
+          neonOut.lineBetween(14, groundTop - 68, 86, groundTop - 68);
+          neonOut.lineBetween(14, groundTop - 58, 86, groundTop - 58);
+          // Building B: mid-height pink
+          neonOut.lineStyle(2, 0xff00cc, 1);
+          neonOut.fillStyle(0x0d0220, 1);
+          neonOut.fillRect(100, groundTop - 60, 60, 60);
+          neonOut.strokeRect(100, groundTop - 60, 60, 60);
+          neonOut.lineStyle(1, 0xff00cc, 0.5);
+          for (let row = groundTop - 50; row < groundTop - 10; row += 12) {
+            neonOut.lineBetween(104, row, 156, row);
+          }
+        }
+
+        // ── Helper: wavy fog strip ────────────────────────────────────────────
+        drawFogLayer(color: number, alpha: number, baseY: number, height: number, lighter: boolean) {
+          const g = this.add.graphics();
+          g.fillStyle(color, alpha);
+          const W = this.scale.width;
+          // Draw chunky cloud blobs along the bottom strip
+          const blobCount = lighter ? 14 : 18;
+          for (let i = 0; i <= blobCount; i++) {
+            const x = (i / blobCount) * W;
+            const blobW = W / blobCount * 1.6;
+            const blobH = Phaser.Math.Between(height - 10, height + 15);
+            const yOff = Phaser.Math.Between(-8, 8);
+            g.fillEllipse(x, baseY + yOff, blobW, blobH);
+          }
+          // Solid ground fill below blobs
+          g.fillRect(0, baseY, W, 20);
+        }
+
+        buildRamp() {
+          const { height } = this.scale;
+          const groundH = 40;
+          const isCyberpunk = (this.levelDef as { bgTheme?: string }).bgTheme === "cyberpunk";
+
           const rampBaseX = 80;
           const rampTopX = 180;
           const rampBaseY = height - groundH;
           const rampTopY = height - groundH - 140;
 
           const g = this.add.graphics();
-          // Ramp surface (brown)
-          g.fillStyle(0x7f5539, 1);
-          g.fillTriangle(rampBaseX, rampBaseY, rampTopX, rampTopY, rampBaseX, rampTopY);
-          g.fillRect(rampBaseX, rampTopY, rampTopX - rampBaseX, rampBaseY - rampTopY);
 
-          // Launch surface highlight
-          g.lineStyle(3, 0xd4a373, 1);
-          g.lineBetween(rampBaseX, rampBaseY, rampTopX, rampTopY);
-
-          // Ramp end platform
-          g.fillStyle(0x7f5539, 1);
-          g.fillRect(rampTopX, rampTopY, 30, 12);
+          if (isCyberpunk) {
+            // Dark metal ramp with neon edge
+            g.fillStyle(0x1e0a38, 1);
+            g.fillTriangle(rampBaseX, rampBaseY, rampTopX, rampTopY, rampBaseX, rampTopY);
+            g.fillRect(rampBaseX, rampTopY, rampTopX - rampBaseX, rampBaseY - rampTopY);
+            // Neon launch edge
+            g.lineStyle(3, 0x00e8ff, 1);
+            g.lineBetween(rampBaseX, rampBaseY, rampTopX, rampTopY);
+            // Platform cap
+            g.fillStyle(0x2a0a4e, 1);
+            g.fillRect(rampTopX, rampTopY, 30, 12);
+            g.lineStyle(2, 0x9900ff, 1);
+            g.strokeRect(rampTopX, rampTopY, 30, 12);
+          } else {
+            g.fillStyle(0x7f5539, 1);
+            g.fillTriangle(rampBaseX, rampBaseY, rampTopX, rampTopY, rampBaseX, rampTopY);
+            g.fillRect(rampBaseX, rampTopY, rampTopX - rampBaseX, rampBaseY - rampTopY);
+            g.lineStyle(3, 0xd4a373, 1);
+            g.lineBetween(rampBaseX, rampBaseY, rampTopX, rampTopY);
+            g.fillStyle(0x7f5539, 1);
+            g.fillRect(rampTopX, rampTopY, 30, 12);
+          }
 
           this.rampGraphics = g;
-
-          // Car start position (top of ramp)
           this.carStart = new Phaser.Math.Vector2(rampTopX + 15, rampTopY - 20);
-
-          // Aim line graphics
           this.aimLine = this.add.graphics();
         }
 
         buildStructures() {
           const { height } = this.scale;
           const groundH = 40;
+          const isCyberpunk = (this.levelDef as { bgTheme?: string }).bgTheme === "cyberpunk";
+          const neonColors = [0x00e8ff, 0xff00cc, 0x9900ff, 0x00ff99];
 
-          this.levelDef.structures.forEach((s) => {
-            // Draw visual
+          this.levelDef.structures.forEach((s, i) => {
             const g = this.add.graphics();
-            g.fillStyle(0x8B6914, 1);
-            g.fillRect(s.x - s.w / 2, s.y - s.h, s.w, s.h);
-            g.lineStyle(2, 0x5d4509, 1);
-            g.strokeRect(s.x - s.w / 2, s.y - s.h, s.w, s.h);
-            // cross hatching
-            g.lineStyle(1, 0x5d4509, 0.5);
-            for (let y = s.y - s.h; y < s.y; y += 15) {
-              g.lineBetween(s.x - s.w / 2, y, s.x + s.w / 2, y);
+            if (isCyberpunk) {
+              const neon = neonColors[i % neonColors.length];
+              // Dark building body
+              g.fillStyle(0x15052a, 1);
+              g.fillRect(s.x - s.w / 2, s.y - s.h, s.w, s.h);
+              // Neon outline
+              g.lineStyle(2, neon, 1);
+              g.strokeRect(s.x - s.w / 2, s.y - s.h, s.w, s.h);
+              // Neon glow lines
+              g.lineStyle(1, neon, 0.4);
+              g.strokeRect(s.x - s.w / 2 + 3, s.y - s.h + 3, s.w - 6, s.h - 6);
+              // Window dots
+              for (let wy = s.y - s.h + 10; wy < s.y - 10; wy += 18) {
+                g.fillStyle(neon, 0.6);
+                g.fillRect(s.x - s.w / 2 + 5, wy, 6, 4);
+                if (s.w > 40) g.fillRect(s.x + 3, wy, 6, 4);
+              }
+            } else {
+              g.fillStyle(0x8B6914, 1);
+              g.fillRect(s.x - s.w / 2, s.y - s.h, s.w, s.h);
+              g.lineStyle(2, 0x5d4509, 1);
+              g.strokeRect(s.x - s.w / 2, s.y - s.h, s.w, s.h);
+              g.lineStyle(1, 0x5d4509, 0.5);
+              for (let y = s.y - s.h; y < s.y; y += 15) {
+                g.lineBetween(s.x - s.w / 2, y, s.x + s.w / 2, y);
+              }
             }
 
             // Physics body
