@@ -372,6 +372,22 @@ export default function CarShotPage() {
             if (!this.textures.exists(c.previewKey))
               this.load.image(c.previewKey, `/sprites/${c.previewKey}.png`);
           });
+
+          // Sign assets – billboards used for obstacles + ramp marker
+          const signFiles: [string, string][] = [
+            ["sign_22x40",    "2%20Billboard/22x40.png"],
+            ["sign_22x40_2",  "2%20Billboard/22x40_2.png"],
+            ["sign_64x64",    "2%20Billboard/64x64.png"],
+            ["sign_64x64_2",  "2%20Billboard/64x64_2.png"],
+            ["sign_128x64",   "2%20Billboard/128x64.png"],
+            ["sign_128x64_2", "2%20Billboard/128x64_2.png"],
+            ["sign_pillar",   "2%20Billboard/Pillar.png"],
+            ["sign_pillar2",  "2%20Billboard/Pillar2.png"],
+          ];
+          signFiles.forEach(([key, file]) => {
+            if (!this.textures.exists(key))
+              this.load.image(key, `/car_shot/signs/${file}`);
+          });
         }
 
         // ── Create ─────────────────────────────────────────────────────────────
@@ -552,42 +568,36 @@ export default function CarShotPage() {
           }
           this.rampGraphics = g;
 
+          // Launch-marker sign standing at the ramp-top platform edge
+          const markerSign = this.add.image(rampTopX + 38, rampTopY, "sign_22x40");
+          markerSign.setOrigin(0.5, 1.0);   // bottom-center anchored to ramp surface
+          markerSign.setScale(2.2);
+          markerSign.setDepth(4);
+
           // Car sits with its bottom at the ramp top surface
           this.carStart = new Phaser.Math.Vector2(rampTopX + 15, rampTopY);
           this.aimLine = this.add.graphics();
         }
 
-        buildStructures(isCityLevel: boolean) {
-          const ld = this.levelDef as { neonPalette?: number[] };
-          const neonColors = ld.neonPalette ?? [0x00e8ff, 0xff00cc, 0x9900ff, 0x00ff99];
-
+        buildStructures(_isCityLevel: boolean) {
           this.levelDef.structures.forEach((s, i) => {
-            // Draw graphics in LOCAL coords (container positioned at top-left of structure)
-            const gx = s.x - s.w / 2, gy = s.y - s.h;
-            const g = this.add.graphics();
-            g.setPosition(gx, gy);
+            // Pick billboard sign based on aspect ratio; alternate variants by index
+            const ratio   = s.w / s.h;
+            const variant = i % 2 === 0 ? "" : "_2";
+            let signKey: string;
+            if      (ratio > 1.5) signKey = `sign_128x64${variant}`;
+            else if (ratio < 0.6) signKey = `sign_22x40${variant}`;
+            else                  signKey = `sign_64x64${variant}`;
 
-            if (isCityLevel) {
-              const neon = neonColors[i % neonColors.length];
-              g.fillStyle(0x15052a, 1);   g.fillRect(0, 0, s.w, s.h);
-              g.lineStyle(2, neon, 1);    g.strokeRect(0, 0, s.w, s.h);
-              g.lineStyle(1, neon, 0.35); g.strokeRect(3, 3, s.w - 6, s.h - 6);
-              for (let wy = 10; wy < s.h - 10; wy += 18) {
-                g.fillStyle(neon, 0.55);
-                g.fillRect(5, wy, 6, 4);
-                if (s.w > 40) g.fillRect(s.w / 2 + 3, wy, 6, 4);
-              }
-            } else {
-              g.fillStyle(0x8B6914, 1); g.fillRect(0, 0, s.w, s.h);
-              g.lineStyle(2, 0x5d4509, 1); g.strokeRect(0, 0, s.w, s.h);
-              g.lineStyle(1, 0x5d4509, 0.5);
-              for (let ly = 0; ly < s.h; ly += 15) g.lineBetween(0, ly, s.w, ly);
-            }
+            // Sign image centered on the structure, scaled to fill its bounds
+            const signImg = this.add.image(s.x, s.y - s.h / 2, signKey);
+            signImg.setOrigin(0.5, 0.5);
+            signImg.setDisplaySize(s.w, s.h);
+            signImg.setDepth(2);
 
+            // Invisible physics body pinned exactly to structure bounds
             const body = this.physics.add.staticImage(s.x, s.y - s.h / 2, "__DEFAULT");
             body.setVisible(false);
-            // Directly pin the StaticBody to the structure's exact bounds
-            // (avoids display-scale mis-sizing in Phaser 3.87)
             const sBody = body.body as Phaser.Physics.Arcade.StaticBody;
             sBody.position.x = s.x - s.w / 2;
             sBody.position.y = s.y - s.h;
@@ -596,10 +606,9 @@ export default function CarShotPage() {
             sBody.halfWidth  = s.w / 2;
             sBody.halfHeight = s.h / 2;
             sBody.updateCenter();
-            // Store graphic + dimensions so we can animate destruction later
-            body.setData("gfx", g);
-            body.setData("sw", s.w);
-            body.setData("sh", s.h);
+            body.setData("gfx", signImg);
+            body.setData("sw",  s.w);
+            body.setData("sh",  s.h);
             this.structures.add(body);
           });
         }
@@ -609,14 +618,15 @@ export default function CarShotPage() {
           body.setActive(false);
           (body.body as Phaser.Physics.Arcade.StaticBody).enable = false;
 
-          const gfx = body.getData("gfx") as Phaser.GameObjects.Graphics;
+          // gfx is now a center-origin Image (origin 0.5, 0.5)
+          const gfx = body.getData("gfx") as Phaser.GameObjects.Image;
           const sw  = body.getData("sw")  as number;
           const sh  = body.getData("sh")  as number;
 
-          // White flash overlay on structure
+          // White flash overlay — offset to top-left since gfx.x/y is center
           const flash = this.add.graphics();
           flash.fillStyle(0xffffff, 0.8);
-          flash.fillRect(gfx.x, gfx.y, sw, sh);
+          flash.fillRect(gfx.x - sw / 2, gfx.y - sh / 2, sw, sh);
           this.time.delayedCall(60, () => flash.destroy());
 
           // Shake then fly up & fade
@@ -637,9 +647,9 @@ export default function CarShotPage() {
             },
           });
 
-          // Scatter fragments (3–5 small coloured squares)
-          const fragColor = gfx.defaultFillColor ?? 0x8B6914;
-          const cx = gfx.x + sw / 2, cy = gfx.y + sh / 2;
+          // Scatter fragments — cx/cy is already the image center
+          const cx = gfx.x, cy = gfx.y;
+          const fragColor = 0xf1c40f;
           for (let f = 0; f < 5; f++) {
             const frag = this.add.graphics();
             frag.fillStyle(fragColor, 1);
