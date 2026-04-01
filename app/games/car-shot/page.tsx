@@ -204,7 +204,7 @@ export default function CarShotPage() {
             const sheet = car.hasIdle ? "Idle" : "Ride";
             const key   = `${car.id}_select`;
             if (!this.textures.exists(key)) {
-              this.load.spritesheet(key, `/cars/${folder}/${sheet}.png`, {
+              this.load.spritesheet(key, `/car_shot/cars/${folder}/${sheet}.png`, {
                 frameWidth:  car.frameW,
                 frameHeight: car.frameH,
               });
@@ -347,7 +347,7 @@ export default function CarShotPage() {
           sheetDefs.forEach(({ name }) => {
             const key = `${car.id}_${name.toLowerCase()}`;
             if (!this.textures.exists(key)) {
-              this.load.spritesheet(key, `/cars/${folder}/${name}.png`, {
+              this.load.spritesheet(key, `/car_shot/cars/${folder}/${name}.png`, {
                 frameWidth: car.frameW, frameHeight: car.frameH,
               });
             }
