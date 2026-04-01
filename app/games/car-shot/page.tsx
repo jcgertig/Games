@@ -272,7 +272,13 @@ export default function CarShotPage() {
             }
           });
 
-          const cardW = 252, cardH = 230, gap = 24;
+          // Monitor/2.png (262×202): screen area ≈ top 60% of frame.
+          // With monH=188 centred at cy-22 → monitor spans cy-116 to cy+72.
+          // Screen area: cy-116 to cy-116+113 = cy+(-3). Car body bottom at cy-28
+          // and scale = min(115/bodyW, 80/bodyH) keeps the body comfortably inside.
+          // Labels at cy+90/108 land ~18-26 px below the monitor bottom (cy+72).
+          const cardW = 252, cardH = 248, gap = 24;
+          const monH = 188, monOffY = -22;   // monitor centre relative to cy
           const totalW = CAR_DEFS.length * (cardW + gap) - gap;
           const startX = (width - totalW) / 2;
 
@@ -280,26 +286,27 @@ export default function CarShotPage() {
             const cx = startX + i * (cardW + gap) + cardW / 2;
             const cy = height / 2 + 8;
 
-            // Monitor/2.png (262×202) used as the card frame, scaled to card dimensions
-            const monFrame = this.add.image(cx, cy - 14, "gui_mon2")
-              .setDisplaySize(cardW, 190).setOrigin(0.5, 0.5).setDepth(1);
+            // Monitor frame – moved up 8 px so labels sit clearly below it
+            const monFrame = this.add.image(cx, cy + monOffY, "gui_mon2")
+              .setDisplaySize(cardW, monH).setOrigin(0.5, 0.5).setDepth(1);
 
             // Dark backing panel so the card area is opaque
             const backing = this.add.graphics().setDepth(0);
             backing.fillStyle(0x0a0a1e, 1);
             backing.fillRoundedRect(cx - cardW / 2, cy - cardH / 2, cardW, cardH, 4);
 
-            // Animated car sprite – scale so car body ≈ 160 px wide
-            const spriteScale = 160 / car.bodyW;
+            // Animated car sprite – scale so body width ≤ 115 px AND body height ≤ 80 px
+            // This keeps the visible car body inside the monitor screen area.
+            const spriteScale = Math.min(115 / car.bodyW, 80 / car.bodyH);
             const sprite = this.add.sprite(cx, cy - 28, `${car.id}_select`);
             sprite.setOrigin(0.5, 1.0).setScale(spriteScale).setDepth(2);
             sprite.play(`${car.id}_select_anim`);
 
-            // Car label & tagline
-            this.add.text(cx, cy + 82, car.label, {
+            // Car label & tagline – placed clearly below the monitor bottom (cy + monOffY + monH/2)
+            this.add.text(cx, cy + 90, car.label, {
               fontSize: "17px", fontFamily: "Arial Black, Arial", color: "#00e8ff",
             }).setOrigin(0.5).setDepth(2);
-            this.add.text(cx, cy + 104, car.tagline, {
+            this.add.text(cx, cy + 110, car.tagline, {
               fontSize: "11px", fontFamily: "Arial", color: "#9966ff",
             }).setOrigin(0.5).setDepth(2);
 
