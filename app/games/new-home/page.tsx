@@ -390,6 +390,11 @@ export default function NewHomePage() {
           this.keys = buildControls(this);
           this.input.mouse?.disableContextMenu();
 
+          // ── Register IndoorScene WITHOUT starting it ──────────────────────
+          if (!this.scene.get("Indoor")) {
+            this.scene.add("Indoor", IndoorScene, false);
+          }
+
           // ── Door hint ────────────────────────────────────────────────────
           this.hint = this.add.text(DOOR_X, DOOR_Y + 18, "▼ ENTER", {
             fontSize: "11px", fontFamily: "Arial", color: "#fffbe6",
@@ -551,7 +556,7 @@ export default function NewHomePage() {
         height: CH,
         parent: canvasWrapRef.current!,
         backgroundColor: "#3a7d3a",
-        scene: [OutdoorScene, IndoorScene],
+        scene: [OutdoorScene],   // IndoorScene is added lazily in OutdoorScene.create()
         scale: { mode: Phaser.Scale.NONE },
       };
 
