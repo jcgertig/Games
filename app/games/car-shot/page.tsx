@@ -50,60 +50,60 @@ export default function CarShotPage() {
 
       // ─── LEVEL DEFINITIONS ───────────────────────────────────────────────────
       const LEVELS = [
-        {
-          name: "Level 1 – Milk Run",
-          structures: [
-            { x: 660, y: 420, w: 40, h: 80 },
-            { x: 710, y: 420, w: 40, h: 80 },
-            { x: 685, y: 340, w: 80, h: 40 },
-          ],
-          wheels: [
-            { x: 550, y: 300 }, { x: 620, y: 260 }, { x: 750, y: 200 },
-            { x: 800, y: 310 }, { x: 850, y: 180 },
-          ],
-          landZone: { x: 820, w: 120 },
-        },
-        {
-          name: "Level 2 – The Gap",
-          structures: [
-            { x: 680, y: 420, w: 30, h: 100 }, { x: 720, y: 420, w: 30, h: 100 },
-            { x: 700, y: 320, w: 70, h: 30 },  { x: 700, y: 290, w: 50, h: 30 },
-          ],
-          wheels: [
-            { x: 500, y: 280 }, { x: 570, y: 230 }, { x: 650, y: 190 },
-            { x: 730, y: 170 }, { x: 810, y: 210 }, { x: 870, y: 270 },
-          ],
-          landZone: { x: 840, w: 110 },
-        },
-        {
-          name: "Level 3 – Tower Smash",
-          structures: [
-            { x: 640, y: 420, w: 28, h: 120 }, { x: 676, y: 420, w: 28, h: 120 },
-            { x: 712, y: 420, w: 28, h: 120 }, { x: 658, y: 300, w: 56, h: 28 },
-            { x: 676, y: 272, w: 28, h: 28 },  { x: 748, y: 420, w: 28, h: 80 },
-            { x: 748, y: 340, w: 28, h: 28 },
-          ],
-          wheels: [
-            { x: 480, y: 250 }, { x: 560, y: 200 }, { x: 640, y: 170 },
-            { x: 720, y: 150 }, { x: 800, y: 160 }, { x: 870, y: 200 }, { x: 920, y: 270 },
-          ],
-          landZone: { x: 860, w: 100 },
-        },
-        {
-          name: "Level 4 – Pyramid",
-          structures: [
-            { x: 630, y: 420, w: 30, h: 90 }, { x: 668, y: 420, w: 30, h: 90 },
-            { x: 706, y: 420, w: 30, h: 90 }, { x: 744, y: 420, w: 30, h: 90 },
-            { x: 649, y: 330, w: 30, h: 90 }, { x: 687, y: 330, w: 30, h: 90 },
-            { x: 725, y: 330, w: 30, h: 90 }, { x: 668, y: 240, w: 30, h: 90 },
-            { x: 706, y: 240, w: 30, h: 90 }, { x: 687, y: 150, w: 30, h: 90 },
-          ],
-          wheels: [
-            { x: 450, y: 220 }, { x: 530, y: 175 }, { x: 610, y: 145 },
-            { x: 690, y: 120 }, { x: 770, y: 140 }, { x: 850, y: 175 }, { x: 920, y: 230 },
-          ],
-          landZone: { x: 880, w: 80 },
-        },
+        // {
+        //   name: "Level 1 – Milk Run",
+        //   structures: [
+        //     { x: 660, y: 420, w: 40, h: 80 },
+        //     { x: 710, y: 420, w: 40, h: 80 },
+        //     { x: 685, y: 340, w: 80, h: 40 },
+        //   ],
+        //   wheels: [
+        //     { x: 550, y: 300 }, { x: 620, y: 260 }, { x: 750, y: 200 },
+        //     { x: 800, y: 310 }, { x: 850, y: 180 },
+        //   ],
+        //   landZone: { x: 820, w: 120 },
+        // },
+        // {
+        //   name: "Level 2 – The Gap",
+        //   structures: [
+        //     { x: 680, y: 420, w: 30, h: 100 }, { x: 720, y: 420, w: 30, h: 100 },
+        //     { x: 700, y: 320, w: 70, h: 30 },  { x: 700, y: 290, w: 50, h: 30 },
+        //   ],
+        //   wheels: [
+        //     { x: 500, y: 280 }, { x: 570, y: 230 }, { x: 650, y: 190 },
+        //     { x: 730, y: 170 }, { x: 810, y: 210 }, { x: 870, y: 270 },
+        //   ],
+        //   landZone: { x: 840, w: 110 },
+        // },
+        // {
+        //   name: "Level 3 – Tower Smash",
+        //   structures: [
+        //     { x: 640, y: 420, w: 28, h: 120 }, { x: 676, y: 420, w: 28, h: 120 },
+        //     { x: 712, y: 420, w: 28, h: 120 }, { x: 658, y: 300, w: 56, h: 28 },
+        //     { x: 676, y: 272, w: 28, h: 28 },  { x: 748, y: 420, w: 28, h: 80 },
+        //     { x: 748, y: 340, w: 28, h: 28 },
+        //   ],
+        //   wheels: [
+        //     { x: 480, y: 250 }, { x: 560, y: 200 }, { x: 640, y: 170 },
+        //     { x: 720, y: 150 }, { x: 800, y: 160 }, { x: 870, y: 200 }, { x: 920, y: 270 },
+        //   ],
+        //   landZone: { x: 860, w: 100 },
+        // },
+        // {
+        //   name: "Level 4 – Pyramid",
+        //   structures: [
+        //     { x: 630, y: 420, w: 30, h: 90 }, { x: 668, y: 420, w: 30, h: 90 },
+        //     { x: 706, y: 420, w: 30, h: 90 }, { x: 744, y: 420, w: 30, h: 90 },
+        //     { x: 649, y: 330, w: 30, h: 90 }, { x: 687, y: 330, w: 30, h: 90 },
+        //     { x: 725, y: 330, w: 30, h: 90 }, { x: 668, y: 240, w: 30, h: 90 },
+        //     { x: 706, y: 240, w: 30, h: 90 }, { x: 687, y: 150, w: 30, h: 90 },
+        //   ],
+        //   wheels: [
+        //     { x: 450, y: 220 }, { x: 530, y: 175 }, { x: 610, y: 145 },
+        //     { x: 690, y: 120 }, { x: 770, y: 140 }, { x: 850, y: 175 }, { x: 920, y: 230 },
+        //   ],
+        //   landZone: { x: 880, w: 80 },
+        // },
         // ── City levels (5–8) use real layered PNG backgrounds ──────────────
         {
           name: "Level 5 – Neon District",
@@ -478,9 +478,18 @@ export default function CarShotPage() {
             groundGfx.fillRect(0, height - groundH, width, 8);
           }
 
-          const groundBody = this.add.rectangle(width / 2, groundY, width, groundH);
-          this.ground.add(groundBody);
-          this.physics.add.existing(groundBody, true);
+          // Use staticImage + manually set body so Phaser 3.87 doesn't mis-size via display-scale
+          const groundImg = this.physics.add.staticImage(width / 2, groundY, "__DEFAULT");
+          groundImg.setVisible(false);
+          const gsBody = groundImg.body as Phaser.Physics.Arcade.StaticBody;
+          gsBody.position.x = 0;
+          gsBody.position.y = height - groundH;
+          gsBody.width     = width;
+          gsBody.height    = groundH;
+          gsBody.halfWidth  = width  / 2;
+          gsBody.halfHeight = groundH / 2;
+          gsBody.updateCenter();
+          this.ground.add(groundImg);
 
           this.buildRamp(isCityLevel);
 
@@ -577,9 +586,17 @@ export default function CarShotPage() {
             }
 
             const body = this.physics.add.staticImage(s.x, s.y - s.h / 2, "__DEFAULT");
-            body.setDisplaySize(s.w, s.h);
             body.setVisible(false);
-            (body.body as Phaser.Physics.Arcade.StaticBody).setSize(s.w, s.h);
+            // Directly pin the StaticBody to the structure's exact bounds
+            // (avoids display-scale mis-sizing in Phaser 3.87)
+            const sBody = body.body as Phaser.Physics.Arcade.StaticBody;
+            sBody.position.x = s.x - s.w / 2;
+            sBody.position.y = s.y - s.h;
+            sBody.width      = s.w;
+            sBody.height     = s.h;
+            sBody.halfWidth  = s.w / 2;
+            sBody.halfHeight = s.h / 2;
+            sBody.updateCenter();
             // Store graphic + dimensions so we can animate destruction later
             body.setData("gfx", g);
             body.setData("sw", s.w);
