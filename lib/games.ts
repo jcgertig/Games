@@ -21,6 +21,13 @@ export const games: Game[] = [
     emoji: "🚗",
     tags: ["physics", "skill", "single-player"],
   },
+  {
+    slug: "new-home",
+    title: "New Home",
+    description: "Walk around your property with WASD, drag & drop trees, bushes, rocks and plants to decorate inside and out, then save your layout.",
+    emoji: "🏡",
+    tags: ["decoration", "sandbox", "creative"],
+  },
   // Add more games here
 ];
 
