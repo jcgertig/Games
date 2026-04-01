@@ -196,9 +196,19 @@ export default function CarShotPage() {
         constructor() { super("CarSelect"); }
 
         preload() {
+          // Load the idle (or ride) spritesheet for every car so we can animate them
           CAR_DEFS.forEach((car) => {
-            if (!this.textures.exists(car.previewKey))
-              this.load.image(car.previewKey, `/sprites/${car.previewKey}.png`);
+            const folder = car.folder.replace(/ /g, "%20");
+
+            // Primary sheet: Idle when available, otherwise Ride
+            const sheet = car.hasIdle ? "Idle" : "Ride";
+            const key   = `${car.id}_select`;
+            if (!this.textures.exists(key)) {
+              this.load.spritesheet(key, `/cars/${folder}/${sheet}.png`, {
+                frameWidth:  car.frameW,
+                frameHeight: car.frameH,
+              });
+            }
           });
         }
 
@@ -217,6 +227,20 @@ export default function CarShotPage() {
           this.add.text(width / 2, 104, "Choose your car", {
             fontSize: "20px", fontFamily: "Arial", color: "#94a3b8",
           }).setOrigin(0.5);
+
+          // Create a looping anim for each car using its select sheet
+          CAR_DEFS.forEach((car) => {
+            const animKey = `${car.id}_select_anim`;
+            if (!this.anims.exists(animKey)) {
+              const frames = car.hasIdle ? car.idleFrames : car.rideFrames;
+              this.anims.create({
+                key: animKey,
+                frames: this.anims.generateFrameNumbers(`${car.id}_select`, { start: 0, end: frames - 1 }),
+                frameRate: 8,
+                repeat: -1,
+              });
+            }
+          });
 
           const cardW = 240, cardH = 220, gap = 28;
           const totalW = CAR_DEFS.length * (cardW + gap) - gap;
@@ -238,10 +262,16 @@ export default function CarShotPage() {
             };
             drawCard(false);
 
-            const sprite = this.add.image(cx, cy - 28, car.previewKey);
-            const scaleW = 180 / sprite.width;
-            const scaleH = 100 / sprite.height;
-            sprite.setScale(Math.min(scaleW, scaleH, 1));
+            // Animated sprite — scale so the car body fills ~180 px wide in the card
+            // Car occupies bodyW px of the frameW frame; target ~180 px display width
+            const targetW = 180;
+            const spriteScale = targetW / car.bodyW;
+
+            const sprite = this.add.sprite(cx, cy - 20, `${car.id}_select`);
+            // Origin at bottom-center so the car sits naturally on an invisible floor
+            sprite.setOrigin(0.5, 1.0);
+            sprite.setScale(spriteScale);
+            sprite.play(`${car.id}_select_anim`);
 
             this.add.text(cx, cy + 68, car.label, {
               fontSize: "18px", fontFamily: "Arial Black, Arial", color: "#f1f5f9",
@@ -253,7 +283,7 @@ export default function CarShotPage() {
 
             const btn = this.add.rectangle(cx, cy, cardW, cardH, 0xffffff, 0)
               .setInteractive({ cursor: "pointer" });
-            btn.on("pointerover", () => { drawCard(true); sprite.setAlpha(1); });
+            btn.on("pointerover", () => { drawCard(true);  sprite.setAlpha(1); });
             btn.on("pointerout",  () => { drawCard(false); sprite.setAlpha(0.9); });
             btn.on("pointerdown", () => {
               this.registry.set("selectedCar", car);
