@@ -251,6 +251,8 @@ export default function CarShotPage() {
         private carTexKey!: string;
         private landed = false;
         private landTimer = 0;
+        private stuckTimer = 0;
+        private retryBtn!: { g: Phaser.GameObjects.Graphics; txt: Phaser.GameObjects.Text; hit: Phaser.GameObjects.Rectangle };
 
         constructor() { super("Game"); }
 
@@ -263,6 +265,7 @@ export default function CarShotPage() {
           this.isDragging = false;
           this.landed = false;
           this.landTimer = 0;
+          this.stuckTimer = 0;
           this.wheelsThisRun = 0;
 
           this.carDef = this.registry.get("selectedCar") as typeof CAR_DEFS[0];
@@ -516,6 +519,47 @@ export default function CarShotPage() {
             fontSize: "13px", fontFamily: "Arial", color: "#94a3b8",
             align: "right",
           }).setOrigin(1, 0).setDepth(10);
+
+          // ── Persistent Retry button (top-right, below instructions) ──
+          const bw = 100, bh = 32;
+          const bx = width - 16 - bw / 2;
+          const by = 72;
+
+          const bg2 = this.add.graphics().setDepth(10);
+          bg2.fillStyle(0x334155, 1);
+          bg2.fillRoundedRect(bx - bw / 2, by - bh / 2, bw, bh, 6);
+
+          const btxt = this.add.text(bx, by, "↺  Retry  [R]", {
+            fontSize: "12px", fontFamily: "Arial", color: "#94a3b8",
+          }).setOrigin(0.5).setDepth(11);
+
+          const bhit = this.add.rectangle(bx, by, bw, bh, 0xffffff, 0)
+            .setInteractive({ cursor: "pointer" }).setDepth(12);
+          bhit.on("pointerover", () => {
+            bg2.clear();
+            bg2.fillStyle(0x475569, 1);
+            bg2.fillRoundedRect(bx - bw / 2, by - bh / 2, bw, bh, 6);
+            btxt.setColor("#e2e8f0");
+          });
+          bhit.on("pointerout", () => {
+            bg2.clear();
+            bg2.fillStyle(0x334155, 1);
+            bg2.fillRoundedRect(bx - bw / 2, by - bh / 2, bw, bh, 6);
+            btxt.setColor("#94a3b8");
+          });
+          bhit.on("pointerdown", () => {
+            this.registry.set("totalWheels", this.totalWheels);
+            this.scene.restart();
+          });
+
+          this.retryBtn = { g: bg2, txt: btxt, hit: bhit };
+
+          // R key shortcut
+          this.input.keyboard!.on("keydown-R", () => {
+            if (this.landed) return; // result screen handles its own buttons
+            this.registry.set("totalWheels", this.totalWheels);
+            this.scene.restart();
+          });
         }
 
         getHudText() {
@@ -809,6 +853,7 @@ export default function CarShotPage() {
           if (this.launched && !this.landed) {
             // Rotate car based on velocity
             const body = this.car.body as Phaser.Physics.Arcade.Body;
+            const speed = body.speed;
             const angle = Math.atan2(body.velocity.y, body.velocity.x) * (180 / Math.PI);
             this.car.setAngle(angle);
 
@@ -821,6 +866,31 @@ export default function CarShotPage() {
             }
 
             this.landTimer += delta;
+
+            // ── Stuck detection ──────────────────────────────────────────────
+            // If the car has been launched for at least 1 s and speed is very
+            // low for 2.5 consecutive seconds, treat it as stuck and end the run.
+            if (this.landTimer > 1000) {
+              if (speed < 20) {
+                this.stuckTimer += delta;
+                if (this.stuckTimer >= 2500) {
+                  this.landed = true;
+                  // Show a small "Stuck!" flash before the result screen
+                  const { width, height } = this.scale;
+                  const flash = this.add.text(width / 2, height / 2 - 20, "⚠️ Stuck!", {
+                    fontSize: "28px", fontFamily: "Arial Black, Arial",
+                    color: "#f59e0b", stroke: "#000", strokeThickness: 5,
+                  }).setOrigin(0.5).setDepth(50);
+                  this.time.delayedCall(700, () => {
+                    flash.destroy();
+                    this.showResult(false);
+                  });
+                }
+              } else {
+                // Reset stuck timer whenever the car is moving
+                this.stuckTimer = 0;
+              }
+            }
           }
         }
       }
