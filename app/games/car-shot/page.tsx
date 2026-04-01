@@ -196,6 +196,31 @@ export default function CarShotPage() {
         constructor() { super("CarSelect"); }
 
         preload() {
+          // GUI assets — loaded here first so they're in the shared texture cache for GameScene too
+          const GUI = "/car_shot/gui";
+          const guiAssets: [string, string][] = [
+            ["gui_mon1",    "1%20Monitor/1.png"],
+            ["gui_mon2",    "1%20Monitor/2.png"],
+            ["gui_mon3",    "1%20Monitor/3.png"],
+            ["gui_mon4",    "1%20Monitor/4.png"],
+            ["gui_mon7_2",  "1%20Monitor/7_2.png"],
+            ["gui_buttons", "1%20Monitor/Buttons.png"],
+            ["gui_buttons2","1%20Monitor/Buttons2.png"],
+            ["gui_bulb",    "1%20Monitor/Bulb.png"],
+            ["gui_osc",     "3%20Other/Oscilloscope_sine.png"],
+            ["gui_granted", "3%20Other/Access_granted.png"],
+            ["gui_denied",  "3%20Other/Access_denied.png"],
+            ["gui_display", "3%20Other/Display.png"],
+            ["gui_arrows",  "3%20Other/Arrows.png"],
+          ];
+          guiAssets.forEach(([key, file]) => {
+            if (!this.textures.exists(key))
+              this.load.image(key, `${GUI}/${file}`);
+          });
+          // Ring spritesheet: 544×136, 4 frames of 136×136 each
+          if (!this.textures.exists("gui_ring"))
+            this.load.spritesheet("gui_ring", `${GUI}/1%20Monitor/Ring136x136.png`, { frameWidth: 136, frameHeight: 136 });
+
           // Load the idle (or ride) spritesheet for every car so we can animate them
           CAR_DEFS.forEach((car) => {
             const folder = car.folder.replace(/ /g, "%20");
@@ -216,8 +241,13 @@ export default function CarShotPage() {
           const { width, height } = this.scale;
 
           const bg = this.add.graphics();
-          bg.fillGradientStyle(0x0f0f2a, 0x0f0f2a, 0x1a1a3a, 0x1a1a3a, 1);
+          bg.fillGradientStyle(0x0a0a1a, 0x0a0a1a, 0x12122a, 0x12122a, 1);
           bg.fillRect(0, 0, width, height);
+
+          // Decorative oscilloscope strips top & bottom
+          const oscTop = this.add.image(width / 2, 12, "gui_osc").setScale(2.5, 1.2).setAlpha(0.35).setDepth(0);
+          const oscBot = this.add.image(width / 2, height - 12, "gui_osc").setScale(2.5, 1.2).setAlpha(0.35).setDepth(0);
+          void oscTop; void oscBot;
 
           this.add.text(width / 2, 52, "🚗  CAR SHOT", {
             fontSize: "42px", fontFamily: "Arial Black, Arial",
@@ -225,7 +255,7 @@ export default function CarShotPage() {
           }).setOrigin(0.5);
 
           this.add.text(width / 2, 104, "Choose your car", {
-            fontSize: "20px", fontFamily: "Arial", color: "#94a3b8",
+            fontSize: "20px", fontFamily: "Arial", color: "#00e8ff",
           }).setOrigin(0.5);
 
           // Create a looping anim for each car using its select sheet
@@ -242,59 +272,53 @@ export default function CarShotPage() {
             }
           });
 
-          const cardW = 240, cardH = 220, gap = 28;
+          const cardW = 252, cardH = 230, gap = 24;
           const totalW = CAR_DEFS.length * (cardW + gap) - gap;
           const startX = (width - totalW) / 2;
-          const borderColors = [0xe74c3c, 0xf1c40f, 0x3498db];
 
           CAR_DEFS.forEach((car, i) => {
             const cx = startX + i * (cardW + gap) + cardW / 2;
-            const cy = height / 2 + 10;
-            const borderColor = borderColors[i];
+            const cy = height / 2 + 8;
 
-            const card = this.add.graphics();
-            const drawCard = (hover: boolean) => {
-              card.clear();
-              card.fillStyle(hover ? 0x2d3f55 : 0x1e293b, 1);
-              card.lineStyle(3, borderColor, 1);
-              card.strokeRoundedRect(cx - cardW / 2, cy - cardH / 2, cardW, cardH, 14);
-              card.fillRoundedRect(cx - cardW / 2, cy - cardH / 2, cardW, cardH, 14);
-            };
-            drawCard(false);
+            // Monitor/2.png (262×202) used as the card frame, scaled to card dimensions
+            const monFrame = this.add.image(cx, cy - 14, "gui_mon2")
+              .setDisplaySize(cardW, 190).setOrigin(0.5, 0.5).setDepth(1);
 
-            // Animated sprite — scale so the car body fills ~180 px wide in the card
-            // Car occupies bodyW px of the frameW frame; target ~180 px display width
-            const targetW = 180;
-            const spriteScale = targetW / car.bodyW;
+            // Dark backing panel so the card area is opaque
+            const backing = this.add.graphics().setDepth(0);
+            backing.fillStyle(0x0a0a1e, 1);
+            backing.fillRoundedRect(cx - cardW / 2, cy - cardH / 2, cardW, cardH, 4);
 
-            const sprite = this.add.sprite(cx, cy - 20, `${car.id}_select`);
-            // Origin at bottom-center so the car sits naturally on an invisible floor
-            sprite.setOrigin(0.5, 1.0);
-            sprite.setScale(spriteScale);
+            // Animated car sprite – scale so car body ≈ 160 px wide
+            const spriteScale = 160 / car.bodyW;
+            const sprite = this.add.sprite(cx, cy - 28, `${car.id}_select`);
+            sprite.setOrigin(0.5, 1.0).setScale(spriteScale).setDepth(2);
             sprite.play(`${car.id}_select_anim`);
 
-            this.add.text(cx, cy + 68, car.label, {
-              fontSize: "18px", fontFamily: "Arial Black, Arial", color: "#f1f5f9",
-            }).setOrigin(0.5);
+            // Car label & tagline
+            this.add.text(cx, cy + 82, car.label, {
+              fontSize: "17px", fontFamily: "Arial Black, Arial", color: "#00e8ff",
+            }).setOrigin(0.5).setDepth(2);
+            this.add.text(cx, cy + 104, car.tagline, {
+              fontSize: "11px", fontFamily: "Arial", color: "#9966ff",
+            }).setOrigin(0.5).setDepth(2);
 
-            this.add.text(cx, cy + 92, car.tagline, {
-              fontSize: "12px", fontFamily: "Arial", color: "#64748b",
-            }).setOrigin(0.5);
-
-            const btn = this.add.rectangle(cx, cy, cardW, cardH, 0xffffff, 0)
-              .setInteractive({ cursor: "pointer" });
-            btn.on("pointerover", () => { drawCard(true);  sprite.setAlpha(1); });
-            btn.on("pointerout",  () => { drawCard(false); sprite.setAlpha(0.9); });
-            btn.on("pointerdown", () => {
+            // Invisible hit zone over whole card
+            const hit = this.add.rectangle(cx, cy, cardW, cardH, 0xffffff, 0)
+              .setInteractive({ cursor: "pointer" }).setDepth(3);
+            hit.on("pointerover",  () => { monFrame.setTint(0x88ffee); sprite.setAlpha(1); });
+            hit.on("pointerout",   () => { monFrame.clearTint();        sprite.setAlpha(0.85); });
+            hit.on("pointerdown",  () => {
               this.registry.set("selectedCar", car);
               this.registry.set("currentLevel", 0);
               this.registry.set("totalWheels", 0);
               this.scene.start("Game");
             });
+            sprite.setAlpha(0.85);
           });
 
-          this.add.text(width / 2, height - 24, "Click & drag on the car to pull back → release to launch!", {
-            fontSize: "14px", fontFamily: "Arial", color: "#475569",
+          this.add.text(width / 2, height - 22, "Click & drag on the car to pull back → release to launch!", {
+            fontSize: "13px", fontFamily: "Arial", color: "#334155",
           }).setOrigin(0.5);
         }
       }
@@ -327,7 +351,7 @@ export default function CarShotPage() {
         private landed = false;
         private landTimer = 0;
         private stuckTimer = 0;
-        private retryBtn!: { g: Phaser.GameObjects.Graphics; txt: Phaser.GameObjects.Text; hit: Phaser.GameObjects.Rectangle };
+        private retryBtn!: { g: Phaser.GameObjects.GameObject; txt: Phaser.GameObjects.Text; hit: Phaser.GameObjects.Rectangle };
 
         constructor() { super("Game"); }
 
@@ -685,44 +709,47 @@ export default function CarShotPage() {
         buildHUD() {
           const { width } = this.scale;
 
+          // Level name centred at top
           this.levelText = this.add.text(width / 2, 18, this.levelDef.name, {
             fontSize: "18px", fontFamily: "Arial Black, Arial",
             color: "#f1c40f", stroke: "#000", strokeThickness: 4,
           }).setOrigin(0.5, 0).setDepth(10);
 
-          this.hud = this.add.text(16, 16, this.getHudText(), {
-            fontSize: "16px", fontFamily: "Arial", color: "#fbbf24",
+          // GUI monitor panel behind the wheel counter + power bar (top-left)
+          this.add.image(100, 52, "gui_mon7_2")
+            .setDisplaySize(196, 64).setOrigin(0.5, 0.5).setDepth(9).setAlpha(0.85);
+
+          this.hud = this.add.text(14, 12, this.getHudText(), {
+            fontSize: "15px", fontFamily: "Arial Black, Arial", color: "#00e8ff",
             stroke: "#000", strokeThickness: 3,
           }).setDepth(10);
 
+          // Power bar track inside the panel
           const barG = this.add.graphics().setDepth(10);
-          barG.fillStyle(0x1e293b, 0.8);
-          barG.fillRoundedRect(14, 50, 154, 18, 4);
-          barG.lineStyle(1, 0x475569, 1);
-          barG.strokeRoundedRect(14, 50, 154, 18, 4);
+          barG.fillStyle(0x050518, 0.9);
+          barG.fillRect(14, 50, 154, 16);
+          barG.lineStyle(1, 0x00e8ff, 0.5);
+          barG.strokeRect(14, 50, 154, 16);
           this.powerBar = this.add.graphics().setDepth(10);
-          this.add.text(16, 71, "POWER", { fontSize: "10px", fontFamily: "Arial", color: "#64748b" }).setDepth(10);
+          this.add.text(14, 68, "POWER", {
+            fontSize: "9px", fontFamily: "Arial", color: "#00e8ff",
+          }).setDepth(10);
 
           this.add.text(width - 16, 16, "Drag car to aim & charge\nRelease to launch!", {
-            fontSize: "13px", fontFamily: "Arial", color: "#94a3b8", align: "right",
+            fontSize: "13px", fontFamily: "Arial", color: "#00e8ff", align: "right",
           }).setOrigin(1, 0).setDepth(10);
 
-          // Persistent retry button
-          const bw = 100, bh = 32, bx = width - 16 - 50, by = 72;
-          const bg2 = this.add.graphics().setDepth(10);
-          const drawBtn = (hover: boolean) => {
-            bg2.clear();
-            bg2.fillStyle(hover ? 0x475569 : 0x334155, 1);
-            bg2.fillRoundedRect(bx - 50, by - 16, bw, bh, 6);
-          };
-          drawBtn(false);
+          // Persistent retry button — uses Buttons.png as the background image
+          const bw = 110, bh = 38, bx = width - 16 - 55, by = 70;
+          const bg2 = this.add.image(bx, by, "gui_buttons")
+            .setDisplaySize(bw, bh).setOrigin(0.5, 0.5).setDepth(10);
           const btxt = this.add.text(bx, by, "↺  Retry  [R]", {
-            fontSize: "12px", fontFamily: "Arial", color: "#94a3b8",
+            fontSize: "11px", fontFamily: "Arial Black, Arial", color: "#00ffcc",
           }).setOrigin(0.5).setDepth(11);
           const bhit = this.add.rectangle(bx, by, bw, bh, 0xffffff, 0)
             .setInteractive({ cursor: "pointer" }).setDepth(12);
-          bhit.on("pointerover", () => { drawBtn(true); btxt.setColor("#e2e8f0"); });
-          bhit.on("pointerout",  () => { drawBtn(false); btxt.setColor("#94a3b8"); });
+          bhit.on("pointerover", () => { bg2.setTint(0x88ffee); btxt.setColor("#ffffff"); });
+          bhit.on("pointerout",  () => { bg2.clearTint();       btxt.setColor("#00ffcc"); });
           bhit.on("pointerdown", () => { this.registry.set("totalWheels", this.totalWheels); this.scene.restart(); });
           this.retryBtn = { g: bg2, txt: btxt, hit: bhit };
 
@@ -943,62 +970,76 @@ export default function CarShotPage() {
 
         showResult(inZone: boolean) {
           const { width, height } = this.scale;
+          const cx = width / 2, cy = height / 2;
+
+          // Dark overlay
           const overlay = this.add.graphics().setDepth(30);
-          overlay.fillStyle(0x000000, 0.6);
+          overlay.fillStyle(0x000000, 0.72);
           overlay.fillRect(0, 0, width, height);
 
-          const panel = this.add.graphics().setDepth(31);
-          panel.fillStyle(0x1e293b, 1);
-          panel.lineStyle(3, inZone ? 0xf1c40f : 0xef4444, 1);
-          panel.strokeRoundedRect(width / 2 - 200, height / 2 - 130, 400, 260, 16);
-          panel.fillRoundedRect(width / 2 - 200, height / 2 - 130, 400, 260, 16);
+          // Monitor/3.png (312×255) as panel frame, scaled to 400×280
+          this.add.image(cx, cy, "gui_mon3")
+            .setDisplaySize(400, 280).setOrigin(0.5, 0.5).setDepth(31);
 
-          const title = inZone ? (this.wheelsThisRun > 0 ? "🏆 Perfect Landing!" : "✅ Landed!") : "💥 Missed!";
-          this.add.text(width / 2, height / 2 - 90, title, {
-            fontSize: "28px", fontFamily: "Arial Black, Arial",
-            color: inZone ? "#f1c40f" : "#ef4444", stroke: "#000", strokeThickness: 4,
+          // Access_granted / Access_denied badge – scaled 2× and placed near top of panel
+          const badgeKey = inZone ? "gui_granted" : "gui_denied";
+          this.add.image(cx, cy - 98, badgeKey)
+            .setScale(2).setOrigin(0.5, 0.5).setDepth(32);
+
+          // Result title
+          const title = inZone
+            ? (this.wheelsThisRun > 0 ? "🏆 Perfect Landing!" : "✅ Landed!")
+            : "💥 Missed!";
+          this.add.text(cx, cy - 60, title, {
+            fontSize: "24px", fontFamily: "Arial Black, Arial",
+            color: inZone ? "#00e8ff" : "#ff4466", stroke: "#000", strokeThickness: 3,
           }).setOrigin(0.5).setDepth(32);
 
-          this.add.text(width / 2, height / 2 - 45, `Golden wheels: ${this.wheelsThisRun}`, {
-            fontSize: "18px", fontFamily: "Arial", color: "#fbbf24",
+          this.add.text(cx, cy - 26, `Golden wheels: ${this.wheelsThisRun}`, {
+            fontSize: "16px", fontFamily: "Arial", color: "#f1c40f",
           }).setOrigin(0.5).setDepth(32);
 
-          this.add.text(width / 2, height / 2 - 18, `Total: ${this.totalWheels + this.wheelsThisRun} 🏆`, {
-            fontSize: "16px", fontFamily: "Arial", color: "#94a3b8",
+          this.add.text(cx, cy - 4, `Total: ${this.totalWheels + this.wheelsThisRun} 🏆`, {
+            fontSize: "14px", fontFamily: "Arial", color: "#9966ff",
           }).setOrigin(0.5).setDepth(32);
 
           const nextLevel = this.levelIdx < LEVELS.length - 1;
-          const btnY = height / 2 + 40;
+          const btnY = cy + 48;
 
           if (inZone && nextLevel) {
-            this.makeButton(width / 2 - 110, btnY, "Next Level →", 0x6366f1, () => {
+            this.makeButton(cx - 90, btnY, "Next Level →", 0x6366f1, () => {
               this.registry.set("currentLevel", this.levelIdx + 1);
               this.registry.set("totalWheels", this.totalWheels + this.wheelsThisRun);
               this.scene.restart();
             });
+            this.makeButton(cx + 90, btnY, "↺ Retry", 0x475569, () => {
+              this.registry.set("totalWheels", this.totalWheels);
+              this.scene.restart();
+            });
+          } else {
+            this.makeButton(cx, btnY, "↺ Retry", 0x475569, () => {
+              this.registry.set("totalWheels", this.totalWheels);
+              this.scene.restart();
+            });
           }
 
-          this.makeButton(width / 2 + (inZone && nextLevel ? 10 : -90), btnY, "↺ Retry", 0x475569, () => {
-            this.registry.set("totalWheels", this.totalWheels);
-            this.scene.restart();
-          });
-
-          this.makeButton(width / 2 - 90, btnY + 58, "Change Car", 0x334155, () => {
+          this.makeButton(cx, btnY + 50, "Change Car", 0x334155, () => {
             this.scene.start("CarSelect");
           });
         }
 
-        makeButton(x: number, y: number, label: string, color: number, cb: () => void) {
-          const bw = 160, bh = 44;
-          const g = this.add.graphics().setDepth(32);
-          g.fillStyle(color, 1); g.fillRoundedRect(x - bw / 2, y - bh / 2, bw, bh, 8);
+        makeButton(x: number, y: number, label: string, _color: number, cb: () => void) {
+          const bw = 160, bh = 42;
+          const btnImg = this.add.image(x, y, "gui_buttons")
+            .setDisplaySize(bw, bh).setOrigin(0.5, 0.5).setDepth(32);
           this.add.text(x, y, label, {
-            fontSize: "15px", fontFamily: "Arial Black, Arial", color: "#ffffff",
+            fontSize: "13px", fontFamily: "Arial Black, Arial", color: "#00ffcc",
+            stroke: "#000", strokeThickness: 2,
           }).setOrigin(0.5).setDepth(33);
           const hit = this.add.rectangle(x, y, bw, bh, 0xffffff, 0)
             .setInteractive({ cursor: "pointer" }).setDepth(34);
-          hit.on("pointerover", () => { g.clear(); g.fillStyle(color + 0x111111, 1); g.fillRoundedRect(x - bw / 2, y - bh / 2, bw, bh, 8); });
-          hit.on("pointerout",  () => { g.clear(); g.fillStyle(color, 1); g.fillRoundedRect(x - bw / 2, y - bh / 2, bw, bh, 8); });
+          hit.on("pointerover", () => btnImg.setTint(0x88ffee));
+          hit.on("pointerout",  () => btnImg.clearTint());
           hit.on("pointerdown", cb);
         }
 
