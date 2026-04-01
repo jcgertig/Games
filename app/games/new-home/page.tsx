@@ -191,9 +191,14 @@ export default function NewHomePage() {
 
       // ── world / house constants ────────────────────────────────────────────
       const WORLD_W = 2400, WORLD_H = 1800;
-      const HX = WORLD_W / 2, HY = WORLD_H / 2;   // house centre
-      const HW = 300, HH = 250;                    // house body size
-      const DOOR_X = HX, DOOR_Y = HY + HH / 2 - 5; // door world position
+      const HX = WORLD_W / 2, HY = WORLD_H / 2;   // house composite anchor
+      // house_composite.png: 160×168px at 1× → scaled 3× = 480×504px
+      // Door centre in composite: pixel (104, 120) → scaled (312, 360) from top-left
+      const HOUSE_SCALE = 3;
+      const HOUSE_LEFT = HX - 240;   // composite origin X in world
+      const HOUSE_TOP  = HY - 350;   // composite origin Y in world
+      const DOOR_X = HOUSE_LEFT + 104 * HOUSE_SCALE;   // = HX + 72
+      const DOOR_Y = HOUSE_TOP  + 120 * HOUSE_SCALE;   // = HY + 10
 
       // ── character spritesheet layout ──────────────────────────────────────
       // Idle  768×256 → 128×64 frames → 6 cols × 4 rows (row=direction)
@@ -332,7 +337,8 @@ export default function NewHomePage() {
         preload() {
           this.load.spritesheet("char_idle", `${NH}/character/PNG/Unarmed/Without_shadow/Unarmed_Idle_without_shadow.png`, { frameWidth: FRAME_W, frameHeight: FRAME_H });
           this.load.spritesheet("char_walk", `${NH}/character/PNG/Unarmed/Without_shadow/Unarmed_Walk_without_shadow.png`, { frameWidth: FRAME_W, frameHeight: FRAME_H });
-          this.load.image("grass_tile", `${NH}/home/ground_grass_details.png`);
+          this.load.image("grass_tile", `${NH}/grass_tile.png`);
+          this.load.image("house_composite", `${NH}/house_composite.png`);
           CATALOG.forEach(a => {
             if (!this.textures.exists(a.id)) this.load.image(a.id, a.path);
           });
@@ -348,46 +354,13 @@ export default function NewHomePage() {
           const gfx = this.add.graphics().setDepth(1);
           gfx.fillStyle(0xc8a96e, 0.7);
           // Path from south edge up to door
-          gfx.fillRect(HX - 24, HY + HH / 2, 48, WORLD_H - (HY + HH / 2));
+          gfx.fillRect(DOOR_X - 24, DOOR_Y, 48, WORLD_H - DOOR_Y);
 
-          // ── House ─────────────────────────────────────────────────────────
-          const house = this.add.graphics().setDepth(2);
-          // Shadow
-          house.fillStyle(0x000000, 0.15);
-          house.fillEllipse(HX + 10, HY + HH / 2 + 10, HW + 40, 40);
-          // Body
-          house.fillStyle(0xd4aa7d);
-          house.fillRect(HX - HW / 2, HY - HH / 2, HW, HH);
-          // Wall shading
-          house.fillStyle(0xb08050, 0.3);
-          house.fillRect(HX + HW / 2 - 18, HY - HH / 2, 18, HH);
-          // Roof
-          house.fillStyle(0x7a3b1a);
-          house.fillTriangle(HX - HW / 2 - 22, HY - HH / 2, HX + HW / 2 + 22, HY - HH / 2, HX, HY - HH / 2 - 110);
-          // Roof ridge
-          house.fillStyle(0x5c2a10, 0.6);
-          house.fillRect(HX - 4, HY - HH / 2 - 110, 8, 110);
-          // Windows
-          house.fillStyle(0xadd8e6, 0.9);
-          house.fillRect(HX - HW / 2 + 30, HY - 20, 52, 52);
-          house.fillRect(HX + HW / 2 - 82, HY - 20, 52, 52);
-          house.fillStyle(0xffffff, 0.3);
-          house.fillRect(HX - HW / 2 + 32, HY - 18, 22, 48); // left window pane
-          house.fillRect(HX + HW / 2 - 80, HY - 18, 22, 48);
-          // Window frames
-          house.lineStyle(2, 0x6b4226, 1);
-          house.strokeRect(HX - HW / 2 + 30, HY - 20, 52, 52);
-          house.strokeRect(HX + HW / 2 - 82, HY - 20, 52, 52);
-          // Door
-          house.fillStyle(0x6b3a2a);
-          house.fillRect(HX - 22, HY + HH / 2 - 70, 44, 70);
-          house.fillStyle(0xc8a05a, 0.8);
-          house.fillRect(HX - 19, HY + HH / 2 - 67, 38, 65);
-          house.fillStyle(0xf0c040);
-          house.fillCircle(HX + 12, HY + HH / 2 - 36, 4); // doorknob
-          // Door frame
-          house.lineStyle(3, 0x4a2010, 1);
-          house.strokeRect(HX - 22, HY + HH / 2 - 70, 44, 70);
+          // ── House (pixel-art composite from TMX tiles) ─────────────────────
+          this.add.image(HOUSE_LEFT, HOUSE_TOP, "house_composite")
+            .setOrigin(0, 0)
+            .setScale(HOUSE_SCALE)
+            .setDepth(2);
 
           // ── Placed items layer ────────────────────────────────────────────
           this.placedGroup = makePlacedGroup(this);
@@ -402,7 +375,7 @@ export default function NewHomePage() {
           });
 
           // ── Character ─────────────────────────────────────────────────────
-          this.player = this.add.sprite(HX, HY + HH / 2 + 100, "char_idle");
+          this.player = this.add.sprite(DOOR_X, DOOR_Y + 90, "char_idle");
           this.player.setDepth(5).setScale(1.2);
 
           // ── Animations ────────────────────────────────────────────────────
@@ -418,7 +391,7 @@ export default function NewHomePage() {
           this.input.mouse?.disableContextMenu();
 
           // ── Door hint ────────────────────────────────────────────────────
-          this.hint = this.add.text(HX, HY + HH / 2 + 18, "▼ ENTER", {
+          this.hint = this.add.text(DOOR_X, DOOR_Y + 18, "▼ ENTER", {
             fontSize: "11px", fontFamily: "Arial", color: "#fffbe6",
             backgroundColor: "#00000066", padding: { x: 5, y: 2 },
           }).setOrigin(0.5).setDepth(6);
@@ -456,7 +429,7 @@ export default function NewHomePage() {
           this.hint.setVisible(near || dy < 120);
 
           if (near && Phaser.Input.Keyboard.JustDown(this.keys.ENTER)) {
-            this.scene.start("Indoor");
+            this.scene.switch("Indoor");
           }
         }
       }
@@ -479,10 +452,8 @@ export default function NewHomePage() {
               this.load.spritesheet(k, `${NH}/character/PNG/Unarmed/Without_shadow/${file}`, { frameWidth: FRAME_W, frameHeight: FRAME_H });
             }
           });
-          if (!this.textures.exists("walls_floor"))
-            this.load.image("walls_floor", `${NH}/home/walls_floor.png`);
-          if (!this.textures.exists("interior_tiles"))
-            this.load.image("interior_tiles", `${NH}/home/Interior.png`);
+          if (!this.textures.exists("interior_floor"))
+            this.load.image("interior_floor", `${NH}/interior_floor.png`);
           CATALOG.filter(a => a.category === "Indoor").forEach(a => {
             if (!this.textures.exists(a.id)) this.load.image(a.id, a.path);
           });
@@ -492,44 +463,17 @@ export default function NewHomePage() {
           setScene("indoor");
           const W = CW, H = CH;
 
-          // ── Floor ─────────────────────────────────────────────────────────
-          // Warm wood-tone fill
-          this.add.rectangle(W / 2, H / 2, W, H, 0xd4a96c).setDepth(0);
-          // Floor tiles using walls_floor sheet as a tile-sprite
-          this.add.tileSprite(0, 120, W, H - 120, "walls_floor").setOrigin(0, 0).setAlpha(0.55).setDepth(1);
+          // ── Interior (pixel-art composite from TMX tiles) ─────────────────
+          // interior_floor.png is 416×352px — scale to fill canvas height
+          const iScale = Math.min(W / 416, H / 352);
+          const iW = Math.round(416 * iScale), iH = Math.round(352 * iScale);
+          // Dark background behind interior
+          this.add.rectangle(W / 2, H / 2, W, H, 0x1a1208).setDepth(0);
+          this.add.image(W / 2, H / 2, "interior_floor")
+            .setDisplaySize(iW, iH)
+            .setDepth(1);
 
-          // ── Walls ─────────────────────────────────────────────────────────
-          const wall = this.add.graphics().setDepth(2);
-          // Top wall (darker)
-          wall.fillStyle(0x8b6040);
-          wall.fillRect(0, 0, W, 120);
-          // Baseboard
-          wall.fillStyle(0x6b4828, 0.8);
-          wall.fillRect(0, 116, W, 6);
-          // Left & right walls
-          wall.fillStyle(0x9a6b42, 0.6);
-          wall.fillRect(0, 0, 24, H);
-          wall.fillRect(W - 24, 0, 24, H);
-
-          // ── Windows on top wall ───────────────────────────────────────────
-          wall.fillStyle(0xadd8e6, 0.75);
-          wall.fillRect(W / 2 - 120, 20, 90, 80);
-          wall.fillRect(W / 2 + 30, 20, 90, 80);
-          wall.lineStyle(3, 0x5c3c1c, 1);
-          wall.strokeRect(W / 2 - 120, 20, 90, 80);
-          wall.strokeRect(W / 2 + 30, 20, 90, 80);
-
-          // ── Door (bottom centre) ──────────────────────────────────────────
-          const door = this.add.graphics().setDepth(2);
-          door.fillStyle(0x6b3a2a);
-          door.fillRect(W / 2 - 26, H - 80, 52, 80);
-          door.fillStyle(0xc8a05a, 0.85);
-          door.fillRect(W / 2 - 22, H - 76, 44, 76);
-          door.fillStyle(0xf0c040);
-          door.fillCircle(W / 2 - 5, H - 44, 4);
-          door.lineStyle(3, 0x4a2010);
-          door.strokeRect(W / 2 - 26, H - 80, 52, 80);
-
+          // ── Door hint (bottom centre) ─────────────────────────────────────
           this.add.text(W / 2, H - 90, "▼ ENTER to go outside", {
             fontSize: "11px", fontFamily: "Arial", color: "#fffbe6",
             backgroundColor: "#00000066", padding: { x: 5, y: 2 },
@@ -548,7 +492,10 @@ export default function NewHomePage() {
           });
 
           // ── Character ─────────────────────────────────────────────────────
-          this.player = this.add.sprite(W / 2, 170, "char_idle");
+          const iScaleInner = Math.min(W / 416, H / 352);
+          const iHInner = Math.round(352 * iScaleInner);
+          const wallH = Math.round(iHInner * 0.25); // approx top wall height
+          this.player = this.add.sprite(W / 2, H / 2 - iHInner / 2 + wallH + 60, "char_idle");
           this.player.setDepth(5).setScale(1.2);
 
           makeAnims(this.anims);
@@ -572,7 +519,13 @@ export default function NewHomePage() {
             if (asset) placeInGroup(this, this.placedGroup, p.assetId, p.sx, p.sy, asset.scale);
           }
 
-          movePlayer(this.player, this.keys, 180, dt, this.dir, 30, W - 30, 130, H - 30);
+          const iScaleMove = Math.min(W / 416, H / 352);
+          const iWMove = Math.round(416 * iScaleMove), iHMove = Math.round(352 * iScaleMove);
+          const left   = (W - iWMove) / 2 + 16;
+          const right  = (W + iWMove) / 2 - 16;
+          const top    = (H - iHMove) / 2 + Math.round(iHMove * 0.25); // below wall
+          const bottom = (H + iHMove) / 2 - 16;
+          movePlayer(this.player, this.keys, 180, dt, this.dir, left, right, top, bottom);
 
           // Depth-sort placed items
           this.placedGroup.getChildren().forEach(c => {
@@ -580,10 +533,13 @@ export default function NewHomePage() {
           });
           this.player.setDepth(3 + this.player.y / 10000 + 0.5);
 
-          // Exit door
-          const nearDoor = Math.abs(this.player.x - W / 2) < 40 && this.player.y > H - 90;
+          // Exit door — interior door is at bottom centre of the composite
+          const iScaleExit = Math.min(W / 416, H / 352);
+          const iHExit = Math.round(352 * iScaleExit);
+          const doorBottomY = (H + iHExit) / 2 - 10;
+          const nearDoor = Math.abs(this.player.x - W / 2) < 40 && this.player.y > doorBottomY - 60;
           if (nearDoor && Phaser.Input.Keyboard.JustDown(this.keys.ENTER)) {
-            this.scene.start("Outdoor");
+            this.scene.switch("Outdoor");
           }
         }
       }
