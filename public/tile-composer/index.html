@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tile Composer</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:      #1a1a2e;
+    --surface: #16213e;
+    --panel:   #0f3460;
+    --accent:  #e94560;
+    --accent2: #533483;
+    --text:    #eaeaea;
+    --muted:   #8892a4;
+    --border:  #2a3a5c;
+    --hover:   rgba(233,69,96,0.15);
+  }
+
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg); color: var(--text);
+    height: 100vh; display: flex; flex-direction: column; overflow: hidden;
+  }
+
+  /* ── Mode tabs ── */
+  .mode-tabs {
+    display: flex; gap: 0; flex-shrink: 0;
+    background: var(--surface); border-bottom: 1px solid var(--border);
+  }
+  .mode-tab {
+    padding: 10px 22px; cursor: pointer; font-size: .85rem; font-weight: 600;
+    color: var(--muted); border-bottom: 3px solid transparent;
+    transition: color .15s, border-color .15s;
+    user-select: none;
+  }
+  .mode-tab:hover  { color: var(--text); }
+  .mode-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* ── Shared header strip ── */
+  .toolbar {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 7px 14px; display: flex; align-items: center; gap: 10px;
+    flex-shrink: 0; flex-wrap: wrap; font-size: .78rem;
+  }
+  .toolbar h1 { font-size: 1rem; font-weight: 700; color: var(--accent); margin-right: 4px; }
+
+  .sep { width: 1px; height: 22px; background: var(--border); flex-shrink: 0; }
+
+  .ctrl-group { display: flex; align-items: center; gap: 6px; }
+  .ctrl-group label { color: var(--muted); white-space: nowrap; }
+
+  input[type=number] {
+    width: 52px; padding: 4px 5px; border-radius: 5px;
+    background: var(--bg); border: 1px solid var(--border);
+    color: var(--text); font-size: .8rem; text-align: center;
+  }
+  input[type=number]:focus { outline: none; border-color: var(--accent); }
+
+  button {
+    padding: 5px 12px; border-radius: 6px; border: none; cursor: pointer;
+    font-size: .8rem; font-weight: 600; transition: opacity .15s, transform .1s;
+  }
+  button:active { transform: scale(.96); }
+  button:hover  { opacity: .85; }
+  .btn-primary   { background: var(--accent);  color: #fff; }
+  .btn-secondary { background: var(--panel);   color: var(--text); border: 1px solid var(--border); }
+  .btn-danger    { background: #6b1a2a; color: #ffaaaa; border: 1px solid #9b2a3a; }
+  button:disabled { opacity: .35; cursor: not-allowed; }
+
+  .tool-btn {
+    padding: 4px 10px; border-radius: 5px; border: 1px solid var(--border);
+    background: var(--bg); color: var(--text); cursor: pointer; font-size: .78rem;
+    transition: background .15s, border-color .15s;
+  }
+  .tool-btn.active { background: var(--accent2); border-color: var(--accent); color: #fff; }
+  .tool-btn:hover:not(.active) { background: var(--panel); }
+
+  .zoom-ctrl { display: flex; align-items: center; gap: 4px; }
+  .zoom-ctrl button {
+    width: 24px; height: 24px; padding: 0; border-radius: 4px;
+    background: var(--panel); color: var(--text); border: 1px solid var(--border);
+    font-size: .9rem; display: flex; align-items: center; justify-content: center;
+  }
+  .zoom-ctrl span { font-size: .78rem; color: var(--muted); min-width: 34px; text-align: center; }
+
+  /* ── Workspace ── */
+  .workspace { display: flex; flex: 1; overflow: hidden; }
+
+  /* ── Side panel ── */
+  .side-panel {
+    width: 210px; flex-shrink: 0; background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  .side-panel h2 {
+    font-size: .72rem; text-transform: uppercase; letter-spacing: .08em;
+    color: var(--muted); padding: 8px 12px 6px; border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .side-panel h2 span { color: var(--text); font-weight: 700; }
+
+  .drop-zone {
+    margin: 10px 12px; border: 2px dashed var(--border); border-radius: 8px;
+    padding: 10px; text-align: center; cursor: pointer;
+    color: var(--muted); font-size: .75rem; line-height: 1.6;
+    transition: border-color .2s, background .2s; flex-shrink: 0;
+  }
+  .drop-zone:hover, .drop-zone.drag-over {
+    border-color: var(--accent); background: var(--hover); color: var(--text);
+  }
+
+  .palette-search { padding: 4px 10px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  .palette-search input {
+    width: 100%; padding: 4px 7px; border-radius: 5px;
+    background: var(--bg); border: 1px solid var(--border);
+    color: var(--text); font-size: .75rem;
+  }
+  .palette-search input:focus { outline: none; border-color: var(--accent); }
+
+  .palette-grid {
+    flex: 1; overflow-y: auto; padding: 6px;
+    display: flex; flex-wrap: wrap; gap: 3px; align-content: flex-start;
+  }
+  .palette-grid::-webkit-scrollbar { width: 4px; }
+  .palette-grid::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  .tile-thumb {
+    width: 38px; height: 38px; border: 2px solid transparent; border-radius: 5px;
+    cursor: pointer; position: relative; flex-shrink: 0;
+    background: repeating-conic-gradient(#2a3a5c 0% 25%,#1a2a4c 0% 50%) 0 0/8px 8px;
+    image-rendering: pixelated; transition: border-color .15s, transform .1s;
+  }
+  .tile-thumb:hover   { border-color: var(--muted); transform: scale(1.1); }
+  .tile-thumb.selected { border-color: var(--accent); box-shadow: 0 0 6px var(--accent); }
+  .tile-thumb img { width: 100%; height: 100%; image-rendering: pixelated; display: block; border-radius: 3px; }
+  .tile-thumb .tip {
+    display: none; position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
+    background: #000d; color: #fff; font-size: .62rem; padding: 2px 5px;
+    border-radius: 4px; white-space: nowrap; pointer-events: none; z-index: 20; margin-bottom: 3px;
+  }
+  .tile-thumb:hover .tip { display: block; }
+
+  .sel-preview {
+    padding: 8px 10px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 8px; flex-shrink: 0; min-height: 46px;
+  }
+  .sel-preview .thumb {
+    width: 30px; height: 30px; flex-shrink: 0; border-radius: 4px;
+    border: 1px solid var(--border); overflow: hidden;
+    background: repeating-conic-gradient(#2a3a5c 0% 25%,#1a2a4c 0% 50%) 0 0/8px 8px;
+    image-rendering: pixelated; display: flex; align-items: center; justify-content: center;
+  }
+  .sel-preview .thumb img { width: 100%; height: 100%; image-rendering: pixelated; }
+  .sel-preview p { font-size: .72rem; color: var(--muted); }
+  .sel-preview p b { color: var(--text); display: block; font-size: .78rem; }
+
+  .empty-msg { width: 100%; text-align: center; color: var(--muted); font-size: .75rem; padding: 16px 0; }
+
+  /* ── Canvas area ── */
+  .canvas-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+  .canvas-scroll {
+    flex: 1; overflow: auto; padding: 20px;
+    display: flex; align-items: flex-start; justify-content: flex-start;
+    background: var(--bg);
+  }
+  .canvas-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
+  .canvas-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  .canvas-wrap { position: relative; flex-shrink: 0; }
+  .canvas-wrap canvas { display: block; image-rendering: pixelated; }
+  .canvas-wrap #overlay { position: absolute; top: 0; left: 0; image-rendering: pixelated; }
+  .canvas-wrap #base    { pointer-events: none; }
+
+  /* ── Info bar ── */
+  .info-bar {
+    padding: 4px 12px; background: var(--surface); border-top: 1px solid var(--border);
+    font-size: .72rem; color: var(--muted); display: flex; gap: 16px; flex-shrink: 0;
+  }
+  .info-bar span b { color: var(--text); }
+
+  /* ── Slice mode side panel ── */
+  .slice-info {
+    padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; flex-shrink: 0;
+  }
+  .slice-info .row { display: flex; justify-content: space-between; font-size: .75rem; }
+  .slice-info .row b { color: var(--text); }
+  .slice-info .row span { color: var(--muted); }
+  .slice-preview-wrap {
+    flex: 1; overflow: hidden; display: flex; flex-direction: column;
+    border-top: 1px solid var(--border); padding: 8px 12px; gap: 6px;
+  }
+  .slice-preview-wrap label { font-size: .72rem; color: var(--muted); }
+  .slice-preview-box {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    background: repeating-conic-gradient(#2a3a5c 0% 25%,#1a2a4c 0% 50%) 0 0/16px 16px;
+    border: 1px solid var(--border); border-radius: 6px; overflow: hidden;
+    image-rendering: pixelated; min-height: 80px;
+  }
+  #slice-preview-canvas { image-rendering: pixelated; max-width: 100%; max-height: 160px; }
+
+  /* hide panels per mode */
+  .compose-only, .slice-only { display: none; }
+  body.mode-compose .compose-only { display: flex; }
+  body.mode-compose .compose-only.block { display: block; }
+  body.mode-slice   .slice-only   { display: flex; }
+  body.mode-slice   .slice-only.block { display: block; }
+  body.mode-slice   .compose-only-hide { display: none !important; }
+</style>
+</head>
+<body class="mode-compose">
+
+<!-- ── MODE TABS ── -->
+<div class="mode-tabs">
+  <div class="mode-tab active" id="tab-compose">🧩 Compose</div>
+  <div class="mode-tab"        id="tab-slice"  >✂️ Slice</div>
+</div>
+
+<!-- ══════════════════════ COMPOSE TOOLBAR ══════════════════════ -->
+<div class="toolbar compose-only" id="compose-toolbar">
+  <div class="ctrl-group">
+    <label>Tile</label>
+    <input type="number" id="inp-tw" value="16" min="1" max="256" style="width:46px" />
+    <span style="color:var(--muted)">×</span>
+    <input type="number" id="inp-th" value="16" min="1" max="256" style="width:46px" />
+    <button class="btn-secondary" id="btn-apply-tile">Apply</button>
+  </div>
+  <div class="sep"></div>
+  <div class="ctrl-group">
+    <label>Cols</label>
+    <input type="number" id="inp-cols" value="10" min="1" max="128" />
+    <label>Rows</label>
+    <input type="number" id="inp-rows" value="10" min="1" max="128" />
+    <button class="btn-secondary" id="btn-resize">Apply</button>
+  </div>
+  <div class="sep"></div>
+  <button class="tool-btn active" id="tool-draw" >✏️ Draw</button>
+  <button class="tool-btn"        id="tool-erase">🧹 Erase</button>
+  <button class="tool-btn"        id="tool-fill" >🪣 Fill</button>
+  <button class="tool-btn"        id="tool-pick" >🔍 Pick</button>
+  <div class="sep"></div>
+  <label style="color:var(--muted)">Grid</label>
+  <input type="checkbox" id="chk-grid-compose" checked style="cursor:pointer;accent-color:var(--accent)" />
+  <div class="sep"></div>
+  <button class="btn-danger"   id="btn-clear"   >Clear</button>
+  <button class="btn-primary"  id="btn-download" >⬇ Download PNG</button>
+  <div class="zoom-ctrl" style="margin-left:auto">
+    <button id="c-zoom-out">−</button>
+    <span   id="c-zoom-label">2×</span>
+    <button id="c-zoom-in">+</button>
+  </div>
+</div>
+
+<!-- ══════════════════════ SLICE TOOLBAR ══════════════════════ -->
+<div class="toolbar slice-only" id="slice-toolbar">
+  <div class="drop-zone" id="slice-drop" style="margin:0;flex-shrink:0;padding:6px 14px;font-size:.78rem">
+    📂 Load image
+  </div>
+  <div class="sep"></div>
+  <div class="ctrl-group">
+    <label>Tile</label>
+    <input type="number" id="s-inp-tw" value="16" min="1" max="256" style="width:46px" />
+    <span style="color:var(--muted)">×</span>
+    <input type="number" id="s-inp-th" value="16" min="1" max="256" style="width:46px" />
+  </div>
+  <div class="sep"></div>
+  <label style="color:var(--muted)">Grid</label>
+  <input type="checkbox" id="chk-grid-slice" checked style="cursor:pointer;accent-color:var(--accent)" />
+  <div class="sep"></div>
+  <span id="slice-sel-info" style="color:var(--muted);font-size:.78rem">No selection</span>
+  <button class="btn-primary" id="btn-slice-download" disabled style="margin-left:8px">⬇ Download selection</button>
+  <button class="btn-secondary" id="btn-slice-clear-sel" disabled style="margin-left:4px">✕ Clear</button>
+  <div class="zoom-ctrl" style="margin-left:auto">
+    <button id="s-zoom-out">−</button>
+    <span   id="s-zoom-label">2×</span>
+    <button id="s-zoom-in">+</button>
+  </div>
+</div>
+
+<!-- hidden file inputs -->
+<input type="file" id="compose-file-input" accept="image/png" multiple style="display:none" />
+<input type="file" id="slice-file-input"   accept="image/*"          style="display:none" />
+
+<!-- ══════════════════════ WORKSPACE ══════════════════════ -->
+<div class="workspace">
+
+  <!-- ── COMPOSE side panel ── -->
+  <aside class="side-panel compose-only" id="compose-panel">
+    <h2>Tiles &nbsp;<span id="tile-count">0</span></h2>
+
+    <div class="drop-zone" id="compose-drop">📂 Click or drop<br/>16×16 PNG files</div>
+
+    <div class="sel-preview">
+      <div class="thumb" id="sel-thumb"><span style="color:var(--muted);font-size:.58rem">none</span></div>
+      <p id="sel-label"><b>Nothing selected</b>Click a tile to pick</p>
+    </div>
+
+    <div class="palette-search">
+      <input type="text" id="search-input" placeholder="Filter…" />
+    </div>
+
+    <div class="palette-grid" id="palette-grid">
+      <div class="empty-msg">No tiles loaded.</div>
+    </div>
+  </aside>
+
+  <!-- ── SLICE side panel ── -->
+  <aside class="side-panel slice-only" id="slice-panel">
+    <h2>Selection</h2>
+
+    <div class="slice-info" id="slice-info">
+      <div class="row"><span>Image</span><b id="si-img">—</b></div>
+      <div class="row"><span>Tile grid</span><b id="si-grid">—</b></div>
+      <div class="row"><span>Selection</span><b id="si-sel">none</b></div>
+      <div class="row"><span>Pixels</span><b id="si-px">—</b></div>
+    </div>
+
+    <div class="slice-preview-wrap">
+      <label>Preview</label>
+      <div class="slice-preview-box">
+        <canvas id="slice-preview-canvas" width="1" height="1"></canvas>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── CANVAS area (shared) ── -->
+  <div class="canvas-area">
+    <div class="canvas-scroll" id="canvas-scroll">
+      <div class="canvas-wrap" id="canvas-wrap">
+        <canvas id="base"></canvas>
+        <canvas id="overlay"></canvas>
+      </div>
+    </div>
+
+    <!-- Compose info bar -->
+    <div class="info-bar compose-only" id="compose-infobar">
+      <span>Size: <b id="info-size">160×160 px</b></span>
+      <span>Cursor: <b id="info-cursor">–</b></span>
+      <span>Selected: <b id="info-sel">none</b></span>
+      <span>Placed: <b id="info-placed">0</b></span>
+    </div>
+
+    <!-- Slice info bar -->
+    <div class="info-bar slice-only" id="slice-infobar">
+      <span>Image: <b id="sb-img">no image</b></span>
+      <span>Cursor tile: <b id="sb-cursor">–</b></span>
+      <span>Selection: <b id="sb-sel">none</b></span>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════════════════════
+// SHARED
+// ══════════════════════════════════════════════════════════════════════════════
+const ZOOM_LEVELS = [1, 2, 3, 4, 6, 8, 12, 16];
+// per-mode tile sizes (compose / slice)
+let cTW = 16, cTH = 16;  // compose tile width/height
+let sTW = 16, sTH = 16;  // slice tile width/height
+
+const baseCanvas    = document.getElementById('base');
+const overlayCanvas = document.getElementById('overlay');
+const bCtx          = baseCanvas.getContext('2d');
+const oCtx          = overlayCanvas.getContext('2d');
+const canvasWrap    = document.getElementById('canvas-wrap');
+const canvasScroll  = document.getElementById('canvas-scroll');
+
+function setCanvasSize(w, h, z) {
+  baseCanvas.width  = w; baseCanvas.height  = h;
+  baseCanvas.style.width  = (w * z) + 'px';
+  baseCanvas.style.height = (h * z) + 'px';
+  overlayCanvas.width  = w * z; overlayCanvas.height  = h * z;
+  overlayCanvas.style.width  = (w * z) + 'px';
+  overlayCanvas.style.height = (h * z) + 'px';
+}
+
+// Mode switching
+let mode = 'compose'; // 'compose' | 'slice'
+
+document.getElementById('tab-compose').addEventListener('click', () => switchMode('compose'));
+document.getElementById('tab-slice').addEventListener('click',   () => switchMode('slice'));
+
+function switchMode(m) {
+  mode = m;
+  document.body.className = 'mode-' + m;
+  document.getElementById('tab-compose').classList.toggle('active', m === 'compose');
+  document.getElementById('tab-slice').classList.toggle('active',   m === 'slice');
+  if (m === 'compose') { composeRebuild(); }
+  else                 { sliceRebuild();   }
+}
+
+// Ctrl+scroll zoom (delegates to active mode)
+canvasScroll.addEventListener('wheel', e => {
+  if (!e.ctrlKey && !e.metaKey) return;
+  e.preventDefault();
+  if (mode === 'compose') e.deltaY < 0 ? cZoomIn() : cZoomOut();
+  else                    e.deltaY < 0 ? sZoomIn() : sZoomOut();
+}, { passive: false });
+
+// ══════════════════════════════════════════════════════════════════════════════
+// COMPOSE MODE
+// ══════════════════════════════════════════════════════════════════════════════
+let cCols = 10, cRows = 10, cZoom = 2, cZoomIdx = 1;
+let cTool = 'draw', cShowGrid = true, cSelectedId = null, cHoverCell = null;
+let cMouseDown = false;
+const tiles = new Map();
+let grid = [];
+
+function cMakeGrid(r, c) { return Array.from({length:r},()=>new Array(c).fill(null)); }
+grid = cMakeGrid(cRows, cCols);
+
+function composeRebuild() {
+  setCanvasSize(cCols * cTW, cRows * cTH, cZoom);
+  cDrawBase();
+  cDrawOverlay();
+  document.getElementById('info-size').textContent = `${cCols*cTW}×${cRows*cTH} px`;
+  document.getElementById('c-zoom-label').textContent = cZoom + '×';
+}
+
+function cDrawBase() {
+  bCtx.clearRect(0, 0, baseCanvas.width, baseCanvas.height);
+  for (let r = 0; r < cRows; r++) {
+    for (let c = 0; c < cCols; c++) {
+      bCtx.fillStyle = ((r+c)%2===0) ? '#1e2a3a' : '#1a2434';
+      bCtx.fillRect(c*cTW, r*cTH, cTW, cTH);
+      const id = grid[r][c];
+      if (id && tiles.has(id)) bCtx.drawImage(tiles.get(id).img, c*cTW, r*cTH, cTW, cTH);
+    }
+  }
+}
+
+function cDrawOverlay() {
+  oCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+  const tsx = cTW * cZoom, tsy = cTH * cZoom;
+  if (cShowGrid) {
+    oCtx.strokeStyle = 'rgba(255,255,255,0.07)';
+    oCtx.lineWidth = 1;
+    for (let c = 0; c <= cCols; c++) { oCtx.beginPath(); oCtx.moveTo(c*tsx+.5,0); oCtx.lineTo(c*tsx+.5,cRows*tsy); oCtx.stroke(); }
+    for (let r = 0; r <= cRows; r++) { oCtx.beginPath(); oCtx.moveTo(0,r*tsy+.5); oCtx.lineTo(cCols*tsx,r*tsy+.5); oCtx.stroke(); }
+  }
+  if (cHoverCell) {
+    const {r,c} = cHoverCell;
+    oCtx.fillStyle   = cTool==='erase' ? 'rgba(255,60,60,0.22)' : 'rgba(233,69,96,0.18)';
+    oCtx.strokeStyle = cTool==='erase' ? '#ff4040' : '#e94560';
+    oCtx.fillRect(c*tsx, r*tsy, tsx, tsy);
+    oCtx.lineWidth = 2;
+    oCtx.strokeRect(c*tsx+1, r*tsy+1, tsx-2, tsy-2);
+  }
+}
+
+function cCell(e) {
+  const rect = overlayCanvas.getBoundingClientRect();
+  const tsx = cTW * cZoom, tsy = cTH * cZoom;
+  const c = Math.floor((e.clientX - rect.left) / tsx);
+  const r = Math.floor((e.clientY - rect.top)  / tsy);
+  if (c < 0 || c >= cCols || r < 0 || r >= cRows) return null;
+  return {r, c};
+}
+
+function cApply(cell) {
+  if (!cell) return;
+  const {r, c} = cell;
+  if (cTool === 'draw') {
+    if (!cSelectedId || grid[r][c] === cSelectedId) return;
+    grid[r][c] = cSelectedId; cDrawBase(); cUpdatePlaced();
+  } else if (cTool === 'erase') {
+    if (!grid[r][c]) return;
+    grid[r][c] = null; cDrawBase(); cUpdatePlaced();
+  } else if (cTool === 'pick') {
+    const id = grid[r][c]; if (id) cSelectTile(id);
+  } else if (cTool === 'fill') {
+    cFloodFill(r, c); cDrawBase(); cUpdatePlaced();
+  }
+}
+
+function cFloodFill(sr, sc) {
+  const target = grid[sr][sc];
+  const fill = cTool === 'erase' ? null : cSelectedId;
+  if (target === fill) return;
+  const q = [[sr,sc]], vis = new Set();
+  while (q.length) {
+    const [r,c] = q.shift(); const k = r+','+c;
+    if (vis.has(k)) continue; vis.add(k);
+    if (r<0||r>=cRows||c<0||c>=cCols||grid[r][c]!==target) continue;
+    grid[r][c] = fill;
+    q.push([r-1,c],[r+1,c],[r,c-1],[r,c+1]);
+  }
+}
+
+overlayCanvas.addEventListener('mousedown', e => {
+  if (mode !== 'compose') return;
+  cMouseDown = true; cApply(cCell(e));
+});
+overlayCanvas.addEventListener('mousemove', e => {
+  if (mode !== 'compose') return;
+  const cell = cCell(e); cHoverCell = cell;
+  if (cell) document.getElementById('info-cursor').textContent = `col ${cell.c}, row ${cell.r}`;
+  cDrawOverlay();
+  if (cMouseDown && (cTool==='draw'||cTool==='erase')) cApply(cell);
+});
+overlayCanvas.addEventListener('mouseup',    () => { if (mode==='compose') cMouseDown = false; });
+overlayCanvas.addEventListener('mouseleave', () => {
+  if (mode !== 'compose') return;
+  cMouseDown = false; cHoverCell = null; cDrawOverlay();
+  document.getElementById('info-cursor').textContent = '–';
+});
+overlayCanvas.addEventListener('contextmenu', e => {
+  if (mode !== 'compose') return;
+  e.preventDefault();
+  const cell = cCell(e);
+  if (cell) { grid[cell.r][cell.c] = null; cDrawBase(); cUpdatePlaced(); }
+});
+overlayCanvas.addEventListener('dragover', e => e.preventDefault());
+overlayCanvas.addEventListener('drop', e => {
+  if (mode !== 'compose') return;
+  e.preventDefault();
+  const id = e.dataTransfer.getData('tileId');
+  if (!id) return;
+  const cell = cCell(e);
+  if (cell) { grid[cell.r][cell.c] = id; cDrawBase(); cUpdatePlaced(); }
+});
+
+// Tile loading
+function loadTileFiles(files) {
+  const arr = Array.from(files).filter(f => f.type.startsWith('image/'));
+  for (const file of arr) {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const img = new Image();
+      img.onload = () => {
+        const oc = document.createElement('canvas');
+        oc.width = cTW; oc.height = cTH;
+        const octx = oc.getContext('2d');
+        octx.clearRect(0,0,cTW,cTH);
+        octx.drawImage(img, 0, 0, cTW, cTH);
+        const dataUrl = oc.toDataURL('image/png');
+        const norm = new Image();
+        norm.onload = () => {
+          const id = 'tile_'+Date.now()+'_'+Math.random().toString(36).slice(2);
+          tiles.set(id, { id, name: file.name.replace(/\.png$/i,''), img: norm, dataUrl });
+          cRenderPalette();
+        };
+        norm.src = dataUrl;
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+const composeFileInput = document.getElementById('compose-file-input');
+const composeDrop      = document.getElementById('compose-drop');
+composeFileInput.addEventListener('change', () => { loadTileFiles(composeFileInput.files); composeFileInput.value=''; });
+composeDrop.addEventListener('click',     e => { e.stopPropagation(); composeFileInput.click(); });
+composeDrop.addEventListener('dragover',  e => { e.preventDefault(); e.stopPropagation(); composeDrop.classList.add('drag-over'); });
+composeDrop.addEventListener('dragleave', e => { e.stopPropagation(); composeDrop.classList.remove('drag-over'); });
+composeDrop.addEventListener('drop',      e => { e.preventDefault(); e.stopPropagation(); composeDrop.classList.remove('drag-over'); loadTileFiles(e.dataTransfer.files); });
+
+// Palette
+const paletteGrid = document.getElementById('palette-grid');
+const searchInput = document.getElementById('search-input');
+
+function cRenderPalette() {
+  const q = searchInput.value.toLowerCase();
+  const filtered = [...tiles.values()].filter(t => !q || t.name.toLowerCase().includes(q));
+  document.getElementById('tile-count').textContent = tiles.size;
+  if (!filtered.length) { paletteGrid.innerHTML = '<div class="empty-msg">No tiles match.</div>'; return; }
+  paletteGrid.innerHTML = '';
+  for (const tile of filtered) {
+    const div = document.createElement('div');
+    div.className = 'tile-thumb' + (tile.id === cSelectedId ? ' selected' : '');
+    div.draggable = true;
+    const img = document.createElement('img'); img.src = tile.dataUrl; img.alt = tile.name;
+    const tip = document.createElement('div'); tip.className = 'tip'; tip.textContent = tile.name;
+    div.appendChild(img); div.appendChild(tip);
+    div.addEventListener('click', () => cSelectTile(tile.id));
+    div.addEventListener('dragstart', e => { e.dataTransfer.setData('tileId', tile.id); cSelectTile(tile.id); });
+    paletteGrid.appendChild(div);
+  }
+}
+searchInput.addEventListener('input', cRenderPalette);
+
+function cSelectTile(id) {
+  cSelectedId = id;
+  if (cTool === 'erase' || cTool === 'pick') cSetTool('draw');
+  cRenderPalette();
+  const t = tiles.get(id);
+  if (!t) return;
+  const wrap = document.getElementById('sel-thumb');
+  wrap.innerHTML = '';
+  const img = document.createElement('img'); img.src = t.dataUrl; wrap.appendChild(img);
+  document.getElementById('sel-label').innerHTML = `<b>${t.name}</b>Ready to place`;
+  document.getElementById('info-sel').textContent = t.name;
+}
+
+function cSetTool(t) {
+  cTool = t;
+  ['draw','erase','fill','pick'].forEach(n =>
+    document.getElementById('tool-'+n).classList.toggle('active', n===t));
+  overlayCanvas.style.cursor = t==='erase'?'cell': t==='pick'?'crosshair': t==='fill'?'copy':'crosshair';
+  if (mode==='compose') cDrawOverlay();
+}
+document.getElementById('tool-draw').addEventListener('click',  () => cSetTool('draw'));
+document.getElementById('tool-erase').addEventListener('click', () => cSetTool('erase'));
+document.getElementById('tool-fill').addEventListener('click',  () => cSetTool(cTool==='fill'?'draw':'fill'));
+document.getElementById('tool-pick').addEventListener('click',  () => cSetTool(cTool==='pick'?'draw':'pick'));
+
+// Resize grid
+document.getElementById('btn-resize').addEventListener('click', () => {
+  const nc = Math.max(1,Math.min(128,parseInt(document.getElementById('inp-cols').value)||cCols));
+  const nr = Math.max(1,Math.min(128,parseInt(document.getElementById('inp-rows').value)||cRows));
+  const ng = cMakeGrid(nr, nc);
+  for (let r=0;r<Math.min(nr,cRows);r++) for (let c=0;c<Math.min(nc,cCols);c++) ng[r][c]=grid[r][c];
+  cCols=nc; cRows=nr; grid=ng;
+  document.getElementById('inp-cols').value=cCols;
+  document.getElementById('inp-rows').value=cRows;
+  composeRebuild(); cUpdatePlaced();
+});
+
+// Zoom
+function cZoomIn()  { if (cZoomIdx<ZOOM_LEVELS.length-1){cZoomIdx++;cZoom=ZOOM_LEVELS[cZoomIdx];composeRebuild();} }
+function cZoomOut() { if (cZoomIdx>0){cZoomIdx--;cZoom=ZOOM_LEVELS[cZoomIdx];composeRebuild();} }
+document.getElementById('c-zoom-in').addEventListener('click',  cZoomIn);
+document.getElementById('c-zoom-out').addEventListener('click', cZoomOut);
+
+// Grid toggle
+document.getElementById('chk-grid-compose').addEventListener('change', e => { cShowGrid=e.target.checked; if(mode==='compose')cDrawOverlay(); });
+
+// Clear
+document.getElementById('btn-clear').addEventListener('click', () => {
+  if (!confirm('Clear the canvas?')) return;
+  grid = cMakeGrid(cRows, cCols); cDrawBase(); cUpdatePlaced();
+});
+
+// Download
+document.getElementById('btn-download').addEventListener('click', () => {
+  const ec = document.createElement('canvas');
+  ec.width=cCols*cTW; ec.height=cRows*cTH;
+  const ctx=ec.getContext('2d');
+  ctx.clearRect(0,0,ec.width,ec.height);
+  for (let r=0;r<cRows;r++) for (let c=0;c<cCols;c++) {
+    const id=grid[r][c]; if(id&&tiles.has(id)) ctx.drawImage(tiles.get(id).img,c*cTW,r*cTH,cTW,cTH);
+  }
+  const a=document.createElement('a');
+  a.href=ec.toDataURL('image/png');
+  a.download=`compose_${cCols}x${cRows}_${cTW}x${cTH}.png`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+});
+
+function cUpdatePlaced() {
+  let n=0; for(let r=0;r<cRows;r++) for(let c=0;c<cCols;c++) if(grid[r][c])n++;
+  document.getElementById('info-placed').textContent=n;
+}
+
+// Keyboard
+document.addEventListener('keydown', e => {
+  if (e.target.tagName==='INPUT') return;
+  if (mode==='compose') {
+    if (e.key==='d'||e.key==='D') cSetTool('draw');
+    if (e.key==='e'||e.key==='E') cSetTool('erase');
+    if (e.key==='f'||e.key==='F') cSetTool('fill');
+    if (e.key==='p'||e.key==='P') cSetTool('pick');
+  }
+  if (e.key==='+'||e.key==='=') mode==='compose'?cZoomIn():sZoomIn();
+  if (e.key==='-')               mode==='compose'?cZoomOut():sZoomOut();
+  if (e.key==='Escape'&&mode==='slice') sClearSel();
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SLICE MODE
+// ══════════════════════════════════════════════════════════════════════════════
+let sImg = null;          // loaded Image
+let sImgW = 0, sImgH = 0; // native px dimensions
+let sZoom = 2, sZoomIdx = 1;
+let sShowGrid = true;
+// selection in tile coords
+let sSel = null;          // {r0,c0,r1,c1} (inclusive, normalised)
+let sDrag = null;         // {r0,c0} anchor
+let sMouseDown = false;
+let sHoverCell = null;
+
+const slicePreviewCanvas = document.getElementById('slice-preview-canvas');
+const spCtx = slicePreviewCanvas.getContext('2d');
+
+function sliceRebuild() {
+  if (!sImg) {
+    setCanvasSize(320, 240, sZoom);
+    bCtx.clearRect(0,0,320,240);
+    bCtx.fillStyle='#1a2434';
+    bCtx.fillRect(0,0,320,240);
+    bCtx.fillStyle='var(--muted)';
+    oCtx.clearRect(0,0,overlayCanvas.width,overlayCanvas.height);
+    sUpdateInfoBar();
+    return;
+  }
+  setCanvasSize(sImgW, sImgH, sZoom);
+  sDrawBase();
+  sDrawOverlay();
+  sUpdateInfoBar();
+  sUpdateSidePanel();
+  document.getElementById('s-zoom-label').textContent = sZoom+'×';
+}
+
+function sDrawBase() {
+  if (!sImg) return;
+  bCtx.clearRect(0,0,sImgW,sImgH);
+  bCtx.drawImage(sImg, 0, 0, sImgW, sImgH);
+}
+
+function sDrawOverlay() {
+  oCtx.clearRect(0,0,overlayCanvas.width,overlayCanvas.height);
+  const z=sZoom, tsx=sTW*z, tsy=sTH*z;
+  const gc=Math.ceil(sImgW/sTW), gr=Math.ceil(sImgH/sTH);
+
+  // grid lines
+  if (sShowGrid) {
+    oCtx.strokeStyle='rgba(255,255,255,0.18)';
+    oCtx.lineWidth=1;
+    for (let c=0;c<=gc;c++) { oCtx.beginPath();oCtx.moveTo(c*tsx+.5,0);oCtx.lineTo(c*tsx+.5,sImgH*z);oCtx.stroke(); }
+    for (let r=0;r<=gr;r++) { oCtx.beginPath();oCtx.moveTo(0,r*tsy+.5);oCtx.lineTo(sImgW*z,r*tsy+.5);oCtx.stroke(); }
+  }
+
+  // hover highlight
+  if (sHoverCell && !sMouseDown) {
+    const {r,c}=sHoverCell;
+    oCtx.fillStyle='rgba(233,69,96,0.15)';
+    oCtx.fillRect(c*tsx, r*tsy, tsx, tsy);
+  }
+
+  // selection rectangle
+  if (sSel) {
+    const {r0,c0,r1,c1}=sSel;
+    const x=c0*tsx, y=r0*tsy, w=(c1-c0+1)*tsx, h=(r1-r0+1)*tsy;
+    oCtx.fillStyle='rgba(100,180,255,0.18)';
+    oCtx.fillRect(x,y,w,h);
+    oCtx.strokeStyle='#64b4ff';
+    oCtx.lineWidth=2;
+    oCtx.strokeRect(x+1,y+1,w-2,h-2);
+    oCtx.fillStyle='#64b4ff';
+    [[x,y],[x+w,y],[x,y+h],[x+w,y+h]].forEach(([hx,hy])=>{
+      oCtx.beginPath(); oCtx.arc(hx,hy,4,0,Math.PI*2); oCtx.fill();
+    });
+  }
+
+  // live drag preview
+  if (sMouseDown && sDrag && sHoverCell) {
+    const r0=Math.min(sDrag.r,sHoverCell.r), c0=Math.min(sDrag.c,sHoverCell.c);
+    const r1=Math.max(sDrag.r,sHoverCell.r), c1=Math.max(sDrag.c,sHoverCell.c);
+    const x=c0*tsx, y=r0*tsy, w=(c1-c0+1)*tsx, h=(r1-r0+1)*tsy;
+    oCtx.fillStyle='rgba(100,200,100,0.2)';
+    oCtx.fillRect(x,y,w,h);
+    oCtx.strokeStyle='#88ff88';
+    oCtx.lineWidth=2;
+    oCtx.setLineDash([4,3]);
+    oCtx.strokeRect(x+1,y+1,w-2,h-2);
+    oCtx.setLineDash([]);
+  }
+}
+
+function sCell(e) {
+  if (!sImg) return null;
+  const rect=overlayCanvas.getBoundingClientRect();
+  const tsx=sTW*sZoom, tsy=sTH*sZoom;
+  const c=Math.floor((e.clientX-rect.left)/tsx);
+  const r=Math.floor((e.clientY-rect.top) /tsy);
+  const gc=Math.ceil(sImgW/sTW), gr=Math.ceil(sImgH/sTH);
+  if (c<0||c>=gc||r<0||r>=gr) return null;
+  return {r,c};
+}
+
+overlayCanvas.addEventListener('mousedown', e => {
+  if (mode!=='slice') return;
+  const cell=sCell(e);
+  if (!cell) return;
+  sMouseDown=true; sDrag=cell; sHoverCell=cell;
+  sDrawOverlay();
+});
+overlayCanvas.addEventListener('mousemove', e => {
+  if (mode!=='slice') return;
+  const cell=sCell(e); sHoverCell=cell;
+  if (cell) document.getElementById('sb-cursor').textContent=`col ${cell.c}, row ${cell.r}`;
+  sDrawOverlay();
+  if (sMouseDown && sDrag && cell) sUpdateDragInfo(cell);
+});
+overlayCanvas.addEventListener('mouseup', e => {
+  if (mode!=='slice') return;
+  if (!sMouseDown||!sDrag) return;
+  const cell=sCell(e);
+  const end=cell||sHoverCell;
+  if (end) {
+    sSel={
+      r0:Math.min(sDrag.r,end.r), c0:Math.min(sDrag.c,end.c),
+      r1:Math.max(sDrag.r,end.r), c1:Math.max(sDrag.c,end.c)
+    };
+    sUpdateSidePanel(); sUpdateSelButtons();
+  }
+  sMouseDown=false; sDrag=null; sDrawOverlay();
+});
+overlayCanvas.addEventListener('mouseleave', () => {
+  if (mode!=='slice') return;
+  sHoverCell=null;
+  if (sMouseDown&&sDrag) { /* keep drag alive */ } else sDrawOverlay();
+  document.getElementById('sb-cursor').textContent='–';
+});
+overlayCanvas.addEventListener('contextmenu', e => {
+  if (mode!=='slice') return;
+  e.preventDefault(); sClearSel();
+});
+
+function sUpdateDragInfo(cell) {
+  const r0=Math.min(sDrag.r,cell.r), c0=Math.min(sDrag.c,cell.c);
+  const r1=Math.max(sDrag.r,cell.r), c1=Math.max(sDrag.c,cell.c);
+  const wt=c1-c0+1, ht=r1-r0+1;
+  document.getElementById('sb-sel').textContent=`${wt}×${ht} tiles`;
+}
+
+function sClearSel() {
+  sSel=null; sUpdateSidePanel(); sUpdateSelButtons(); sDrawOverlay();
+  document.getElementById('sb-sel').textContent='none';
+}
+
+function sUpdateSelButtons() {
+  document.getElementById('btn-slice-download').disabled = !sSel;
+  document.getElementById('btn-slice-clear-sel').disabled = !sSel;
+}
+
+function sUpdateSidePanel() {
+  if (!sImg) { document.getElementById('si-img').textContent='—'; return; }
+  const gc=Math.ceil(sImgW/sTW), gr=Math.ceil(sImgH/sTH);
+  document.getElementById('si-img').textContent=`${sImgW}×${sImgH} px`;
+  document.getElementById('si-grid').textContent=`${gc} cols × ${gr} rows`;
+  if (sSel) {
+    const {r0,c0,r1,c1}=sSel;
+    const wt=c1-c0+1, ht=r1-r0+1;
+    const wpx=Math.min(wt*sTW, sImgW-c0*sTW);
+    const hpx=Math.min(ht*sTH, sImgH-r0*sTH);
+    document.getElementById('si-sel').textContent=`${wt}×${ht} tiles`;
+    document.getElementById('si-px').textContent=`${wpx}×${hpx} px`;
+    document.getElementById('sb-sel').textContent=`${wt}×${ht} tiles (${wpx}×${hpx} px)`;
+    // update preview
+    slicePreviewCanvas.width=wpx; slicePreviewCanvas.height=hpx;
+    spCtx.clearRect(0,0,wpx,hpx);
+    spCtx.drawImage(sImg, c0*sTW, r0*sTH, wpx, hpx, 0, 0, wpx, hpx);
+    // scale preview display
+    const maxPx=160;
+    const sc=Math.min(maxPx/wpx, maxPx/hpx, 8);
+    slicePreviewCanvas.style.width=Math.round(wpx*sc)+'px';
+    slicePreviewCanvas.style.height=Math.round(hpx*sc)+'px';
+  } else {
+    document.getElementById('si-sel').textContent='none';
+    document.getElementById('si-px').textContent='—';
+    slicePreviewCanvas.width=1; slicePreviewCanvas.height=1;
+  }
+}
+
+function sUpdateInfoBar() {
+  if (!sImg) { document.getElementById('sb-img').textContent='no image'; return; }
+  const gc=Math.ceil(sImgW/sTW), gr=Math.ceil(sImgH/sTH);
+  document.getElementById('sb-img').textContent=`${sImgW}×${sImgH} px  (${gc}×${gr} tiles @ ${sTW}×${sTH})`;
+}
+
+// Load image for slice mode
+function loadSliceImage(file) {
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    const img=new Image();
+    img.onload=()=>{
+      sImg=img; sImgW=img.naturalWidth; sImgH=img.naturalHeight;
+      sSel=null; sUpdateSelButtons();
+      document.getElementById('slice-sel-info').textContent=
+        `${sImgW}×${sImgH} px — drag to select`;
+      sliceRebuild();
+    };
+    img.src=ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+const sliceFileInput = document.getElementById('slice-file-input');
+const sliceDrop      = document.getElementById('slice-drop');
+sliceFileInput.addEventListener('change', () => { if(sliceFileInput.files[0]) loadSliceImage(sliceFileInput.files[0]); sliceFileInput.value=''; });
+sliceDrop.addEventListener('click',     e => { e.stopPropagation(); sliceFileInput.click(); });
+sliceDrop.addEventListener('dragover',  e => { e.preventDefault(); e.stopPropagation(); sliceDrop.classList.add('drag-over'); });
+sliceDrop.addEventListener('dragleave', e => { e.stopPropagation(); sliceDrop.classList.remove('drag-over'); });
+sliceDrop.addEventListener('drop',      e => { e.preventDefault(); e.stopPropagation(); sliceDrop.classList.remove('drag-over'); if(e.dataTransfer.files[0]) loadSliceImage(e.dataTransfer.files[0]); });
+
+// Also accept drops directly on the canvas in slice mode
+overlayCanvas.addEventListener('drop', e => {
+  if (mode!=='slice') return;
+  e.preventDefault();
+  const f=e.dataTransfer.files[0]; if(f&&f.type.startsWith('image/')) loadSliceImage(f);
+});
+
+// Grid toggle
+document.getElementById('chk-grid-slice').addEventListener('change', e => { sShowGrid=e.target.checked; if(mode==='slice')sDrawOverlay(); });
+
+// Slice zoom
+function sZoomIn()  { if(sZoomIdx<ZOOM_LEVELS.length-1){sZoomIdx++;sZoom=ZOOM_LEVELS[sZoomIdx];sliceRebuild();} }
+function sZoomOut() { if(sZoomIdx>0){sZoomIdx--;sZoom=ZOOM_LEVELS[sZoomIdx];sliceRebuild();} }
+document.getElementById('s-zoom-in').addEventListener('click',  sZoomIn);
+document.getElementById('s-zoom-out').addEventListener('click', sZoomOut);
+document.getElementById('s-zoom-label').textContent = sZoom+'×';
+
+// Clear selection
+document.getElementById('btn-slice-clear-sel').addEventListener('click', sClearSel);
+
+// Download selection
+document.getElementById('btn-slice-download').addEventListener('click', () => {
+  if (!sSel||!sImg) return;
+  const {r0,c0,r1,c1}=sSel;
+  const wpx=Math.min((c1-c0+1)*sTW, sImgW-c0*sTW);
+  const hpx=Math.min((r1-r0+1)*sTH, sImgH-r0*sTH);
+  const ec=document.createElement('canvas'); ec.width=wpx; ec.height=hpx;
+  const ctx=ec.getContext('2d');
+  ctx.clearRect(0,0,wpx,hpx);
+  ctx.drawImage(sImg, c0*sTW, r0*sTH, wpx, hpx, 0, 0, wpx, hpx);
+  const a=document.createElement('a');
+  a.href=ec.toDataURL('image/png');
+  a.download=`slice_r${r0}c${c0}_${wpx}x${hpx}.png`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+});
+
+// Slice info bar button
+document.getElementById('slice-sel-info').style.cursor='default';
+
+// ── Tile size inputs ──────────────────────────────────────────────────────────
+document.getElementById('btn-apply-tile').addEventListener('click', () => {
+  const tw = Math.max(1, Math.min(256, parseInt(document.getElementById('inp-tw').value) || cTW));
+  const th = Math.max(1, Math.min(256, parseInt(document.getElementById('inp-th').value) || cTH));
+  cTW = tw; cTH = th;
+  document.getElementById('inp-tw').value = cTW;
+  document.getElementById('inp-th').value = cTH;
+  // clear grid tiles since they were normalised to the old size
+  if (tiles.size > 0 && !confirm(`Tile size changed to ${cTW}×${cTH}. Reload tiles to re-normalise them. Clear the canvas now?`)) return;
+  grid = cMakeGrid(cRows, cCols);
+  composeRebuild(); cUpdatePlaced();
+});
+
+// Slice tile size — live update on change
+function sApplyTileSize() {
+  const tw = Math.max(1, Math.min(256, parseInt(document.getElementById('s-inp-tw').value) || sTW));
+  const th = Math.max(1, Math.min(256, parseInt(document.getElementById('s-inp-th').value) || sTH));
+  sTW = tw; sTH = th;
+  document.getElementById('s-inp-tw').value = sTW;
+  document.getElementById('s-inp-th').value = sTH;
+  sSel = null; sUpdateSelButtons();
+  if (mode === 'slice') sliceRebuild();
+}
+document.getElementById('s-inp-tw').addEventListener('change', sApplyTileSize);
+document.getElementById('s-inp-th').addEventListener('change', sApplyTileSize);
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+composeRebuild();
+</script>
+</body>
+</html>
