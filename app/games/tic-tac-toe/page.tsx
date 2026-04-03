@@ -30,6 +30,7 @@ function isDraw(board: Board): boolean {
 export default function TicTacToePage() {
   const [board, setBoard] = useState<Board>(Array(9).fill(null));
   const [currentPlayer, setCurrentPlayer] = useState<Player>("X");
+  const [nextStarter, setNextStarter] = useState<Player>("O");
   const [scores, setScores] = useState({ X: 0, O: 0 });
 
   const result = checkWinner(board);
@@ -55,7 +56,8 @@ export default function TicTacToePage() {
 
   const reset = () => {
     setBoard(Array(9).fill(null));
-    setCurrentPlayer("X");
+    setCurrentPlayer(nextStarter);
+    setNextStarter(nextStarter === "X" ? "O" : "X");
   };
 
   const cellStyle = (index: number) => {

@@ -50,60 +50,101 @@ export default function CarShotPage() {
 
       // ─── LEVEL DEFINITIONS ───────────────────────────────────────────────────
       const LEVELS = [
-        // {
-        //   name: "Level 1 – Milk Run",
-        //   structures: [
-        //     { x: 660, y: 420, w: 40, h: 80 },
-        //     { x: 710, y: 420, w: 40, h: 80 },
-        //     { x: 685, y: 340, w: 80, h: 40 },
-        //   ],
-        //   wheels: [
-        //     { x: 550, y: 300 }, { x: 620, y: 260 }, { x: 750, y: 200 },
-        //     { x: 800, y: 310 }, { x: 850, y: 180 },
-        //   ],
-        //   landZone: { x: 820, w: 120 },
-        // },
-        // {
-        //   name: "Level 2 – The Gap",
-        //   structures: [
-        //     { x: 680, y: 420, w: 30, h: 100 }, { x: 720, y: 420, w: 30, h: 100 },
-        //     { x: 700, y: 320, w: 70, h: 30 },  { x: 700, y: 290, w: 50, h: 30 },
-        //   ],
-        //   wheels: [
-        //     { x: 500, y: 280 }, { x: 570, y: 230 }, { x: 650, y: 190 },
-        //     { x: 730, y: 170 }, { x: 810, y: 210 }, { x: 870, y: 270 },
-        //   ],
-        //   landZone: { x: 840, w: 110 },
-        // },
-        // {
-        //   name: "Level 3 – Tower Smash",
-        //   structures: [
-        //     { x: 640, y: 420, w: 28, h: 120 }, { x: 676, y: 420, w: 28, h: 120 },
-        //     { x: 712, y: 420, w: 28, h: 120 }, { x: 658, y: 300, w: 56, h: 28 },
-        //     { x: 676, y: 272, w: 28, h: 28 },  { x: 748, y: 420, w: 28, h: 80 },
-        //     { x: 748, y: 340, w: 28, h: 28 },
-        //   ],
-        //   wheels: [
-        //     { x: 480, y: 250 }, { x: 560, y: 200 }, { x: 640, y: 170 },
-        //     { x: 720, y: 150 }, { x: 800, y: 160 }, { x: 870, y: 200 }, { x: 920, y: 270 },
-        //   ],
-        //   landZone: { x: 860, w: 100 },
-        // },
-        // {
-        //   name: "Level 4 – Pyramid",
-        //   structures: [
-        //     { x: 630, y: 420, w: 30, h: 90 }, { x: 668, y: 420, w: 30, h: 90 },
-        //     { x: 706, y: 420, w: 30, h: 90 }, { x: 744, y: 420, w: 30, h: 90 },
-        //     { x: 649, y: 330, w: 30, h: 90 }, { x: 687, y: 330, w: 30, h: 90 },
-        //     { x: 725, y: 330, w: 30, h: 90 }, { x: 668, y: 240, w: 30, h: 90 },
-        //     { x: 706, y: 240, w: 30, h: 90 }, { x: 687, y: 150, w: 30, h: 90 },
-        //   ],
-        //   wheels: [
-        //     { x: 450, y: 220 }, { x: 530, y: 175 }, { x: 610, y: 145 },
-        //     { x: 690, y: 120 }, { x: 770, y: 140 }, { x: 850, y: 175 }, { x: 920, y: 230 },
-        //   ],
-        //   landZone: { x: 880, w: 80 },
-        // },
+        // ── Levels 1–4 ────────────────────────────────────────────────────────
+        {
+          name: "Level 1 – Easy Street",
+          bgId: 1, bgVariant: "Night", layerCount: 5,
+          groundColor: 0x071a0e, groundLine: 0x00ff88,
+          neonPalette: [0x00ff88, 0x44ffaa, 0x00cc55, 0x88ffcc],
+          structures: [
+            // Single centre tower with wide cap
+            { x: 640, y: 420, w: 38, h: 130 },
+            { x: 640, y: 290, w: 76, h: 28 },
+            // Smaller right tower
+            { x: 790, y: 420, w: 34, h: 90 },
+            { x: 790, y: 330, w: 68, h: 26 },
+          ],
+          wheels: [
+            { x: 460, y: 290 }, { x: 540, y: 250 }, { x: 640, y: 200 },
+            { x: 730, y: 225 }, { x: 820, y: 270 }, { x: 890, y: 320 },
+          ],
+          landZone: { x: 850, w: 100 },
+        },
+        {
+          name: "Level 2 – The Bridge",
+          bgId: 2, bgVariant: "Night", layerCount: 5,
+          groundColor: 0x100820, groundLine: 0xcc44ff,
+          neonPalette: [0xcc44ff, 0xff66cc, 0x9922ff, 0x66ffcc],
+          structures: [
+            // Gate: two tall pillars + bridge cap
+            { x: 610, y: 420, w: 26, h: 170 },
+            { x: 700, y: 420, w: 26, h: 170 },
+            { x: 655, y: 250, w: 116, h: 26 },
+            // Stack on the bridge
+            { x: 655, y: 224, w: 30, h: 28 },
+            { x: 655, y: 196, w: 30, h: 28 },
+            // Right flanking tower
+            { x: 810, y: 420, w: 30, h: 100 },
+            { x: 810, y: 320, w: 60, h: 26 },
+          ],
+          wheels: [
+            { x: 430, y: 220 }, { x: 500, y: 180 }, { x: 590, y: 148 },
+            { x: 680, y: 128 }, { x: 770, y: 158 }, { x: 860, y: 210 },
+          ],
+          landZone: { x: 850, w: 95 },
+        },
+        {
+          name: "Level 3 – Staircase",
+          bgId: 3, bgVariant: "Night", layerCount: 5,
+          groundColor: 0x080e1a, groundLine: 0x0099ff,
+          neonPalette: [0x0099ff, 0x44ccff, 0x0066dd, 0x44ffee],
+          structures: [
+            // Short left tower
+            { x: 560, y: 420, w: 30, h: 70  },
+            { x: 560, y: 350, w: 62, h: 24  },
+            // Medium centre tower + crate
+            { x: 665, y: 420, w: 30, h: 130 },
+            { x: 665, y: 290, w: 66, h: 24  },
+            { x: 665, y: 266, w: 28, h: 28  },
+            // Tall right tower + crates
+            { x: 780, y: 420, w: 30, h: 200 },
+            { x: 780, y: 220, w: 70, h: 24  },
+            { x: 780, y: 196, w: 28, h: 28  },
+            { x: 780, y: 168, w: 28, h: 28  },
+          ],
+          wheels: [
+            { x: 420, y: 240 }, { x: 490, y: 195 }, { x: 570, y: 155 },
+            { x: 650, y: 125 }, { x: 730, y: 108 }, { x: 810, y: 138 }, { x: 880, y: 185 },
+          ],
+          landZone: { x: 860, w: 90 },
+        },
+        {
+          name: "Level 4 – The Fortress",
+          bgId: 4, bgVariant: "Night", layerCount: 5,
+          groundColor: 0x1a0808, groundLine: 0xff3300,
+          neonPalette: [0xff3300, 0xff6622, 0xcc2200, 0xff9944],
+          structures: [
+            // Outer gate — two tall pillars + cap
+            { x: 590, y: 420, w: 24, h: 165 },
+            { x: 690, y: 420, w: 24, h: 165 },
+            { x: 640, y: 255, w: 124, h: 26 },
+            // Inner tower rising above the gate
+            { x: 640, y: 255, w: 28, h: 80  },
+            { x: 640, y: 175, w: 72, h: 24  },
+            { x: 640, y: 151, w: 30, h: 28  },
+            { x: 640, y: 123, w: 30, h: 28  },
+            // Right guard post
+            { x: 790, y: 420, w: 28, h: 130 },
+            { x: 790, y: 290, w: 58, h: 26  },
+            { x: 790, y: 264, w: 28, h: 28  },
+          ],
+          wheels: [
+            { x: 400, y: 210 }, { x: 460, y: 170 }, { x: 530, y: 130 },
+            { x: 620, y: 100 }, { x: 710, y:  95 }, { x: 790, y: 118 },
+            { x: 865, y: 162 }, { x: 925, y: 220 },
+          ],
+          landZone: { x: 870, w: 75 },
+        },
         // ── City levels (5–8) use real layered PNG backgrounds ──────────────
         {
           name: "Level 5 – Neon District",
@@ -352,13 +393,14 @@ export default function CarShotPage() {
         private wheelsThisRun = 0;
         private launched = false;
         private wasDestroyed = false;
+        private slamTriggered = false;
         private isDragging = false;
         private dragStart!: Phaser.Math.Vector2;
         private carStart!: Phaser.Math.Vector2;
         private landed = false;
         private landTimer = 0;
         private stuckTimer = 0;
-        private retryBtn!: { g: Phaser.GameObjects.GameObject; txt: Phaser.GameObjects.Text; hit: Phaser.GameObjects.Rectangle };
+        private cursorZones: Map<string, { hit: Phaser.Geom.Rectangle; cursor: string }> = new Map();
 
         constructor() { super("Game"); }
 
@@ -404,7 +446,7 @@ export default function CarShotPage() {
               this.load.image(c.previewKey, `/sprites/${c.previewKey}.png`);
           });
 
-          // Sign assets – billboards used for obstacles + ramp marker
+          // Billboard frame assets
           const signFiles: [string, string][] = [
             ["sign_22x40",    "2%20Billboard/22x40.png"],
             ["sign_22x40_2",  "2%20Billboard/22x40_2.png"],
@@ -419,17 +461,30 @@ export default function CarShotPage() {
             if (!this.textures.exists(key))
               this.load.image(key, `/car_shot/signs/${file}`);
           });
+
+          // Ad images (15 per size × 3 sizes)
+          const SIGNS = "/car_shot/signs/1%20Ad";
+          for (let n = 1; n <= 15; n++) {
+            if (!this.textures.exists(`ad_128_${n}`))
+              this.load.image(`ad_128_${n}`, `${SIGNS}/128x64/${n}.png`);
+            if (!this.textures.exists(`ad_64_${n}`))
+              this.load.image(`ad_64_${n}`,  `${SIGNS}/64x64/${n}.png`);
+            if (!this.textures.exists(`ad_22_${n}`))
+              this.load.image(`ad_22_${n}`,  `${SIGNS}/22x40/${n}.png`);
+          }
         }
 
         // ── Create ─────────────────────────────────────────────────────────────
         create() {
           this.launched = false;
           this.wasDestroyed = false;
+          this.slamTriggered = false;
           this.isDragging = false;
           this.landed = false;
           this.landTimer = 0;
           this.stuckTimer = 0;
           this.wheelsThisRun = 0;
+          this.cursorZones = new Map();
 
           this.carDef = this.registry.get("selectedCar") as typeof CAR_DEFS[0];
           this.levelIdx = this.registry.get("currentLevel") as number;
@@ -441,6 +496,7 @@ export default function CarShotPage() {
           this.buildWorld();
           this.buildHUD();
           this.setupInput();
+          this.initCursorZone();
         }
 
         // ── Animations ─────────────────────────────────────────────────────────
@@ -467,7 +523,7 @@ export default function CarShotPage() {
         // ── Textures ───────────────────────────────────────────────────────────
         buildTextures() {
           if (!this.textures.exists("wheel")) {
-            const g = this.make.graphics({ x: 0, y: 0, add: false });
+            const g = this.make.graphics({ x: 0, y: 0 }, false);
             g.fillStyle(0xf1c40f, 1); g.fillCircle(14, 14, 14);
             g.fillStyle(0xd4ac0d, 1); g.fillCircle(14, 14, 10);
             g.fillStyle(0xf1c40f, 1); g.fillCircle(14, 14, 6);
@@ -546,17 +602,47 @@ export default function CarShotPage() {
           this.buildWheels();
 
           // Landing zone
-          const lz = this.levelDef.landZone;
-          const lzGfx = this.add.graphics();
+          const lz      = this.levelDef.landZone;
           const lzColor = isCityLevel ? 0x00ffcc : 0x00ff00;
-          lzGfx.fillStyle(lzColor, 0.12);
-          lzGfx.fillRect(lz.x, height - groundH - 60, lz.w, 60);
-          lzGfx.lineStyle(2, lzColor, 0.5);
-          lzGfx.strokeRect(lz.x, height - groundH - 60, lz.w, 60);
-          this.add.text(lz.x + lz.w / 2, height - groundH - 30, "LAND HERE", {
-            fontSize: "11px", fontFamily: "Arial",
-            color: isCityLevel ? "#00ffcc" : "#00ff00",
-          }).setOrigin(0.5).setAlpha(0.7);
+          const lzHex   = isCityLevel ? "#00ffcc" : "#00ff00";
+          const lzTop   = height - groundH - 60;
+          const lzGfx   = this.add.graphics();
+
+          // Soft fill
+          lzGfx.fillStyle(lzColor, 0.09);
+          lzGfx.fillRect(lz.x, lzTop, lz.w, 60);
+
+          // Main border
+          lzGfx.lineStyle(2, lzColor, 0.65);
+          lzGfx.strokeRect(lz.x, lzTop, lz.w, 60);
+
+          // Corner accent ticks
+          const tk = 10;
+          lzGfx.lineStyle(3, lzColor, 1.0);
+          lzGfx.lineBetween(lz.x,        lzTop,      lz.x + tk, lzTop);
+          lzGfx.lineBetween(lz.x,        lzTop,      lz.x,      lzTop + tk);
+          lzGfx.lineBetween(lz.x + lz.w, lzTop,      lz.x + lz.w - tk, lzTop);
+          lzGfx.lineBetween(lz.x + lz.w, lzTop,      lz.x + lz.w,      lzTop + tk);
+          lzGfx.lineBetween(lz.x,        lzTop + 60, lz.x + tk, lzTop + 60);
+          lzGfx.lineBetween(lz.x,        lzTop + 60, lz.x,      lzTop + 60 - tk);
+          lzGfx.lineBetween(lz.x + lz.w, lzTop + 60, lz.x + lz.w - tk, lzTop + 60);
+          lzGfx.lineBetween(lz.x + lz.w, lzTop + 60, lz.x + lz.w,      lzTop + 60 - tk);
+
+          // Downward chevrons inside
+          const cxLZ = lz.x + lz.w / 2;
+          lzGfx.lineStyle(2, lzColor, 0.45);
+          for (let ca = 0; ca < 3; ca++) {
+            const ay = lzTop + 14 + ca * 13;
+            lzGfx.lineBetween(cxLZ - 8, ay, cxLZ, ay + 7);
+            lzGfx.lineBetween(cxLZ,     ay + 7, cxLZ + 8, ay);
+          }
+
+          // Pulsing label
+          const lzLabel = this.add.text(cxLZ, lzTop + 5, "▼ LAND ▼", {
+            fontSize: "10px", fontFamily: "Arial", fontStyle: "bold",
+            color: lzHex,
+          }).setOrigin(0.5, 0).setAlpha(0.9);
+          this.tweens.add({ targets: lzLabel, alpha: 0.35, duration: 700, yoyo: true, repeat: -1 });
 
           this.particles = this.add.graphics();
         }
@@ -573,25 +659,129 @@ export default function CarShotPage() {
         buildRamp(isCityLevel: boolean) {
           const { height } = this.scale;
           const groundH = 40;
-          const rampBaseX = 80, rampTopX = 180;
+          const rampBaseX = 80,  rampTopX = 180;
           const rampBaseY = height - groundH;
           const rampTopY  = height - groundH - 140;
 
+          // Slope unit vectors
+          const rampLen  = Math.hypot(rampTopX - rampBaseX, rampTopY - rampBaseY);
+          const rdX = (rampTopX - rampBaseX) / rampLen;  //  ≈  0.581
+          const rdY = (rampTopY - rampBaseY) / rampLen;  //  ≈ -0.813
+          // Perpendicular ABOVE the slope (the car-facing side)
+          const abX =  rdY;   // ≈ -0.813
+          const abY = -rdX;   // ≈ -0.581
+          // Perpendicular BELOW the slope (for attaching supports)
+          const blX = -rdY;   // ≈  0.813
+          const blY =  rdX;   // ≈  0.581
+          const thick = 10;   // surface plank thickness
+
           const g = this.add.graphics();
+          g.setDepth(1);
+
           if (isCityLevel) {
-            g.fillStyle(0x1e0a38, 1);
-            g.fillTriangle(rampBaseX, rampBaseY, rampTopX, rampTopY, rampBaseX, rampTopY);
-            g.fillRect(rampBaseX, rampTopY, rampTopX - rampBaseX, rampBaseY - rampTopY);
-            g.lineStyle(3, 0x00e8ff, 1);
+            const neon = 0x00e8ff;
+
+            // ── Two vertical support columns ──────────────────────────────────
+            for (const t of [0.3, 0.65]) {
+              const sx = rampBaseX + rdX * rampLen * t;
+              const sy = rampBaseY + rdY * rampLen * t;
+              const bx = sx + blX * thick;          // attachment on underside of plank
+              const by = sy + blY * thick;
+              const ph = rampBaseY - by;             // column height down to ground
+
+              const cw = 7;
+              g.fillStyle(0x05020d, 1);
+              g.fillRect(bx - cw / 2, by, cw, ph);
+              g.lineStyle(2, neon, 0.9);
+              g.lineBetween(bx - cw / 2, by, bx - cw / 2, rampBaseY);
+              g.lineBetween(bx + cw / 2, by, bx + cw / 2, rampBaseY);
+              // Cross-tick marks on column shaft
+              g.lineStyle(1, neon, 0.3);
+              for (let ty = by + 14; ty < rampBaseY - 4; ty += 18) {
+                g.lineBetween(bx - cw / 2 - 2, ty, bx + cw / 2 + 2, ty);
+              }
+            }
+
+            // Horizontal connecting beam near ground
+            const bx0 = rampBaseX + rdX * rampLen * 0.3  + blX * thick;
+            const bx1 = rampBaseX + rdX * rampLen * 0.65 + blX * thick;
+            const beamY = rampBaseY - 14;
+            g.lineStyle(3, neon, 0.45);
+            g.lineBetween(bx0, beamY, bx1, beamY);
+            g.lineStyle(1, neon, 0.2);
+            g.lineBetween(bx0, beamY - 3, bx1, beamY - 3);
+
+            // ── Thin ramp surface plank ───────────────────────────────────────
+            const p0x = rampBaseX,           p0y = rampBaseY;
+            const p1x = rampTopX,            p1y = rampTopY;
+            const p2x = rampTopX + abX*thick, p2y = rampTopY + abY*thick;
+            const p3x = rampBaseX + abX*thick,p3y = rampBaseY + abY*thick;
+
+            g.fillStyle(0x12052a, 1);
+            g.fillTriangle(p0x, p0y, p1x, p1y, p2x, p2y);
+            g.fillTriangle(p0x, p0y, p2x, p2y, p3x, p3y);
+
+            // Underside edge (dim)
+            g.lineStyle(1, neon, 0.18);
+            g.lineBetween(p3x, p3y, p2x, p2y);
+
+            // Top surface neon edge
+            g.lineStyle(3, neon, 1.0);
             g.lineBetween(rampBaseX, rampBaseY, rampTopX, rampTopY);
-            g.fillStyle(0x2a0a4e, 1);
-            g.fillRect(rampTopX, rampTopY, 30, 12);
-            g.lineStyle(2, 0x9900ff, 1);
-            g.strokeRect(rampTopX, rampTopY, 30, 12);
+
+            // Arrow chevron marks along the surface
+            g.lineStyle(1, 0x9900ff, 0.6);
+            for (let t = 0.08; t < 0.95; t += 0.11) {
+              const mx = rampBaseX + rdX * rampLen * t;
+              const my = rampBaseY + rdY * rampLen * t;
+              g.lineBetween(mx + abX * 1, my + abY * 1,
+                            mx + abX * (thick - 1), my + abY * (thick - 1));
+            }
+
+            // ── Top launch platform ───────────────────────────────────────────
+            const platW = 44, platH = 10;
+            const platX = rampTopX - 2;
+            g.fillStyle(0x1a0535, 1);
+            g.fillRect(platX, rampTopY, platW, platH);
+            g.lineStyle(2, neon, 1.0);
+            g.strokeRect(platX, rampTopY, platW, platH);
+            g.lineStyle(1, 0xffffff, 0.3);
+            g.lineBetween(platX, rampTopY, platX + platW, rampTopY);
+
+            // ── sign_pillar / sign_pillar2 images as support caps ────────────
+            for (const t of [0.3, 0.65]) {
+              const sx = rampBaseX + rdX * rampLen * t;
+              const sy = rampBaseY + rdY * rampLen * t;
+              const bx = sx + blX * thick;
+              const by = sy + blY * thick;
+
+              // Base foot
+              const foot = this.add.image(bx, rampBaseY, "sign_pillar2");
+              foot.setOrigin(0.5, 1.0);
+              foot.setScale(1.6);
+              foot.setDepth(2);
+              // Ramp-connection cap (bracket)
+              const cap = this.add.image(bx, by, "sign_pillar");
+              cap.setOrigin(0.5, 0.5);
+              cap.setScale(1.4);
+              cap.setDepth(2);
+            }
+
+            // Platform support leg (left side, away from marker sign)
+            const platLeg = this.add.image(platX + 10, rampTopY + platH, "sign_pillar2");
+            platLeg.setOrigin(0.5, 0.0);
+            platLeg.setScale(1.4);
+            platLeg.setDepth(2);
+
           } else {
+            // Non-city: wood plank ramp (same geometry, earthy colours)
+            const p0x = rampBaseX,            p0y = rampBaseY;
+            const p1x = rampTopX,             p1y = rampTopY;
+            const p2x = rampTopX + abX*thick,  p2y = rampTopY + abY*thick;
+            const p3x = rampBaseX + abX*thick, p3y = rampBaseY + abY*thick;
             g.fillStyle(0x7f5539, 1);
-            g.fillTriangle(rampBaseX, rampBaseY, rampTopX, rampTopY, rampBaseX, rampTopY);
-            g.fillRect(rampBaseX, rampTopY, rampTopX - rampBaseX, rampBaseY - rampTopY);
+            g.fillTriangle(p0x, p0y, p1x, p1y, p2x, p2y);
+            g.fillTriangle(p0x, p0y, p2x, p2y, p3x, p3y);
             g.lineStyle(3, 0xd4a373, 1);
             g.lineBetween(rampBaseX, rampBaseY, rampTopX, rampTopY);
             g.fillStyle(0x7f5539, 1);
@@ -599,45 +789,100 @@ export default function CarShotPage() {
           }
           this.rampGraphics = g;
 
-          // Launch-marker sign standing at the ramp-top platform edge
-          const markerSign = this.add.image(rampTopX + 38, rampTopY, "sign_22x40");
-          markerSign.setOrigin(0.5, 1.0);   // bottom-center anchored to ramp surface
-          markerSign.setScale(2.2);
-          markerSign.setDepth(4);
-
-          // Car sits with its bottom at the ramp top surface
           this.carStart = new Phaser.Math.Vector2(rampTopX + 15, rampTopY);
           this.aimLine = this.add.graphics();
         }
 
-        buildStructures(_isCityLevel: boolean) {
+        buildStructures(isCityLevel: boolean) {
+          const ld      = this.levelDef as { neonPalette?: number[] };
+          const palette = ld.neonPalette ?? [0x00e8ff, 0xff00cc, 0x9900ff, 0x00ff99];
+
+          // Billboard frame info: [frameKey, frameW, frameH, adPrefix, adW, adH]
+          // Ad center = frame center for all base variants (verified by pixel dims)
+          const BB_WIDE  = { bbKey: "sign_128x64", bbW: 134, bbH: 70,  adPfx: "ad_128", adW: 126, adH: 62 };
+          const BB_SQ    = { bbKey: "sign_64x64",  bbW: 70,  bbH: 70,  adPfx: "ad_64",  adW: 62,  adH: 62 };
+          const BB_TALL  = { bbKey: "sign_22x40",  bbW: 28,  bbH: 46,  adPfx: "ad_22",  adW: 20,  adH: 38 };
+
           this.levelDef.structures.forEach((s, i) => {
-            // Pick billboard sign based on aspect ratio; alternate variants by index
-            const ratio   = s.w / s.h;
-            const variant = i % 2 === 0 ? "" : "_2";
-            let signKey: string;
-            if      (ratio > 1.5) signKey = `sign_128x64${variant}`;
-            else if (ratio < 0.6) signKey = `sign_22x40${variant}`;
-            else                  signKey = `sign_64x64${variant}`;
+            const cx        = s.x;
+            const cy        = s.y - s.h / 2;   // world-space center y
+            const hw        = s.w / 2;
+            const hh        = s.h / 2;
+            const ratio     = s.w / s.h;
+            const neonColor = palette[i % palette.length];
+            const adIdx     = (i % 15) + 1;    // 1–15
 
-            // Sign image centered on the structure, scaled to fill its bounds
-            const signImg = this.add.image(s.x, s.y - s.h / 2, signKey);
-            signImg.setOrigin(0.5, 0.5);
-            signImg.setDisplaySize(s.w, s.h);
-            signImg.setDepth(2);
+            // ── Choose billboard type ──
+            let bb: typeof BB_WIDE;
+            if      (ratio > 1.5)        bb = BB_WIDE;
+            else if (ratio < 0.55)       bb = s.w >= 36 ? BB_SQ : BB_TALL;
+            else                         bb = BB_SQ;
 
-            // Invisible physics body pinned exactly to structure bounds
-            const body = this.physics.add.staticImage(s.x, s.y - s.h / 2, "__DEFAULT");
+            // Scale: fit structure width; also cap height for flat beams
+            const bbScale = Math.min(s.w / bb.bbW, s.h / bb.bbH, 3.0);
+            const bbDispH = bb.bbH * bbScale;
+
+            // Billboard local-Y within the container: top of structure + half billboard height
+            const bbLocalY = -hh + bbDispH / 2;
+
+            // ── Container at structure world-center ──
+            const container = this.add.container(cx, cy);
+            container.setDepth(2);
+
+            // ── Pole support below the billboard ──
+            const poleTopLocal = bbLocalY + bbDispH / 2;   // billboard bottom in local space
+            const poleH        = hh - poleTopLocal;        // space from bb-bottom to structure bottom
+
+            if (poleH > 1) {
+              const poleW   = Math.max(4, Math.min(s.w * 0.28, 10));
+              const poleGfx = this.add.graphics();
+              if (isCityLevel) {
+                // Sleek dark pole with neon side lines
+                poleGfx.fillStyle(0x06030e, 1);
+                poleGfx.fillRect(-poleW / 2, poleTopLocal, poleW, poleH);
+                poleGfx.lineStyle(1, neonColor, 0.9);
+                poleGfx.lineBetween(-poleW / 2, poleTopLocal, -poleW / 2, hh);
+                poleGfx.lineBetween( poleW / 2, poleTopLocal,  poleW / 2, hh);
+                // Horizontal crossbars every ~24px
+                poleGfx.lineStyle(1, neonColor, 0.35);
+                for (let ty = poleTopLocal + 16; ty < hh - 4; ty += 24) {
+                  poleGfx.lineBetween(-poleW / 2 - 3, ty, poleW / 2 + 3, ty);
+                }
+              } else {
+                poleGfx.fillStyle(0x6b4226, 1);
+                poleGfx.fillRect(-poleW / 2, poleTopLocal, poleW, poleH);
+                poleGfx.lineStyle(2, 0xc4956a, 0.7);
+                poleGfx.strokeRect(-poleW / 2, poleTopLocal, poleW, poleH);
+              }
+              container.add(poleGfx);
+            }
+
+            // ── Billboard frame image ──
+            const bbImg = this.add.image(0, bbLocalY, bb.bbKey);
+            bbImg.setOrigin(0.5, 0.5);
+            bbImg.setScale(bbScale);
+            container.add(bbImg);
+
+            // ── Ad image — same center as frame (verified: ad center = frame center) ──
+            const adKey = `${bb.adPfx}_${adIdx}`;
+            const adImg = this.add.image(0, bbLocalY, adKey);
+            adImg.setOrigin(0.5, 0.5);
+            adImg.setScale(bbScale);
+            container.add(adImg);
+
+            // ── Invisible physics body (unchanged bounds) ──
+            const body = this.physics.add.staticImage(cx, cy, "__DEFAULT");
             body.setVisible(false);
             const sBody = body.body as Phaser.Physics.Arcade.StaticBody;
-            sBody.position.x = s.x - s.w / 2;
-            sBody.position.y = s.y - s.h;
+            sBody.position.x = cx - hw;
+            sBody.position.y = cy - hh;
             sBody.width      = s.w;
             sBody.height     = s.h;
-            sBody.halfWidth  = s.w / 2;
-            sBody.halfHeight = s.h / 2;
+            sBody.halfWidth  = hw;
+            sBody.halfHeight = hh;
             sBody.updateCenter();
-            body.setData("gfx", signImg);
+            body.setData("gfx",         container);  // container used for tween in destroyObstacle
+            body.setData("signOverlay", null);        // everything is inside container
             body.setData("sw",  s.w);
             body.setData("sh",  s.h);
             this.structures.add(body);
@@ -649,16 +894,21 @@ export default function CarShotPage() {
           body.setActive(false);
           (body.body as Phaser.Physics.Arcade.StaticBody).enable = false;
 
-          // gfx is now a center-origin Image (origin 0.5, 0.5)
-          const gfx = body.getData("gfx") as Phaser.GameObjects.Image;
-          const sw  = body.getData("sw")  as number;
-          const sh  = body.getData("sh")  as number;
+          // gfx is a Graphics object with x/y at structure center
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const gfx         = body.getData("gfx") as any;
+          const signOverlay = body.getData("signOverlay") as Phaser.GameObjects.Image | null;
+          const sw          = body.getData("sw")  as number;
+          const sh          = body.getData("sh")  as number;
 
-          // White flash overlay — offset to top-left since gfx.x/y is center
+          // White flash overlay (world-space top-left of structure)
           const flash = this.add.graphics();
           flash.fillStyle(0xffffff, 0.8);
           flash.fillRect(gfx.x - sw / 2, gfx.y - sh / 2, sw, sh);
           this.time.delayedCall(60, () => flash.destroy());
+
+          // Collect all visuals to animate together
+          const flyTargets = [gfx, signOverlay].filter(Boolean);
 
           // Shake then fly up & fade
           this.tweens.add({
@@ -666,19 +916,24 @@ export default function CarShotPage() {
             x: { value: gfx.x + Phaser.Math.Between(-6, 6) },
             duration: 40, yoyo: true, repeat: 3,
             onComplete: () => {
+              const targetY = gfx.y - sh * 0.8;
+              const rot     = Phaser.Math.Between(-45, 45);
               this.tweens.add({
-                targets: gfx,
-                y: gfx.y - sh * 0.8,
-                angle: Phaser.Math.Between(-45, 45),
+                targets: flyTargets,
+                y: targetY,
+                angle: rot,
                 alpha: 0,
                 duration: 400,
                 ease: "Power2",
-                onComplete: () => gfx.destroy(),
+                onComplete: () => {
+                  gfx.destroy();
+                  if (signOverlay) signOverlay.destroy();
+                },
               });
             },
           });
 
-          // Scatter fragments — cx/cy is already the image center
+          // Scatter fragments
           const cx = gfx.x, cy = gfx.y;
           const fragColor = 0xf1c40f;
           for (let f = 0; f < 5; f++) {
@@ -703,13 +958,28 @@ export default function CarShotPage() {
 
         buildWheels() {
           this.levelDef.wheels.forEach((w) => {
-            const halo = this.add.graphics();
-            halo.fillStyle(0xf1c40f, 0.15);
-            halo.fillCircle(w.x, w.y, 22);
+            // Outer soft glow
+            const outerHalo = this.add.graphics();
+            outerHalo.fillStyle(0xf1c40f, 0.07);
+            outerHalo.fillCircle(w.x, w.y, 32);
+            // Inner halo (pulsed)
+            const innerHalo = this.add.graphics();
+            innerHalo.fillStyle(0xf1c40f, 0.22);
+            innerHalo.fillCircle(w.x, w.y, 20);
+            this.tweens.add({ targets: innerHalo, alpha: 0.05, duration: 700, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+
             const img = this.physics.add.staticImage(w.x, w.y, "wheel");
             this.wheels.add(img);
             this.tweens.add({ targets: img, angle: 360, duration: 2000, repeat: -1 });
-            this.tweens.add({ targets: img, y: w.y - 6, duration: 1000, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+            // Bob up/down — move halos in sync with wheel
+            this.tweens.add({
+              targets: [img, innerHalo, outerHalo],
+              y: "-=6",
+              duration: 1000,
+              yoyo: true,
+              repeat: -1,
+              ease: "Sine.easeInOut",
+            });
           });
         }
 
@@ -747,18 +1017,8 @@ export default function CarShotPage() {
           }).setOrigin(1, 0).setDepth(10);
 
           // Persistent retry button — uses Buttons.png as the background image
-          const bw = 110, bh = 38, bx = width - 16 - 55, by = 70;
-          const bg2 = this.add.image(bx, by, "gui_buttons")
-            .setDisplaySize(bw, bh).setOrigin(0.5, 0.5).setDepth(10);
-          const btxt = this.add.text(bx, by, "↺  Retry  [R]", {
-            fontSize: "11px", fontFamily: "Arial Black, Arial", color: "#00ffcc",
-          }).setOrigin(0.5).setDepth(11);
-          const bhit = this.add.rectangle(bx, by, bw, bh, 0xffffff, 0)
-            .setInteractive({ cursor: "pointer" }).setDepth(12);
-          bhit.on("pointerover", () => { bg2.setTint(0x88ffee); btxt.setColor("#ffffff"); });
-          bhit.on("pointerout",  () => { bg2.clearTint();       btxt.setColor("#00ffcc"); });
-          bhit.on("pointerdown", () => { this.registry.set("totalWheels", this.totalWheels); this.scene.restart(); });
-          this.retryBtn = { g: bg2, txt: btxt, hit: bhit };
+          const bw = 120, bh = 38, bx = width - 16 - (bw / 2), by = 70;
+          this.createTextButton("Persistent retry button", "↩  Retry  [R]", bx, by, bw, bh, 11, () => { this.registry.set("totalWheels", this.totalWheels); this.scene.restart(); });
 
           this.input.keyboard!.on("keydown-R", () => {
             if (this.landed) return;
@@ -975,6 +1235,21 @@ export default function CarShotPage() {
           }
         }
 
+        createTextButton(id: string,text: string, x: number, y: number, w: number, h: number, z: number, cb?: () => void, fontSize = "13px", color: string = "#00ffcc", bold = false, strokeStyles: Partial<{ stroke: string; strokeThickness: number }> = {}) {
+          const txt = this.add.text(x, y, text, {
+            fontSize, fontFamily: "Arial", fontStyle: bold ? "bold" : "normal",
+            color, ...strokeStyles,
+          }).setInteractive().setOrigin(0.5).setDepth(z);
+          if (cb) {
+            const hit = this.add.rectangle(x - 2, y - 2, w + 4, h + 4, 0xffffff, 0)
+              .setInteractive({ cursor: "pointer" }).setDepth(z + 1);
+            hit.on("pointerover", () => txt.setAlpha(0.7));
+            hit.on("pointerout", () => txt.setAlpha(1));
+            hit.on("pointerdown", cb);
+            this.addCursorZone(id, new Phaser.Geom.Rectangle(x-2, y-2, w+4, h+4), "pointer");
+          }
+        }
+
         showResult(inZone: boolean) {
           const { width, height } = this.scale;
           const cx = width / 2, cy = height / 2;
@@ -988,66 +1263,104 @@ export default function CarShotPage() {
           this.add.image(cx, cy, "gui_mon3")
             .setDisplaySize(400, 280).setOrigin(0.5, 0.5).setDepth(31);
 
-          // Access_granted / Access_denied badge – scaled 2× and placed near top of panel
+          // Badge – moved down into centre of monitor
           const badgeKey = inZone ? "gui_granted" : "gui_denied";
-          this.add.image(cx, cy - 98, badgeKey)
-            .setScale(2).setOrigin(0.5, 0.5).setDepth(32);
+          const badgeY = cy - 45;
+          this.add.image(cx, badgeY, badgeKey)
+            .setScale(1.8).setOrigin(0.5, 0.5).setDepth(32);
 
-          // Result title
-          const title = inZone
-            ? (this.wheelsThisRun > 0 ? "🏆 Perfect Landing!" : "✅ Landed!")
-            : "💥 Missed!";
-          this.add.text(cx, cy - 60, title, {
-            fontSize: "24px", fontFamily: "Arial Black, Arial",
-            color: inZone ? "#00e8ff" : "#ff4466", stroke: "#000", strokeThickness: 3,
+          // Golden wheels – under the badge with a bit of breathing room
+          const wheelsY = badgeY + 66;
+          this.add.text(cx, wheelsY, `Golden wheels: ${this.wheelsThisRun}`, {
+            fontSize: "15px", fontFamily: "Arial", color: "#f1c40f",
           }).setOrigin(0.5).setDepth(32);
 
-          this.add.text(cx, cy - 26, `Golden wheels: ${this.wheelsThisRun}`, {
-            fontSize: "16px", fontFamily: "Arial", color: "#f1c40f",
-          }).setOrigin(0.5).setDepth(32);
-
-          this.add.text(cx, cy - 4, `Total: ${this.totalWheels + this.wheelsThisRun} 🏆`, {
-            fontSize: "14px", fontFamily: "Arial", color: "#9966ff",
-          }).setOrigin(0.5).setDepth(32);
-
+          // Below the monitor frame (bottom edge ≈ cy + 140)
           const nextLevel = this.levelIdx < LEVELS.length - 1;
-          const btnY = cy + 48;
+          const belowMonitor = cy + 155;
 
           if (inZone && nextLevel) {
-            this.makeButton(cx - 90, btnY, "Next Level →", 0x6366f1, () => {
+            // Next Level: button left, Retry text-only right
+            this.createTextButton("Next Level: button left", "Next Level →", cx - 90, belowMonitor, 90, 28, 33, () => {
               this.registry.set("currentLevel", this.levelIdx + 1);
               this.registry.set("totalWheels", this.totalWheels + this.wheelsThisRun);
               this.scene.restart();
-            });
-            this.makeButton(cx + 90, btnY, "↺ Retry", 0x475569, () => {
-              this.registry.set("totalWheels", this.totalWheels);
-              this.scene.restart();
-            });
-          } else {
-            this.makeButton(cx, btnY, "↺ Retry", 0x475569, () => {
-              this.registry.set("totalWheels", this.totalWheels);
-              this.scene.restart();
-            });
-          }
+            }, "13px", "#6366F1", true);
 
-          this.makeButton(cx, btnY + 50, "Change Car", 0x334155, () => {
-            this.scene.start("CarSelect");
+            // Retry – text only (next-level branch)
+            this.createTextButton("Retry – text only (next-level branch)", "↩ Retry", cx + 90, belowMonitor, 90, 28, 33, () => {
+              this.registry.set("totalWheels", this.totalWheels);
+              this.scene.restart();
+            }, "13px", "#00ffcc", true);
+          } else {
+            // Retry – text only, left side
+            this.createTextButton("Retry – text only, left side", "↩ Retry", cx - 80, belowMonitor, 90, 28, 33, () => {
+              this.registry.set("totalWheels", this.totalWheels);
+              this.scene.restart();
+            }, "13px", "#00ffcc", true);
+
+            // Change Car – text only, right side
+            this.createTextButton("Change Car – text only, right side", "Change Car", cx + 80, belowMonitor, 100, 28, 33, () => {
+              this.scene.start("CarSelect");
+            }, "13px", "#00ffcc", true);
+          }
+        }
+
+        // Adds a native mousemove listener on the canvas for flicker-free pointer cursor.
+        // Phaser resets canvas.style.cursor every frame; this runs outside Phaser's loop.
+        initCursorZone() {
+          const canvas = this.game.canvas;
+          const handler = (e: MouseEvent) => {
+            const rect  = canvas.getBoundingClientRect();
+            const scaleX = this.scale.width  / rect.width;
+            const scaleY = this.scale.height / rect.height;
+            const gx = (e.clientX - rect.left) * scaleX;
+            const gy = (e.clientY - rect.top)  * scaleY;
+            const over = [...this.cursorZones.values()].find(z => {
+              const x = z.hit.x;
+              const y = z.hit.y;
+              const w = z.hit.width;
+              const h = z.hit.height;
+
+              return gx >= x - w / 2 && gx <= x + w / 2 &&
+              gy >= y - h / 2 && gy <= y + h / 2;
+            });
+
+            if (over) {
+              this.input.setDefaultCursor(over.cursor);
+            } else {
+              this.input.setDefaultCursor("default");
+            }
+          };
+          canvas.addEventListener("mousemove", handler);
+          // Clean up when scene shuts down (restart or scene change)
+          this.events.once("shutdown", () => {
+            canvas.removeEventListener("mousemove", handler);
+            canvas.style.cursor = "default";
+          });
+        }
+        addCursorZone(id: string, hit: Phaser.Geom.Rectangle, cursor: string) {
+          this.cursorZones.set(id, { hit, cursor });
+          // Clean up when scene shuts down (restart or scene change)
+          this.events.once("shutdown", () => {
+            this.cursorZones.delete(id);
           });
         }
 
         makeButton(x: number, y: number, label: string, _color: number, cb: () => void) {
-          const bw = 160, bh = 42;
-          const btnImg = this.add.image(x, y, "gui_buttons")
+          const bw = 180, bh = 38;
+          const btnImg = this.add.image(x, y, "gui_buttons2")
             .setDisplaySize(bw, bh).setOrigin(0.5, 0.5).setDepth(32);
           this.add.text(x, y, label, {
-            fontSize: "13px", fontFamily: "Arial Black, Arial", color: "#00ffcc",
+            fontSize: "11px", fontFamily: "Arial Black, Arial", color: "#00ffcc",
             stroke: "#000", strokeThickness: 2,
           }).setOrigin(0.5).setDepth(33);
           const hit = this.add.rectangle(x, y, bw, bh, 0xffffff, 0)
-            .setInteractive({ cursor: "pointer" }).setDepth(34);
+            .setInteractive().setDepth(34);
           hit.on("pointerover", () => btnImg.setTint(0x88ffee));
           hit.on("pointerout",  () => btnImg.clearTint());
           hit.on("pointerdown", cb);
+          this.addCursorZone(label, new Phaser.Geom.Rectangle(x, y, bw, bh), "pointer");
         }
 
         update(_time: number, delta: number) {
@@ -1060,8 +1373,86 @@ export default function CarShotPage() {
               this.car.setAngle(angle);
             }
 
-            // Out of bounds fallback
-            if (this.car.y > this.scale.height + 100 || this.car.x > this.scale.width + 100) {
+            // Fell back into launch half — end immediately once past mid-line
+            if (this.landTimer > 500 &&
+                this.car.x < this.scale.width  / 2 &&
+                this.car.y > this.scale.height / 2) {
+              this.landed = true;
+              this.time.delayedCall(150, () => this.showResult(false));
+            }
+
+            // Dynamic floor — keep every corner of the car body above height-20
+            // at any rotation angle.
+            // The car uses origin (0.5, 1.0) so car.y == the BOTTOM of the sprite.
+            // We rotate the four body-rectangle corners around that origin point and
+            // find the one that dips lowest.
+            {
+              const cd = this.carDef;
+              const s   = cd.scale;
+              // Body corner positions relative to the sprite's bottom-center origin
+              const bL = (cd.bodyOffX               - cd.frameW / 2) * s;  // left x
+              const bR = (cd.bodyOffX + cd.bodyW    - cd.frameW / 2) * s;  // right x
+              const bT = (cd.bodyOffY               - cd.frameH    ) * s;  // top y (negative = above)
+              const bB = (cd.bodyOffY + cd.bodyH    - cd.frameH    ) * s;  // bottom y (≈ 0)
+
+              const θ    = Phaser.Math.DegToRad(this.car.angle);
+              const sinθ = Math.sin(θ);
+              const cosθ = Math.cos(θ);
+
+              // Rotated y of each corner (positive = below the origin/bottom point)
+              const maxExtentDown = Math.max(
+                bL * sinθ + bT * cosθ,
+                bR * sinθ + bT * cosθ,
+                bL * sinθ + bB * cosθ,
+                bR * sinθ + bB * cosθ,
+              );
+
+              // car.y must not exceed this so no corner goes below height-20
+              const effectiveFloorY = this.scale.height - 20 - maxExtentDown;
+
+              if (this.car.y > effectiveFloorY) {
+                this.car.y = effectiveFloorY;
+
+                if (body.velocity.y > 150 && !this.wasDestroyed && !this.slamTriggered) {
+                  // Nose-dive slam: kill physics then flop flat via tween
+                  this.slamTriggered = true;
+                  this.wasDestroyed  = true;
+                  body.setAllowGravity(false);   // stop gravity fighting the tween
+                  body.velocity.x *= 0.25;
+                  body.velocity.y  = 0;
+
+                  // Impact flash near the ground line
+                  const flash = this.add.graphics();
+                  flash.fillStyle(0xffffff, 0.75);
+                  flash.fillRect(this.car.x - 48, this.scale.height - 30, 96, 12);
+                  this.time.delayedCall(70, () => flash.destroy());
+
+                  this.car.play(`${this.carDef.id}_destroyed`);
+
+                  // When flat (θ=0) bB≈0 so maxExtentDown≈0 → car.y should equal height-20
+                  const restY = this.scale.height - 20 - bB;
+                  this.tweens.add({
+                    targets: this.car,
+                    angle: 0,
+                    y: restY,
+                    duration: 380,
+                    ease: "Back.easeOut",
+                    onComplete: () => {
+                      this.car.y = restY;   // snap to exact rest position
+                      if (!this.landed) {
+                        this.landed = true;
+                        this.time.delayedCall(450, () => this.showResult(false));
+                      }
+                    },
+                  });
+                } else {
+                  body.velocity.y = 0;
+                }
+              }
+            }
+
+            // Hard out-of-bounds fallback (right edge)
+            if (this.car.x > this.scale.width + 100) {
               if (!this.landed) {
                 this.landed = true;
                 this.time.delayedCall(200, () => this.showResult(false));

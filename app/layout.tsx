@@ -29,9 +29,6 @@ export default function RootLayout({
         <main className="flex-1">
           {children}
         </main>
-        <footer className="border-t border-slate-800 text-center text-sm text-slate-600 py-4">
-          Built with Next.js
-        </footer>
       </body>
     </html>
   );

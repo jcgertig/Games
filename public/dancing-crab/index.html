@@ -1,0 +1,3258 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Dancing Crab</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        background: #0a0a1a;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        font-family: monospace;
+        overflow: hidden;
+      }
+
+      .stage {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 16px;
+      }
+
+      /* sprite sheets — shared pattern */
+      .crab-sprite {
+        width: 72px;
+        height: 48px;
+        image-rendering: pixelated;
+        background-repeat: no-repeat;
+        animation:
+          crab-frames 0.4s steps(4) infinite,
+          crab-dance 0.5s ease-in-out infinite alternate;
+        filter: drop-shadow(0 0 10px #ff660099);
+      }
+      @keyframes crab-frames {
+        to {
+          background-position-x: -288px;
+        }
+      }
+      @keyframes crab-dance {
+        from {
+          transform: translateX(-14px) rotate(-3deg);
+        }
+        to {
+          transform: translateX(14px) rotate(3deg);
+        }
+      }
+
+      .baby-sprite-wrap {
+        perspective: 180px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 80px;
+        height: 90px;
+      }
+      .baby-sprite {
+        width: 48px;
+        height: 90px;
+        image-rendering: pixelated;
+        background-repeat: no-repeat;
+        animation:
+          baby-frames 0.4s steps(4) infinite,
+          baby-spin3d 2s linear infinite;
+        filter: drop-shadow(0 0 12px #ffccaacc);
+        transform-style: preserve-3d;
+      }
+      @keyframes baby-frames {
+        to {
+          background-position-x: -192px;
+        }
+      }
+      @keyframes baby-spin3d {
+        0% {
+          transform: rotateY(0deg) translateY(0);
+        }
+        25% {
+          transform: rotateY(90deg) translateY(-6px);
+        }
+        50% {
+          transform: rotateY(180deg) translateY(0);
+        }
+        75% {
+          transform: rotateY(270deg) translateY(-6px);
+        }
+        100% {
+          transform: rotateY(360deg) translateY(0);
+        }
+      }
+
+      .shark-sprite {
+        width: 54px;
+        height: 90px;
+        image-rendering: pixelated;
+        background-repeat: no-repeat;
+        animation:
+          shark-frames 0.52s steps(4) infinite,
+          shark-dance 0.65s ease-in-out infinite alternate 0.18s;
+        filter: drop-shadow(0 0 8px #00aaff66);
+      }
+      @keyframes shark-frames {
+        to {
+          background-position-x: -216px;
+        }
+      }
+      @keyframes shark-dance {
+        from {
+          transform: translateX(-10px) rotate(-6deg);
+        }
+        to {
+          transform: translateX(8px) rotate(5deg);
+        }
+      }
+
+      .label {
+        color: #ff660066;
+        font-size: 0.85rem;
+        letter-spacing: 4px;
+        text-transform: uppercase;
+        animation: pulse 1s ease-in-out infinite alternate;
+      }
+      @keyframes pulse {
+        from {
+          opacity: 0.3;
+        }
+        to {
+          opacity: 0.9;
+        }
+      }
+
+      /* disco floor */
+      .floor {
+        display: flex;
+        gap: 4px;
+      }
+      .tile {
+        width: 28px;
+        height: 28px;
+        border-radius: 4px;
+        animation: disco 1s steps(1) infinite;
+      }
+      .tile:nth-child(1) {
+        animation-delay: 0s;
+      }
+      .tile:nth-child(2) {
+        animation-delay: 0.1s;
+      }
+      .tile:nth-child(3) {
+        animation-delay: 0.2s;
+      }
+      .tile:nth-child(4) {
+        animation-delay: 0.3s;
+      }
+      .tile:nth-child(5) {
+        animation-delay: 0.4s;
+      }
+      .tile:nth-child(6) {
+        animation-delay: 0.5s;
+      }
+      .tile:nth-child(7) {
+        animation-delay: 0.6s;
+      }
+      .tile:nth-child(8) {
+        animation-delay: 0.7s;
+      }
+      .tile:nth-child(9) {
+        animation-delay: 0.8s;
+      }
+      .tile:nth-child(10) {
+        animation-delay: 0.9s;
+      }
+      @keyframes disco {
+        0% {
+          background: #ff003388;
+        }
+        20% {
+          background: #ff660088;
+        }
+        40% {
+          background: #00ff6688;
+        }
+        60% {
+          background: #0066ff88;
+        }
+        80% {
+          background: #aa00ff88;
+        }
+        100% {
+          background: #ff003388;
+        }
+      }
+
+      .btn {
+        background: none;
+        border: 1px solid #ff660066;
+        color: #ff6600cc;
+        font-family: monospace;
+        font-size: 0.8rem;
+        letter-spacing: 3px;
+        padding: 6px 16px;
+        cursor: pointer;
+        border-radius: 4px;
+        transition: all 0.2s;
+      }
+      .btn:hover {
+        background: #ff660022;
+        border-color: #ff6600cc;
+        color: #ff6600;
+      }
+      .btn.on {
+        background: #ff660033;
+        border-color: #ff6600;
+        color: #ff6600;
+      }
+
+      /* disco lights */
+      .lights {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        overflow: hidden;
+        z-index: 0;
+      }
+      .stage {
+        position: relative;
+        z-index: 1;
+      }
+
+      .beam {
+        position: absolute;
+        top: -60px;
+        width: 6px;
+        border-radius: 0 0 120px 120px;
+        transform-origin: top center;
+        opacity: 0.18;
+        filter: blur(2px);
+      }
+      .beam:nth-child(1) {
+        left: 10%;
+        height: 70vh;
+        background: #ff0066;
+        animation:
+          sweep1 2.3s ease-in-out infinite alternate,
+          colorshift 4s linear infinite;
+      }
+      .beam:nth-child(2) {
+        left: 20%;
+        height: 60vh;
+        background: #00ffff;
+        animation:
+          sweep2 1.8s ease-in-out infinite alternate,
+          colorshift 3s linear infinite 1s;
+      }
+      .beam:nth-child(3) {
+        left: 35%;
+        height: 80vh;
+        background: #ffff00;
+        animation:
+          sweep3 2.7s ease-in-out infinite alternate,
+          colorshift 5s linear infinite 0.5s;
+      }
+      .beam:nth-child(4) {
+        left: 50%;
+        height: 65vh;
+        background: #ff6600;
+        animation:
+          sweep1 2.1s ease-in-out infinite alternate-reverse,
+          colorshift 3.5s linear infinite 2s;
+      }
+      .beam:nth-child(5) {
+        left: 65%;
+        height: 75vh;
+        background: #aa00ff;
+        animation:
+          sweep2 1.9s ease-in-out infinite alternate,
+          colorshift 4.5s linear infinite 0.3s;
+      }
+      .beam:nth-child(6) {
+        left: 80%;
+        height: 55vh;
+        background: #00ff88;
+        animation:
+          sweep3 2.4s ease-in-out infinite alternate-reverse,
+          colorshift 3.8s linear infinite 1.5s;
+      }
+      .beam:nth-child(7) {
+        left: 90%;
+        height: 72vh;
+        background: #ff00ff;
+        animation:
+          sweep1 3.1s ease-in-out infinite alternate,
+          colorshift 4.2s linear infinite 0.8s;
+      }
+
+      @keyframes sweep1 {
+        from {
+          transform: rotate(-30deg);
+          opacity: 0.12;
+        }
+        to {
+          transform: rotate(15deg);
+          opacity: 0.22;
+        }
+      }
+      @keyframes sweep2 {
+        from {
+          transform: rotate(20deg);
+          opacity: 0.08;
+        }
+        to {
+          transform: rotate(-25deg);
+          opacity: 0.25;
+        }
+      }
+      @keyframes sweep3 {
+        from {
+          transform: rotate(-10deg);
+          opacity: 0.15;
+        }
+        to {
+          transform: rotate(30deg);
+          opacity: 0.2;
+        }
+      }
+      @keyframes colorshift {
+        0% {
+          filter: blur(2px) hue-rotate(0deg);
+        }
+        100% {
+          filter: blur(2px) hue-rotate(360deg);
+        }
+      }
+
+      /* mirror ball sparkles */
+      .sparkle {
+        position: absolute;
+        border-radius: 50%;
+        pointer-events: none;
+        animation: sparkle-anim linear infinite;
+      }
+      @keyframes sparkle-anim {
+        0% {
+          opacity: 0;
+          transform: scale(0.5);
+        }
+        20% {
+          opacity: 1;
+        }
+        80% {
+          opacity: 1;
+        }
+        100% {
+          opacity: 0;
+          transform: scale(1.5);
+        }
+      }
+
+      /* speakers */
+      .speakers {
+        display: flex;
+        align-items: flex-end;
+        gap: 32px;
+        position: relative;
+        z-index: 1;
+      }
+      .speaker {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0;
+        animation: spk-bounce 0.25s ease-in-out infinite alternate;
+        filter: drop-shadow(0 0 10px #ff660066);
+      }
+      .speaker.right {
+        animation-direction: alternate-reverse;
+      }
+      @keyframes spk-bounce {
+        from {
+          transform: translateY(0px) scaleX(1);
+        }
+        to {
+          transform: translateY(-14px) scaleX(0.96);
+        }
+      }
+      .spk-cabinet {
+        width: 62px;
+        background: #111;
+        border: 2px solid #333;
+        border-radius: 6px 6px 4px 4px;
+        padding: 8px 6px 10px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+      }
+      .spk-woofer {
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+        border: 3px solid #444;
+        background: radial-gradient(
+          circle at 40% 38%,
+          #555 0%,
+          #1a1a1a 55%,
+          #000 100%
+        );
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        animation: spk-cone 0.25s ease-in-out infinite alternate;
+      }
+      @keyframes spk-cone {
+        from {
+          box-shadow:
+            0 0 0 2px #ff660000,
+            inset 0 0 6px #ff660022;
+          transform: scale(1);
+        }
+        to {
+          box-shadow:
+            0 0 8px 3px #ff660055,
+            inset 0 0 10px #ff660066;
+          transform: scale(1.06);
+        }
+      }
+      .spk-woofer::after {
+        content: "";
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: radial-gradient(circle, #666 0%, #222 100%);
+        border: 2px solid #555;
+      }
+      .spk-tweeter {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        border: 2px solid #444;
+        background: radial-gradient(circle at 40% 38%, #666 0%, #111 100%);
+        animation: spk-cone 0.25s ease-in-out infinite alternate-reverse;
+      }
+      .spk-base {
+        width: 70px;
+        height: 8px;
+        background: #1a1a1a;
+        border: 2px solid #333;
+        border-radius: 0 0 4px 4px;
+      }
+      .spk-bars {
+        display: flex;
+        gap: 2px;
+        align-items: flex-end;
+        height: 18px;
+        margin-top: 2px;
+      }
+      .spk-bar {
+        width: 4px;
+        border-radius: 2px 2px 0 0;
+        background: #ff6600;
+        animation: bar-dance 0.25s steps(1) infinite;
+      }
+      .spk-bar:nth-child(1) {
+        animation-delay: 0s;
+      }
+      .spk-bar:nth-child(2) {
+        animation-delay: 0.04s;
+      }
+      .spk-bar:nth-child(3) {
+        animation-delay: 0.08s;
+      }
+      .spk-bar:nth-child(4) {
+        animation-delay: 0.12s;
+      }
+      .spk-bar:nth-child(5) {
+        animation-delay: 0.06s;
+      }
+      @keyframes bar-dance {
+        0% {
+          height: 4px;
+          background: #ff6600;
+        }
+        25% {
+          height: 14px;
+          background: #ffcc00;
+        }
+        50% {
+          height: 8px;
+          background: #ff3300;
+        }
+        75% {
+          height: 18px;
+          background: #ff00aa;
+        }
+        100% {
+          height: 6px;
+          background: #ff6600;
+        }
+      }
+      .controls {
+        display: flex;
+        gap: 32px;
+        align-items: center;
+        justify-content: center;
+      }
+
+      /* ── game overlay ─────────────────────────────────── */
+      #gameOverlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        overflow: hidden;
+        background: rgba(10, 10, 26, 0.92);
+      }
+      #gameCanvas {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        touch-action: none;
+      }
+      #gameHud {
+        position: absolute;
+        top: 64px;
+        left: 0;
+        right: 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        padding: 0 40px;
+        pointer-events: none;
+        font-family: monospace;
+        letter-spacing: 3px;
+      }
+      #gameScore {
+        font-size: 2rem;
+        color: #fff;
+        text-shadow: 0 0 10px #ff6600;
+      }
+      #gameComboGroup {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      #gameCombo {
+        font-size: 1.2rem;
+        color: #ff6600;
+        text-shadow: 0 0 8px currentColor;
+        min-width: 160px;
+        transition: color 0.2s;
+      }
+      #gameComboBonus {
+        font-size: 0.85rem;
+        font-weight: 700;
+        letter-spacing: 2px;
+        text-shadow: 0 0 8px currentColor;
+        transition: color 0.2s;
+        min-height: 1.2em;
+      }
+      #gameTimer {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 1.5rem;
+        color: #00ffaa;
+        text-shadow: 0 0 10px currentColor;
+      }
+      #gameHealth {
+        display: flex;
+        gap: 3px;
+        align-items: center;
+        pointer-events: none;
+      }
+      .health-pip {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #ff4444;
+        box-shadow: 0 0 6px #ff4444;
+        transition:
+          background 0.2s,
+          box-shadow 0.2s;
+      }
+      .health-pip.empty {
+        background: #333;
+        box-shadow: none;
+      }
+      #gameTitle {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        font-family: monospace;
+        letter-spacing: 6px;
+        pointer-events: none;
+      }
+      #gameTitle h2 {
+        font-size: 2rem;
+        color: #ff6600;
+        text-shadow: 0 0 20px #ff6600;
+        animation: pulse 0.8s ease-in-out infinite alternate;
+      }
+      #gameTitle p {
+        color: #ff660099;
+        font-size: 0.8rem;
+        margin-top: 8px;
+        letter-spacing: 4px;
+      }
+      #gameExitBtn {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        z-index: 103;
+        background: none;
+        border: 1px solid #ff660066;
+        color: #ff6600aa;
+        font-family: monospace;
+        font-size: 0.75rem;
+        letter-spacing: 3px;
+        padding: 5px 12px;
+        cursor: pointer;
+        border-radius: 4px;
+      }
+      #gameExitBtn:hover {
+        background: #ff660022;
+        color: #ff6600;
+      }
+      #gamePauseBtn {
+        position: absolute;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 103;
+        background: none;
+        border: 1px solid #00ffaa66;
+        color: #00ffaaaa;
+        font-family: monospace;
+        font-size: 0.75rem;
+        letter-spacing: 3px;
+        padding: 5px 14px;
+        cursor: pointer;
+        border-radius: 4px;
+        pointer-events: all;
+      }
+      #gamePauseBtn:hover {
+        background: #00ffaa22;
+        color: #00ffaa;
+        border-color: #00ffaacc;
+      }
+
+      /* game-btn shared style */
+      .game-btn {
+        background: none;
+        border: 1px solid #ff660066;
+        color: #ff6600cc;
+        font-family: monospace;
+        font-size: 0.75rem;
+        letter-spacing: 3px;
+        padding: 6px 16px;
+        cursor: pointer;
+        border-radius: 4px;
+        transition: all 0.2s;
+      }
+      .game-btn:hover {
+        background: #ff660022;
+        border-color: #ff6600cc;
+        color: #ff6600;
+      }
+
+      /* active character glow */
+      .sprite-active {
+        outline: 3px solid #fff;
+        outline-offset: 4px;
+        border-radius: 4px;
+        animation-name: active-pulse !important;
+      }
+      @keyframes active-pulse {
+        from {
+          outline-color: #fff;
+          filter: brightness(1.3) drop-shadow(0 0 14px currentColor);
+        }
+        to {
+          outline-color: #ff0;
+          filter: brightness(1.6) drop-shadow(0 0 22px currentColor);
+        }
+      }
+      [id$="Sprite"] {
+        cursor: pointer;
+      }
+
+      /* techno viking — sprite sheet */
+      .viking-sprite {
+        width: 54px;
+        height: 102px;
+        image-rendering: pixelated;
+        background-repeat: no-repeat;
+        background-size: auto 102px;
+        animation:
+          vk-frames 0.4s steps(4) infinite,
+          vk-stomp 0.4s ease-in-out infinite alternate;
+        filter: drop-shadow(0 0 8px #ff440066);
+      }
+      @keyframes vk-frames {
+        from {
+          background-position-x: 0;
+        }
+        to {
+          background-position-x: -216px;
+        }
+      }
+      @keyframes vk-stomp {
+        from {
+          transform: translateY(0) rotate(-2deg);
+        }
+        to {
+          transform: translateY(-9px) rotate(2deg);
+        }
+      }
+
+      /* ── game selection screen ─────────────────────────── */
+      #gameSelect {
+        display: none;
+        position: absolute;
+        inset: 0;
+        z-index: 102;
+        background: rgba(10, 10, 26, 0.98);
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 20px;
+        font-family: monospace;
+        overflow-y: auto;
+        padding: 20px;
+      }
+      #gameSelect.visible {
+        display: flex;
+      }
+      .sel-title {
+        font-size: 1.6rem;
+        color: #ff6600;
+        text-shadow: 0 0 16px #ff6600;
+        letter-spacing: 6px;
+      }
+      .sel-cards {
+        display: flex;
+        gap: 14px;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      .sel-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        background: #111;
+        border: 2px solid #333;
+        border-radius: 8px;
+        padding: 16px 20px;
+        cursor: pointer;
+        transition: all 0.2s;
+        min-width: 110px;
+      }
+      .sel-card:hover {
+        border-color: #ff660088;
+        background: #1a1a2e;
+      }
+      .sel-card.selected {
+        border-color: #ff6600;
+        background: #1a1408;
+        box-shadow: 0 0 14px #ff660055;
+      }
+      .sel-card-name {
+        color: #ff6600;
+        font-size: 0.8rem;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+      }
+      .sel-card-diff {
+        font-size: 0.65rem;
+        letter-spacing: 2px;
+        margin-top: 2px;
+      }
+      .sel-card-bpm {
+        color: #ffffff44;
+        font-size: 0.6rem;
+        letter-spacing: 2px;
+      }
+      .diff-easy {
+        color: #00ff88;
+      }
+      .diff-normal {
+        color: #ffff00;
+      }
+      .diff-medium {
+        color: #ff9900;
+      }
+      .diff-hard {
+        color: #ff4444;
+      }
+      .diff-extreme {
+        color: #ff00ff;
+        text-shadow: 0 0 8px #ff00ff;
+      }
+
+      .sel-mode {
+        display: flex;
+        gap: 0;
+        border: 1px solid #ff660044;
+        border-radius: 6px;
+        overflow: hidden;
+      }
+      .sel-mode-btn {
+        background: none;
+        border: none;
+        color: #ff6600aa;
+        font-family: monospace;
+        font-size: 0.75rem;
+        letter-spacing: 3px;
+        padding: 7px 18px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .sel-mode-btn.active {
+        background: #ff660033;
+        color: #ff6600;
+      }
+      .sel-mode-btn:hover {
+        background: #ff660022;
+        color: #ff6600cc;
+      }
+
+      .sel-start {
+        background: #ff660033;
+        border: 1px solid #ff6600;
+        color: #ff6600;
+        font-family: monospace;
+        font-size: 0.9rem;
+        letter-spacing: 5px;
+        padding: 10px 36px;
+        cursor: pointer;
+        border-radius: 6px;
+        transition: all 0.2s;
+        text-shadow: 0 0 10px #ff6600;
+      }
+      .sel-start:hover {
+        background: #ff660055;
+        box-shadow: 0 0 20px #ff660055;
+      }
+      .sel-back {
+        background: none;
+        border: 1px solid #ffffff22;
+        color: #ffffff44;
+        font-family: monospace;
+        font-size: 0.7rem;
+        letter-spacing: 3px;
+        padding: 6px 18px;
+        cursor: pointer;
+        border-radius: 4px;
+        transition: all 0.2s;
+      }
+      .sel-back:hover {
+        color: #ffffff88;
+        border-color: #ffffff44;
+      }
+
+      /* ── result / end screen ──────────────────────────── */
+      #gameResult {
+        display: none;
+        position: absolute;
+        inset: 0;
+        z-index: 102;
+        background: rgba(10, 10, 26, 0.98);
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        font-family: monospace;
+        text-align: center;
+      }
+      #gameResult.visible {
+        display: flex;
+      }
+      .res-header {
+        font-size: 2.4rem;
+        letter-spacing: 8px;
+        text-shadow: 0 0 30px currentColor;
+      }
+      .res-header.win {
+        color: #00ffaa;
+      }
+      .res-header.loss {
+        color: #ff4444;
+      }
+      .res-grade {
+        font-size: 7rem;
+        font-weight: bold;
+        line-height: 1;
+        text-shadow: 0 0 40px currentColor;
+        animation: pulse 0.6s ease-in-out infinite alternate;
+      }
+      .grade-sss {
+        color: #ffffff;
+      }
+      .grade-ss {
+        color: #ffff00;
+      }
+      .grade-s {
+        color: #ffcc00;
+      }
+      .grade-a {
+        color: #00ff88;
+      }
+      .grade-b {
+        color: #00ccff;
+      }
+      .grade-c {
+        color: #ff9900;
+      }
+      .grade-d {
+        color: #ff6600;
+      }
+      .grade-e {
+        color: #ff4444;
+      }
+      .grade-f {
+        color: #aa0000;
+      }
+      .res-stats {
+        display: flex;
+        gap: 32px;
+        flex-wrap: wrap;
+        justify-content: center;
+        margin: 8px 0;
+      }
+      .res-stat {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+      }
+      .res-stat-val {
+        font-size: 1.6rem;
+        color: #fff;
+        text-shadow: 0 0 10px #ff6600;
+      }
+      .res-stat-lbl {
+        font-size: 0.65rem;
+        color: #ff660088;
+        letter-spacing: 3px;
+      }
+      .res-btns {
+        display: flex;
+        gap: 16px;
+        margin-top: 8px;
+      }
+      .res-btn {
+        background: #ff660033;
+        border: 1px solid #ff6600;
+        color: #ff6600;
+        font-family: monospace;
+        font-size: 0.75rem;
+        letter-spacing: 4px;
+        padding: 8px 24px;
+        cursor: pointer;
+        border-radius: 6px;
+        transition: all 0.2s;
+      }
+      .res-btn:hover {
+        background: #ff660055;
+        box-shadow: 0 0 16px #ff660055;
+      }
+      .res-btn.secondary {
+        background: none;
+        border-color: #ffffff33;
+        color: #ffffff66;
+      }
+      .res-btn.secondary:hover {
+        background: #ffffff11;
+        color: #ffffffaa;
+        box-shadow: none;
+      }
+
+      /* ── history panel ────────────────────────────────── */
+      #gameHistory {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 200;
+        background: rgba(10, 10, 26, 0.98);
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+        padding: 32px 20px;
+        overflow-y: auto;
+        font-family: monospace;
+      }
+      #gameHistory.visible {
+        display: flex;
+      }
+      .hist-title {
+        font-size: 1.6rem;
+        color: #ff6600;
+        text-shadow: 0 0 16px #ff6600;
+        letter-spacing: 6px;
+      }
+      .hist-table {
+        width: 100%;
+        max-width: 760px;
+        border-collapse: collapse;
+        font-size: 0.75rem;
+      }
+      .hist-table th {
+        color: #ff660088;
+        letter-spacing: 3px;
+        padding: 6px 10px;
+        border-bottom: 1px solid #ff660033;
+        text-align: left;
+        text-transform: uppercase;
+      }
+      .hist-table td {
+        color: #ccc;
+        padding: 6px 10px;
+        border-bottom: 1px solid #ffffff11;
+      }
+      .hist-table tr:hover td {
+        background: #ffffff08;
+      }
+      .hist-empty {
+        color: #ffffff33;
+        font-size: 0.85rem;
+        letter-spacing: 3px;
+        margin-top: 40px;
+      }
+      .hist-close {
+        background: none;
+        border: 1px solid #ffffff33;
+        color: #ffffff66;
+        font-family: monospace;
+        font-size: 0.75rem;
+        letter-spacing: 3px;
+        padding: 7px 20px;
+        cursor: pointer;
+        border-radius: 4px;
+        transition: all 0.2s;
+      }
+      .hist-close:hover {
+        color: #fff;
+        border-color: #fff;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- game overlay -->
+    <div id="gameOverlay">
+      <canvas id="gameCanvas"></canvas>
+      <div id="gameHud">
+        <div id="gameComboGroup">
+          <div id="gameCombo"></div>
+          <div id="gameComboBonus"></div>
+        </div>
+        <div id="gameTimer"></div>
+        <div id="gameScore">0</div>
+      </div>
+      <div id="gameHealth" style="display: none"></div>
+      <button id="gamePauseBtn" onclick="togglePause()">⏸ PAUSE</button>
+      <div id="gameTitle">
+        <h2>PRESS TO START</h2>
+        <p>
+          D &nbsp; F &nbsp; J &nbsp; K &nbsp; TO HIT &nbsp;|&nbsp; P TO PAUSE
+          &nbsp;|&nbsp; ESC TO EXIT
+        </p>
+      </div>
+      <!-- selection screen -->
+      <div id="gameSelect"></div>
+      <!-- result screen -->
+      <div id="gameResult"></div>
+      <button id="gameExitBtn" onclick="exitGame()">ESC ✕</button>
+    </div>
+
+    <!-- history panel (outside overlay) -->
+    <div id="gameHistory"></div>
+
+    <div class="lights">
+      <div class="beam"></div>
+      <div class="beam"></div>
+      <div class="beam"></div>
+      <div class="beam"></div>
+      <div class="beam"></div>
+      <div class="beam"></div>
+      <div class="beam"></div>
+    </div>
+
+    <div class="stage">
+      <div class="label">♪ ♫ get crabby with it ♫ ♪</div>
+
+      <div class="speakers">
+        <!-- left speaker -->
+        <div class="speaker left">
+          <div class="spk-cabinet">
+            <div class="spk-tweeter"></div>
+            <div class="spk-woofer"></div>
+            <div class="spk-bars">
+              <div class="spk-bar"></div>
+              <div class="spk-bar"></div>
+              <div class="spk-bar"></div>
+              <div class="spk-bar"></div>
+              <div class="spk-bar"></div>
+            </div>
+          </div>
+          <div class="spk-base"></div>
+        </div>
+
+        <!-- dancing baby sprite -->
+        <div class="baby-sprite-wrap">
+          <div class="baby-sprite" id="babySprite"></div>
+        </div>
+
+        <!-- crab sprite -->
+        <div class="crab-sprite" id="crabSprite"></div>
+
+        <!-- techno viking sprite -->
+        <div class="viking-sprite" id="vikingSprite"></div>
+
+        <!-- left shark sprite -->
+        <div class="shark-sprite" id="sharkSprite"></div>
+
+        <!-- right speaker -->
+        <div class="speaker right">
+          <div class="spk-cabinet">
+            <div class="spk-tweeter"></div>
+            <div class="spk-woofer"></div>
+            <div class="spk-bars">
+              <div class="spk-bar"></div>
+              <div class="spk-bar"></div>
+              <div class="spk-bar"></div>
+              <div class="spk-bar"></div>
+              <div class="spk-bar"></div>
+            </div>
+          </div>
+          <div class="spk-base"></div>
+        </div>
+      </div>
+
+      <div class="floor">
+        <div class="tile"></div>
+        <div class="tile"></div>
+        <div class="tile"></div>
+        <div class="tile"></div>
+        <div class="tile"></div>
+        <div class="tile"></div>
+        <div class="tile"></div>
+        <div class="tile"></div>
+        <div class="tile"></div>
+        <div class="tile"></div>
+      </div>
+
+      <button class="btn" id="musicBtn" onclick="toggleMusic()">
+        ▶ PLAY TECHNO
+      </button>
+
+      <div class="controls">
+        <div id="knobSpeed"></div>
+        <div
+          style="
+            display: flex;
+            gap: 10px;
+            flex-direction: column;
+            align-items: center;
+          "
+        >
+          <button class="game-btn" onclick="showGameSelect()">
+            ▶ PLAY GAME
+          </button>
+          <button class="game-btn" onclick="showHistoryPanel()">
+            🏆 SCORES
+          </button>
+        </div>
+        <div id="knobVolume"></div>
+      </div>
+    </div>
+
+    <script>
+      let ctx,
+        playing = false,
+        scheduledNodes = [],
+        nextBeat = 0,
+        beatTimer = null;
+      let currentMode = "techno";
+      let BEAT = 60 / 138;
+
+      const MODES = {
+        techno: { bpm: 138, label: "TECHNO" },
+        crab: { bpm: 95, label: "REGGAE" },
+        baby: { bpm: 120, label: "BABY SHARK" },
+        shark: { bpm: 116, label: "BABY SHARK (WRONG)" },
+        viking: { bpm: 175, label: "METAL" },
+      };
+
+      function setMode(mode) {
+        currentMode = mode;
+        BEAT = 60 / MODES[mode].bpm;
+        document
+          .querySelectorAll('[id$="Sprite"]')
+          .forEach((el) => el.classList.remove("sprite-active"));
+        const ids = {
+          crab: "crabSprite",
+          baby: "babySprite",
+          shark: "sharkSprite",
+          viking: "vikingSprite",
+        };
+        if (ids[mode])
+          document.getElementById(ids[mode]).classList.add("sprite-active");
+        const btn = document.getElementById("musicBtn");
+        if (playing) {
+          step = 0;
+          nextBeat = getCtx().currentTime + 0.05;
+          btn.textContent = `■ STOP ${MODES[mode].label}`;
+        } else {
+          btn.textContent = `▶ PLAY ${MODES[mode].label}`;
+        }
+      }
+
+      function getCtx() {
+        if (!ctx)
+          ctx = new (window.AudioContext || window.webkitAudioContext)();
+        return ctx;
+      }
+
+      let masterGain = null;
+      function getMasterGain() {
+        if (!masterGain) {
+          const ac = getCtx();
+          masterGain = ac.createGain();
+          masterGain.gain.value = 0.8;
+          masterGain.connect(ac.destination);
+        }
+        return masterGain;
+      }
+
+      let noteDensity = 1.0;
+
+      function kick(t) {
+        const ac = getCtx();
+        const osc = ac.createOscillator();
+        const gain = ac.createGain();
+        osc.connect(gain);
+        gain.connect(getMasterGain());
+        osc.frequency.setValueAtTime(160, t);
+        osc.frequency.exponentialRampToValueAtTime(40, t + 0.08);
+        gain.gain.setValueAtTime(1.2, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+        osc.start(t);
+        osc.stop(t + 0.35);
+      }
+
+      function hihat(t, open = false) {
+        const ac = getCtx();
+        const buf = ac.createBuffer(1, ac.sampleRate * 0.1, ac.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+        const src = ac.createBufferSource();
+        src.buffer = buf;
+        const hpf = ac.createBiquadFilter();
+        hpf.type = "highpass";
+        hpf.frequency.value = 7000;
+        const gain = ac.createGain();
+        gain.gain.setValueAtTime(open ? 0.25 : 0.15, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + (open ? 0.15 : 0.05));
+        src.connect(hpf);
+        hpf.connect(gain);
+        gain.connect(getMasterGain());
+        src.start(t);
+        src.stop(t + 0.2);
+      }
+
+      function clap(t) {
+        const ac = getCtx();
+        [0, 0.01, 0.02].forEach((offset) => {
+          const buf = ac.createBuffer(1, ac.sampleRate * 0.1, ac.sampleRate);
+          const data = buf.getChannelData(0);
+          for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+          const src = ac.createBufferSource();
+          src.buffer = buf;
+          const bpf = ac.createBiquadFilter();
+          bpf.type = "bandpass";
+          bpf.frequency.value = 1200;
+          bpf.Q.value = 0.5;
+          const gain = ac.createGain();
+          gain.gain.setValueAtTime(0.4, t + offset);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + offset + 0.08);
+          src.connect(bpf);
+          bpf.connect(gain);
+          gain.connect(getMasterGain());
+          src.start(t + offset);
+          src.stop(t + offset + 0.1);
+        });
+      }
+
+      const bassNotes = [0, 0, 7, 0, 0, 5, 0, 7, 0, 0, 3, 0, 0, 5, 7, 0];
+      const bassOn = [1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 0];
+      const A1 = 55;
+
+      function bass(t, step) {
+        if (!bassOn[step]) return;
+        const ac = getCtx();
+        const freq = A1 * Math.pow(2, bassNotes[step] / 12);
+        const osc = ac.createOscillator();
+        osc.type = "sawtooth";
+        osc.frequency.value = freq;
+        const lpf = ac.createBiquadFilter();
+        lpf.type = "lowpass";
+        lpf.frequency.setValueAtTime(800, t);
+        lpf.frequency.exponentialRampToValueAtTime(200, t + BEAT * 0.4);
+        const gain = ac.createGain();
+        gain.gain.setValueAtTime(0.45, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + BEAT * 0.45);
+        osc.connect(lpf);
+        lpf.connect(gain);
+        gain.connect(getMasterGain());
+        osc.start(t);
+        osc.stop(t + BEAT * 0.5);
+      }
+
+      let step = 0;
+
+      function rimshot(t) {
+        const ac = getCtx();
+        const buf = ac.createBuffer(1, ac.sampleRate * 0.05, ac.sampleRate);
+        const d = buf.getChannelData(0);
+        for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+        const src = ac.createBufferSource();
+        src.buffer = buf;
+        const hpf = ac.createBiquadFilter();
+        hpf.type = "highpass";
+        hpf.frequency.value = 2500;
+        const g = ac.createGain();
+        g.gain.setValueAtTime(0.35, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.045);
+        src.connect(hpf);
+        hpf.connect(g);
+        g.connect(getMasterGain());
+        src.start(t);
+        src.stop(t + 0.06);
+        const osc = ac.createOscillator();
+        osc.frequency.value = 900;
+        const g2 = ac.createGain();
+        g2.gain.setValueAtTime(0.2, t);
+        g2.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
+        osc.connect(g2);
+        g2.connect(getMasterGain());
+        osc.start(t);
+        osc.stop(t + 0.04);
+      }
+
+      function skank(t) {
+        const ac = getCtx();
+        [220, 277.18, 329.63].forEach((freq) => {
+          const osc = ac.createOscillator();
+          osc.type = "square";
+          osc.frequency.value = freq;
+          const lpf = ac.createBiquadFilter();
+          lpf.type = "lowpass";
+          lpf.frequency.value = 1400;
+          const g = ac.createGain();
+          g.gain.setValueAtTime(0.08, t);
+          g.gain.exponentialRampToValueAtTime(0.001, t + 0.07);
+          osc.connect(lpf);
+          lpf.connect(g);
+          g.connect(getMasterGain());
+          osc.start(t);
+          osc.stop(t + 0.09);
+        });
+      }
+
+      function reggaeBass(t, freq) {
+        const ac = getCtx();
+        const osc = ac.createOscillator();
+        osc.type = "sine";
+        osc.frequency.value = freq;
+        const g = ac.createGain();
+        g.gain.setValueAtTime(0.6, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + BEAT * 0.4);
+        osc.connect(g);
+        g.connect(getMasterGain());
+        osc.start(t);
+        osc.stop(t + BEAT * 0.5);
+      }
+
+      function bell(t, freq) {
+        const ac = getCtx();
+        [freq, freq * 2.756].forEach((f, i) => {
+          const osc = ac.createOscillator();
+          osc.type = "sine";
+          osc.frequency.value = f;
+          const g = ac.createGain();
+          g.gain.setValueAtTime(i === 0 ? 0.35 : 0.12, t);
+          g.gain.exponentialRampToValueAtTime(
+            0.001,
+            t + (i === 0 ? 0.4 : 0.15)
+          );
+          osc.connect(g);
+          g.connect(getMasterGain());
+          osc.start(t);
+          osc.stop(t + 0.45);
+        });
+      }
+
+      function crash(t) {
+        const ac = getCtx();
+        const buf = ac.createBuffer(1, ac.sampleRate * 0.8, ac.sampleRate);
+        const d = buf.getChannelData(0);
+        for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+        const src = ac.createBufferSource();
+        src.buffer = buf;
+        const hpf = ac.createBiquadFilter();
+        hpf.type = "highpass";
+        hpf.frequency.value = 5000;
+        const g = ac.createGain();
+        g.gain.setValueAtTime(0.45, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.8);
+        src.connect(hpf);
+        hpf.connect(g);
+        g.connect(getMasterGain());
+        src.start(t);
+        src.stop(t + 0.8);
+      }
+
+      function powerChord(t, root) {
+        const ac = getCtx();
+        [root, root * 1.498, root * 2].forEach((freq) => {
+          const osc = ac.createOscillator();
+          osc.type = "sawtooth";
+          osc.frequency.value = freq;
+          const ws = ac.createWaveShaper();
+          const curve = new Float32Array(256);
+          for (let i = 0; i < 256; i++) {
+            const x = (i * 2) / 256 - 1;
+            curve[i] = x < 0 ? -Math.pow(-x, 0.6) : Math.pow(x, 0.6);
+          }
+          ws.curve = curve;
+          const g = ac.createGain();
+          g.gain.setValueAtTime(0.18, t);
+          g.gain.exponentialRampToValueAtTime(0.001, t + BEAT * 1.8);
+          osc.connect(ws);
+          ws.connect(g);
+          g.connect(getMasterGain());
+          osc.start(t);
+          osc.stop(t + BEAT * 2);
+        });
+      }
+
+      const METAL_BASS = [
+        82.41, 0, 82.41, 0, 123.47, 0, 82.41, 0, 82.41, 0, 82.41, 0, 110, 0,
+        82.41, 0,
+      ];
+      function metalBass(t, freq) {
+        const ac = getCtx();
+        const osc = ac.createOscillator();
+        osc.type = "sawtooth";
+        osc.frequency.value = freq;
+        const g = ac.createGain();
+        g.gain.setValueAtTime(0.35, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + BEAT * 0.4);
+        osc.connect(g);
+        g.connect(getMasterGain());
+        osc.start(t);
+        osc.stop(t + BEAT * 0.5);
+      }
+
+      // ── per-mode schedulers ────────────────────────────────────
+      function scheduleTechno(t, s16, s4) {
+        if (s4 === 0) kick(t);
+        if (s16 === 4 || s16 === 12) clap(t);
+        hihat(t, s16 % 4 === 2);
+        bass(t, s16);
+      }
+
+      const RB = [55, 0, 0, 0, 0, 0, 41.2, 0, 55, 0, 0, 0, 0, 0, 41.2, 0];
+      function scheduleReggae(t, s16) {
+        if (s16 === 0 || s16 === 8) kick(t);
+        if (s16 === 4 || s16 === 12) rimshot(t);
+        if ([2, 6, 10, 14].includes(s16)) skank(t);
+        if (RB[s16]) reggaeBass(t, RB[s16]);
+      }
+
+      const BS_NOTES = [
+        329.63, 0, 329.63, 0, 392, 0, 0, 0, 329.63, 0, 329.63, 0, 329.63, 0,
+        329.63, 0,
+      ];
+      function scheduleBabyShark(t, s16) {
+        if (s16 === 0 || s16 === 8) kick(t);
+        if (s16 === 4 || s16 === 12) clap(t);
+        hihat(t, false);
+        if (BS_NOTES[s16]) bell(t, BS_NOTES[s16]);
+      }
+
+      const BS_WRONG = [
+        0, 329.63, 0, 329.63, 0, 0, 415, 0, 0, 329.63, 0, 329.63, 0, 0, 329.63,
+        0,
+      ];
+      function scheduleSharkBeat(t, s16) {
+        if (s16 === 2 || s16 === 10) kick(t);
+        if (s16 === 6 || s16 === 14) clap(t);
+        hihat(t, s16 % 4 === 0);
+        if (BS_WRONG[s16]) bell(t, BS_WRONG[s16]);
+      }
+
+      function scheduleMetal(t, s16) {
+        if (s16 % 2 === 0) kick(t);
+        if (s16 === 0) crash(t);
+        if (s16 === 0 || s16 === 8) powerChord(t, 82.41);
+        hihat(t, s16 % 4 === 2);
+        if (METAL_BASS[s16]) metalBass(t, METAL_BASS[s16]);
+      }
+
+      function schedule() {
+        if (!playing) return;
+        const ac = getCtx();
+        while (nextBeat < ac.currentTime + 0.2) {
+          const t = nextBeat;
+          const s16 = step % 16;
+          const s4 = step % 4;
+          switch (currentMode) {
+            case "techno":
+              scheduleTechno(t, s16, s4);
+              break;
+            case "crab":
+              scheduleReggae(t, s16);
+              break;
+            case "baby":
+              scheduleBabyShark(t, s16);
+              break;
+            case "shark":
+              scheduleSharkBeat(t, s16);
+              break;
+            case "viking":
+              scheduleMetal(t, s16);
+              break;
+          }
+          step++;
+          nextBeat += BEAT / 4;
+        }
+        beatTimer = setTimeout(schedule, 50);
+      }
+
+      // ── Crab sprite sheet ───────────────────────────────────────
+      (function buildCrabSprite() {
+        const S = 3,
+          W = 24,
+          H = 16,
+          N = 4;
+        const cv = document.createElement("canvas");
+        cv.width = W * N * S;
+        cv.height = H * S;
+        const g = cv.getContext("2d");
+        const C = {
+          b: "#ff5500",
+          d: "#cc2200",
+          c: "#ff8833",
+          e: "#111111",
+          s: "#ffcc88",
+        };
+        const dot = (f, x, y, col) => {
+          g.fillStyle = col;
+          g.fillRect((f * W + x) * S, y * S, S, S);
+        };
+        const fill = (f, x, y, w, h, col) => {
+          g.fillStyle = col;
+          g.fillRect((f * W + x) * S, y * S, w * S, h * S);
+        };
+        const CLAWS = [
+          {
+            l: [
+              [2, 6],
+              [1, 7],
+              [2, 8],
+              [3, 7],
+              [3, 6],
+            ],
+            r: [
+              [21, 6],
+              [22, 7],
+              [21, 8],
+              [20, 7],
+              [20, 6],
+            ],
+          },
+          {
+            l: [
+              [1, 4],
+              [2, 3],
+              [3, 4],
+              [2, 5],
+              [1, 6],
+            ],
+            r: [
+              [22, 4],
+              [21, 3],
+              [20, 4],
+              [21, 5],
+              [22, 6],
+            ],
+          },
+          {
+            l: [
+              [1, 5],
+              [2, 4],
+              [3, 5],
+              [1, 6],
+              [2, 7],
+            ],
+            r: [
+              [22, 5],
+              [21, 4],
+              [20, 5],
+              [22, 6],
+              [21, 7],
+            ],
+          },
+          {
+            l: [
+              [2, 7],
+              [1, 8],
+              [2, 9],
+              [3, 8],
+              [3, 7],
+            ],
+            r: [
+              [21, 4],
+              [22, 3],
+              [21, 5],
+              [20, 5],
+              [20, 4],
+            ],
+          },
+        ];
+        const LEGS = [0, 1, 0, -1];
+        for (let f = 0; f < N; f++) {
+          fill(f, 8, 6, 8, 1, C.b);
+          fill(f, 6, 7, 12, 1, C.b);
+          fill(f, 5, 8, 14, 3, C.b);
+          fill(f, 6, 11, 12, 1, C.b);
+          fill(f, 8, 12, 8, 1, C.b);
+          fill(f, 8, 8, 8, 1, C.d);
+          fill(f, 9, 9, 6, 1, C.d);
+          fill(f, 10, 10, 4, 1, C.d);
+          dot(f, 9, 6, C.d);
+          dot(f, 9, 5, C.d);
+          dot(f, 14, 6, C.d);
+          dot(f, 14, 5, C.d);
+          fill(f, 8, 4, 3, 2, C.b);
+          dot(f, 9, 4, C.e);
+          dot(f, 9, 5, C.e);
+          fill(f, 13, 4, 3, 2, C.b);
+          dot(f, 14, 4, C.e);
+          dot(f, 14, 5, C.e);
+          CLAWS[f].l.forEach(([x, y]) => dot(f, x, y, C.c));
+          CLAWS[f].r.forEach(([x, y]) => dot(f, x, y, C.c));
+          dot(f, CLAWS[f].l[1][0], CLAWS[f].l[1][1], C.d);
+          dot(f, CLAWS[f].r[1][0], CLAWS[f].r[1][1], C.d);
+          const ly = LEGS[f];
+          [
+            [5, 13],
+            [4, 14],
+            [3, 14],
+          ].forEach(([x, y]) => dot(f, x, y + ly, C.d));
+          [
+            [7, 13],
+            [6, 14],
+            [5, 15],
+          ].forEach(([x, y]) => dot(f, x, y, C.d));
+          [
+            [9, 13],
+            [8, 14],
+          ].forEach(([x, y]) => dot(f, x, y, C.d));
+          [
+            [18, 13],
+            [19, 14],
+            [20, 14],
+          ].forEach(([x, y]) => dot(f, x, y - ly, C.d));
+          [
+            [16, 13],
+            [17, 14],
+            [18, 15],
+          ].forEach(([x, y]) => dot(f, x, y, C.d));
+          [
+            [14, 13],
+            [15, 14],
+          ].forEach(([x, y]) => dot(f, x, y, C.d));
+        }
+        document.getElementById("crabSprite").style.backgroundImage =
+          `url(${cv.toDataURL()})`;
+      })();
+
+      // ── Baby sprite sheet ───────────────────────────────────────
+      (function buildBabySprite() {
+        const S = 3,
+          W = 16,
+          H = 30,
+          N = 4;
+        const cv = document.createElement("canvas");
+        cv.width = W * N * S;
+        cv.height = H * S;
+        const g = cv.getContext("2d");
+        const C = {
+          k: "#f5c07a",
+          e: "#3a1000",
+          u: "#5599dd",
+          w: "#ffffff",
+          d: "#d4955a",
+          p: "#ffaaaa",
+        };
+        const dot = (f, x, y, col) => {
+          g.fillStyle = col;
+          g.fillRect((f * W + x) * S, y * S, S, S);
+        };
+        const fill = (f, x, y, w, h, col) => {
+          g.fillStyle = col;
+          g.fillRect((f * W + x) * S, y * S, w * S, h * S);
+        };
+        const HANDS = [
+          {
+            l: [
+              [1, 2],
+              [0, 3],
+              [1, 4],
+              [2, 3],
+            ],
+            r: [
+              [14, 2],
+              [15, 3],
+              [14, 4],
+              [13, 3],
+            ],
+          },
+          {
+            l: [
+              [0, 2],
+              [1, 3],
+              [0, 4],
+              [2, 3],
+            ],
+            r: [
+              [15, 2],
+              [14, 3],
+              [15, 4],
+              [13, 3],
+            ],
+          },
+          {
+            l: [
+              [1, 2],
+              [0, 3],
+              [1, 4],
+              [2, 3],
+            ],
+            r: [
+              [14, 2],
+              [15, 3],
+              [14, 4],
+              [13, 3],
+            ],
+          },
+          {
+            l: [
+              [0, 3],
+              [1, 2],
+              [2, 3],
+              [1, 4],
+            ],
+            r: [
+              [15, 3],
+              [14, 2],
+              [13, 3],
+              [14, 4],
+            ],
+          },
+        ];
+        const LSTEP = [
+          [0, 0],
+          [-2, 1],
+          [0, 0],
+          [1, -2],
+        ];
+        for (let f = 0; f < N; f++) {
+          [
+            [1, 9],
+            [1, 8],
+            [1, 7],
+            [1, 6],
+            [1, 5],
+          ].forEach(([x, y]) => dot(f, x, y, C.k));
+          [
+            [14, 9],
+            [14, 8],
+            [14, 7],
+            [14, 6],
+            [14, 5],
+          ].forEach(([x, y]) => dot(f, x, y, C.k));
+          HANDS[f].l.forEach(([x, y]) => dot(f, x, y, C.p));
+          HANDS[f].r.forEach(([x, y]) => dot(f, x, y, C.p));
+          fill(f, 4, 5, 8, 8, C.k);
+          fill(f, 5, 7, 2, 1, C.e);
+          fill(f, 9, 7, 2, 1, C.e);
+          dot(f, 6, 11, C.e);
+          fill(f, 7, 12, 2, 1, C.e);
+          dot(f, 9, 11, C.e);
+          fill(f, 4, 13, 8, 7, C.u);
+          fill(f, 3, 19, 10, 3, C.w);
+          dot(f, 3, 19, C.d);
+          dot(f, 12, 19, C.d);
+          const [ld, rd] = LSTEP[f];
+          fill(f, 4, 22, 3, 6, C.u);
+          fill(f, 3, 27 + ld, 4, 2, C.k);
+          fill(f, 9, 22, 3, 6, C.u);
+          fill(f, 9, 27 + rd, 4, 2, C.k);
+        }
+        document.getElementById("babySprite").style.backgroundImage =
+          `url(${cv.toDataURL()})`;
+      })();
+
+      // ── Shark sprite sheet ──────────────────────────────────────
+      (function buildSharkSprite() {
+        const S = 3,
+          W = 18,
+          H = 30,
+          N = 4;
+        const cv = document.createElement("canvas");
+        cv.width = W * N * S;
+        cv.height = H * S;
+        const g = cv.getContext("2d");
+        const C = {
+          b: "#3388cc",
+          d: "#1155aa",
+          w: "#ffffff",
+          e: "#111111",
+          k: "#f5c07a",
+          s: "#d4955a",
+          t: "#aaccee",
+        };
+        const dot = (f, x, y, col) => {
+          g.fillStyle = col;
+          g.fillRect((f * W + x) * S, y * S, S, S);
+        };
+        const fill = (f, x, y, w, h, col) => {
+          g.fillStyle = col;
+          g.fillRect((f * W + x) * S, y * S, w * S, h * S);
+        };
+        const TILT = [0, -1, 0, 1];
+        const LSTEP = [
+          [0, 0],
+          [1, -1],
+          [0, 0],
+          [-1, 1],
+        ];
+        for (let f = 0; f < N; f++) {
+          const tx = TILT[f];
+          dot(f, 8 + tx, 0, C.b);
+          dot(f, 8 + tx, 1, C.b);
+          dot(f, 7 + tx, 1, C.b);
+          dot(f, 8 + tx, 2, C.b);
+          dot(f, 7 + tx, 2, C.b);
+          dot(f, 9 + tx, 2, C.b);
+          fill(f, 4, 3, 10, 2, C.b);
+          fill(f, 3, 5, 12, 5, C.b);
+          fill(f, 4, 10, 10, 3, C.b);
+          fill(f, 5, 13, 8, 1, C.b);
+          fill(f, 6, 5, 6, 6, C.t);
+          fill(f, 5, 6, 2, 2, C.w);
+          dot(f, 6, 7, C.e);
+          fill(f, 11, 6, 2, 2, C.w);
+          dot(f, 11, 7, C.e);
+          const moffset = f % 2 === 0 ? 0 : 1;
+          fill(f, 6, 12, 6, 1, C.w);
+          dot(f, 6 + moffset, 12, C.d);
+          dot(f, 11 - moffset, 12, C.d);
+          const finUp = f % 2 === 0;
+          if (finUp) {
+            dot(f, 2, 7, C.b);
+            dot(f, 1, 6, C.b);
+            dot(f, 15, 7, C.b);
+            dot(f, 16, 6, C.b);
+          } else {
+            dot(f, 2, 9, C.b);
+            dot(f, 1, 10, C.b);
+            dot(f, 15, 9, C.b);
+            dot(f, 16, 10, C.b);
+          }
+          const [ld, rd] = LSTEP[f];
+          fill(f, 5, 14, 3, 8, C.k);
+          fill(f, 4, 21 + ld, 4, 2, C.s);
+          fill(f, 10, 14, 3, 8, C.k);
+          fill(f, 10, 21 + rd, 4, 2, C.s);
+        }
+        document.getElementById("sharkSprite").style.backgroundImage =
+          `url(${cv.toDataURL()})`;
+      })();
+
+      // ── Techno Viking sprite sheet ──────────────────────────────
+      (function buildVikingSprite() {
+        const S = 3,
+          W = 18,
+          H = 34,
+          N = 4;
+        const cv = document.createElement("canvas");
+        cv.width = W * N * S;
+        cv.height = H * S;
+        const g = cv.getContext("2d");
+        const P = {
+          R: "#dd3300",
+          K: "#f5c07a",
+          E: "#3a1000",
+          B: "#8b3a10",
+          J: "#2a3d77",
+          O: "#111125",
+        };
+        const dot = (f, x, y, c) => {
+          g.fillStyle = c;
+          g.fillRect((f * W + x) * S, y * S, S, S);
+        };
+        const fill = (f, x, y, w, h, c) => {
+          g.fillStyle = c;
+          g.fillRect((f * W + x) * S, y * S, w * S, h * S);
+        };
+        const row = (f, x1, x2, y, c) => {
+          for (let x = x1; x <= x2; x++) dot(f, x, y, c);
+        };
+        const ARMS = [
+          {
+            l: [
+              [3, 13],
+              [2, 12],
+              [2, 11],
+              [1, 10],
+              [1, 9],
+              [1, 8],
+              [1, 7],
+            ],
+            r: [
+              [14, 13],
+              [15, 12],
+              [15, 11],
+              [16, 10],
+              [16, 9],
+              [16, 7],
+              [16, 8],
+            ],
+          },
+          {
+            l: [
+              [3, 13],
+              [2, 12],
+              [1, 11],
+              [1, 10],
+              [0, 9],
+              [0, 8],
+              [0, 7],
+            ],
+            r: [
+              [14, 13],
+              [15, 12],
+              [16, 11],
+              [16, 10],
+              [17, 9],
+              [17, 8],
+              [17, 7],
+            ],
+          },
+          {
+            l: [
+              [3, 13],
+              [2, 12],
+              [2, 11],
+              [2, 10],
+              [1, 9],
+              [1, 8],
+              [2, 7],
+            ],
+            r: [
+              [14, 13],
+              [15, 12],
+              [15, 11],
+              [15, 10],
+              [16, 9],
+              [16, 8],
+              [15, 7],
+            ],
+          },
+          {
+            l: [
+              [3, 13],
+              [2, 12],
+              [1, 11],
+              [2, 10],
+              [1, 9],
+              [2, 8],
+              [1, 7],
+            ],
+            r: [
+              [14, 13],
+              [15, 12],
+              [16, 11],
+              [15, 10],
+              [16, 9],
+              [15, 8],
+              [16, 7],
+            ],
+          },
+        ];
+        for (let f = 0; f < N; f++) {
+          [
+            [6, 3],
+            [7, 5],
+            [8, 6 + (f % 2)],
+            [9, 5],
+            [10, 3],
+          ].forEach(([x, h]) => fill(f, x, 4 - h, 1, h, P.R));
+          fill(f, 5, 4, 8, 7, P.K);
+          dot(f, 6, 5, P.E);
+          dot(f, 7, 4, P.E);
+          dot(f, 11, 5, P.E);
+          dot(f, 10, 4, P.E);
+          fill(f, 6, 6, 2, 1, P.E);
+          fill(f, 10, 6, 2, 1, P.E);
+          row(f, 7, 10, 9, P.E);
+          fill(f, 5, 11, 8, 2, P.B);
+          fill(f, 6, 13, 6, 1, P.B);
+          fill(f, 7, 14, 4, 1, P.B);
+          fill(f, 4, 13, 10, 9, P.K);
+          row(f, 5, 7, 16, P.E);
+          row(f, 10, 12, 16, P.E);
+          dot(f, 9, 18, P.E);
+          dot(f, 9, 20, P.E);
+          const ad = ARMS[f];
+          ad.l.forEach(([x, y]) => dot(f, x, y, P.K));
+          ad.r.forEach(([x, y]) => dot(f, x, y, P.K));
+          const lt = ad.l.at(-1),
+            rt = ad.r.at(-1);
+          dot(f, lt[0], lt[1] - 1, P.K);
+          dot(f, rt[0], rt[1] - 1, P.K);
+          fill(f, 4, 22, 10, 6, P.J);
+          fill(f, 9, 24, 1, 4, "#0a0a1a");
+          const [ls, rs] = [
+            [0, 0],
+            [0, 1],
+            [0, 0],
+            [1, 0],
+          ][f];
+          fill(f, 3, 28 + ls, 5, 4, P.O);
+          row(f, 2, 7, 31 + ls, P.O);
+          fill(f, 10, 28 + rs, 5, 4, P.O);
+          row(f, 9, 14, 31 + rs, P.O);
+        }
+        document.getElementById("vikingSprite").style.backgroundImage =
+          `url(${cv.toDataURL()})`;
+      })();
+
+      // ── Mirror ball sparkles ────────────────────────────────────
+      const COLORS = [
+        "#ff0066",
+        "#00ffff",
+        "#ffff00",
+        "#ff6600",
+        "#aa00ff",
+        "#00ff88",
+        "#ff00ff",
+        "#ffffff",
+      ];
+      const MAX_SPARKLES = 50;
+      function spawnSparkle() {
+        if (document.querySelectorAll(".sparkle").length >= MAX_SPARKLES)
+          return;
+        const el = document.createElement("div");
+        el.className = "sparkle";
+        const size = 3 + Math.random() * 5;
+        el.style.cssText = `
+          width:${size}px; height:${size}px;
+          left:${Math.random() * 100}vw; top:${Math.random() * 85}vh;
+          background:${COLORS[Math.floor(Math.random() * COLORS.length)]};
+          box-shadow: 0 0 ${size * 2}px ${COLORS[Math.floor(Math.random() * COLORS.length)]};
+          animation-duration:${0.6 + Math.random() * 1.4}s;
+          animation-delay:${Math.random() * 0.5}s;
+        `;
+        document.querySelector(".lights").appendChild(el);
+        el.addEventListener("animationend", () => el.remove());
+      }
+      setInterval(spawnSparkle, 300);
+
+      function toggleMusic() {
+        const btn = document.getElementById("musicBtn");
+        const label = MODES[currentMode].label;
+        if (!playing) {
+          const ac = getCtx();
+          if (ac.state === "suspended") ac.resume();
+          playing = true;
+          nextBeat = ac.currentTime + 0.05;
+          step = 0;
+          schedule();
+          btn.textContent = `■ STOP ${label}`;
+          btn.classList.add("on");
+        } else {
+          playing = false;
+          clearTimeout(beatTimer);
+          btn.textContent = `▶ PLAY ${label}`;
+          btn.classList.remove("on");
+        }
+      }
+
+      // ── Rotary knob widget ─────────────────────────────────────
+      function makeKnob({
+        containerId,
+        label,
+        min,
+        max,
+        value,
+        format,
+        onChange,
+        snap = null, // optional step size to snap to, e.g. 0.5
+      }) {
+        const SIZE = 64;
+        const wrap = document.getElementById(containerId);
+        wrap.style.cssText =
+          "display:flex;flex-direction:column;align-items:center;gap:4px;cursor:ns-resize;user-select:none";
+        const cv = document.createElement("canvas");
+        cv.width = cv.height = SIZE;
+        wrap.appendChild(cv);
+        const readout = document.createElement("div");
+        readout.style.cssText =
+          "color:#ff6600cc;font-family:monospace;font-size:0.7rem;letter-spacing:2px;text-align:center";
+        wrap.appendChild(readout);
+        const lbl = document.createElement("div");
+        lbl.textContent = label;
+        lbl.style.cssText =
+          "color:#ff660066;font-family:monospace;font-size:0.65rem;letter-spacing:3px;text-transform:uppercase";
+        wrap.appendChild(lbl);
+        let current = value;
+        function draw() {
+          const g = cv.getContext("2d");
+          const cx = SIZE / 2,
+            cy = SIZE / 2,
+            R = SIZE / 2 - 4;
+          g.clearRect(0, 0, SIZE, SIZE);
+          g.shadowColor = "#ff6600";
+          g.shadowBlur = 10;
+          const startA = Math.PI * 0.75,
+            endA = Math.PI * 2.25;
+          g.beginPath();
+          g.arc(cx, cy, R - 4, startA, endA);
+          g.strokeStyle = "#333";
+          g.lineWidth = 3;
+          g.shadowBlur = 0;
+          g.stroke();
+          const norm = (current - min) / (max - min);
+          const valA = startA + norm * (endA - startA);
+          g.beginPath();
+          g.arc(cx, cy, R - 4, startA, valA);
+          g.strokeStyle = "#ff6600";
+          g.lineWidth = 3;
+          g.shadowBlur = 8;
+          g.stroke();
+          g.shadowBlur = 0;
+          const grad = g.createRadialGradient(cx - 4, cy - 4, 2, cx, cy, R);
+          grad.addColorStop(0, "#3a3a3a");
+          grad.addColorStop(1, "#111");
+          g.beginPath();
+          g.arc(cx, cy, R - 8, 0, Math.PI * 2);
+          g.fillStyle = grad;
+          g.shadowColor = "#ff6600";
+          g.shadowBlur = 6;
+          g.fill();
+          const pointerA = valA;
+          g.beginPath();
+          g.moveTo(cx, cy);
+          g.lineTo(
+            cx + Math.cos(pointerA) * (R - 10),
+            cy + Math.sin(pointerA) * (R - 10)
+          );
+          g.strokeStyle = "#ff9900";
+          g.lineWidth = 2;
+          g.shadowBlur = 4;
+          g.stroke();
+          g.beginPath();
+          g.arc(cx, cy, 3, 0, Math.PI * 2);
+          g.fillStyle = "#ff6600";
+          g.shadowBlur = 4;
+          g.fill();
+          g.shadowBlur = 0;
+          readout.textContent = format(current);
+        }
+        let dragY = null;
+        let rawCurrent = current; // unsnapped accumulator for smooth dragging
+        const range = max - min;
+        cv.addEventListener("pointerdown", (e) => {
+          dragY = e.clientY;
+          rawCurrent = current;
+          cv.setPointerCapture(e.pointerId);
+        });
+        cv.addEventListener("pointermove", (e) => {
+          if (dragY === null) return;
+          const dy = dragY - e.clientY;
+          dragY = e.clientY;
+          rawCurrent = Math.min(max, Math.max(min, rawCurrent + dy * (range / 150)));
+          current = snap ? Math.round(rawCurrent / snap) * snap : rawCurrent;
+          draw();
+          onChange(current);
+        });
+        cv.addEventListener("pointerup", () => {
+          dragY = null;
+        });
+        cv.addEventListener("dblclick", () => {
+          rawCurrent = value;
+          current = value;
+          draw();
+          onChange(current);
+        });
+        draw();
+      }
+
+      makeKnob({
+        containerId: "knobSpeed",
+        label: "NOTES",
+        min: 0.5,
+        max: 2.5,
+        value: 1.0,
+        snap: 0.5,
+        format: (v) => v.toFixed(1) + "×",
+        onChange: (v) => {
+          noteDensity = v;
+        },
+      });
+      makeKnob({
+        containerId: "knobVolume",
+        label: "VOLUME",
+        min: 0,
+        max: 1,
+        value: 0.8,
+        format: (v) => Math.round(v * 100) + "%",
+        onChange: (v) => {
+          if (masterGain)
+            masterGain.gain.setTargetAtTime(v, getCtx().currentTime, 0.01);
+          else {
+            getCtx();
+            getMasterGain().gain.value = v;
+          }
+        },
+      });
+
+      // ── IndexedDB score history ─────────────────────────────────
+      let crabDB = null;
+      function openDB() {
+        return new Promise((resolve, reject) => {
+          const req = indexedDB.open("DancingCrabDB", 1);
+          req.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains("scores")) {
+              const store = db.createObjectStore("scores", {
+                keyPath: "id",
+                autoIncrement: true,
+              });
+              store.createIndex("date", "date", { unique: false });
+            }
+          };
+          req.onsuccess = (e) => resolve(e.target.result);
+          req.onerror = (e) => reject(e.target.error);
+        });
+      }
+      openDB()
+        .then((db) => {
+          crabDB = db;
+        })
+        .catch(() => {});
+
+      const MAX_PER_DIFFICULTY = 10;
+
+      async function saveHistory(entry) {
+        try {
+          const db = crabDB || (crabDB = await openDB());
+          // Load all entries, add new one, keep best 10 per difficulty, write back
+          const all = await loadHistory();
+          all.push({ ...entry, date: Date.now() });
+
+          // Group by difficulty, keep best 10 per group (acc desc, then score desc)
+          const groups = {};
+          for (const e of all) {
+            const key = e.difficulty || 'normal';
+            if (!groups[key]) groups[key] = [];
+            groups[key].push(e);
+          }
+          const kept = [];
+          for (const group of Object.values(groups)) {
+            group.sort((a, b) => {
+              const accDiff = (b.accuracy ?? 0) - (a.accuracy ?? 0);
+              return accDiff !== 0 ? accDiff : (b.score ?? 0) - (a.score ?? 0);
+            });
+            kept.push(...group.slice(0, MAX_PER_DIFFICULTY));
+          }
+
+          // Clear store and rewrite kept entries
+          await new Promise(resolve => {
+            const tx = db.transaction("scores", "readwrite");
+            tx.objectStore("scores").clear();
+            tx.oncomplete = resolve;
+          });
+          await new Promise(resolve => {
+            const tx = db.transaction("scores", "readwrite");
+            const store = tx.objectStore("scores");
+            for (const e of kept) {
+              const { id: _id, ...rest } = e; // strip old autoincrement id
+              store.add(rest);
+            }
+            tx.oncomplete = resolve;
+          });
+        } catch (e) {
+          /* idb unavailable */
+        }
+      }
+
+      async function loadHistory() {
+        try {
+          const db = crabDB || (crabDB = await openDB());
+          return new Promise((resolve) => {
+            const tx = db.transaction("scores", "readonly");
+            const req = tx.objectStore("scores").index("date").getAll();
+            req.onsuccess = () => resolve([...req.result].reverse());
+            req.onerror = () => resolve([]);
+          });
+        } catch (e) {
+          return [];
+        }
+      }
+
+      // ── Game Engine ─────────────────────────────────────────────
+      const GLANES = [
+        { key: "d", color: "#ff6600", label: "D" },
+        { key: "f", color: "#ff00cc", label: "F" },
+        { key: "j", color: "#00ffaa", label: "J" },
+        { key: "k", color: "#0099ff", label: "K" },
+      ];
+      const SPRITE_INFO = {
+        crabSprite: { fw: 72, fh: 48, frames: 4 },
+        babySprite: { fw: 48, fh: 90, frames: 4 },
+        sharkSprite: { fw: 54, fh: 90, frames: 4 },
+        vikingSprite: { fw: 54, fh: 102, frames: 4 },
+      };
+      const MODE_SPRITE = {
+        techno: "crabSprite",
+        crab: "crabSprite",
+        baby: "babySprite",
+        shark: "sharkSprite",
+        viking: "vikingSprite",
+      };
+
+      // Per-mode note patterns — each lane maps to an instrument in the scheduler
+      // Techno: kick@0,4,8,12 | clap@4,12 | bass (bassOn minus kick) | open-hihat@2,6,10,14
+      // Reggae: kick@0,8 | rimshot@4,12 | skank@2,6,10,14 | bass@0,6,8,14
+      // Baby:   kick@0,8 | clap@4,12 | E4 melody@0,2,8,10,12,14 | G4@4
+      // Shark:  kick@2,10 | clap@6,14 | wrong-melody@1,3,9,11,14 | detuned@6
+      // Viking: double-kick@even | crash+chord@0,8 | hihat@2,6,10,14 | bass-accent@0,4,8,12
+      const GPATTERNS = {
+        // techno: 16 → 11 notes (~31% reduction)
+        techno: [
+          [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0], // D = kick
+          [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0], // F = clap
+          [0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0], // J = bass
+          [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0], // K = hihat
+        ],
+        // crab: 12 → 8 notes (~33% reduction)
+        crab: [
+          [1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0], // D = kick
+          [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0], // F = rimshot
+          [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0], // J = skank
+          [1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0], // K = bass
+        ],
+        // baby: 11 → 8 notes (~27% reduction)
+        baby: [
+          [1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0], // D = kick
+          [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0], // F = clap
+          [1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0], // J = melody
+          [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], // K = high note
+        ],
+        // shark: 10 → 7 notes (~30% reduction)
+        shark: [
+          [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0], // D = kick
+          [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0], // F = clap
+          [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0], // J = melody
+          [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0], // K = detuned
+        ],
+        // viking: 18 → 13 notes (~28% reduction)
+        viking: [
+          [1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0], // D = double kick
+          [1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0], // F = crash/chord
+          [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0], // J = hihat
+          [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0], // K = bass
+        ],
+      };
+
+      const DIFFICULTY_SETTINGS = {
+        easy: { hitPx: 85, missLimit: 15 },
+        normal: { hitPx: 65, missLimit: 12 },
+        medium: { hitPx: 55, missLimit: 10 },
+        hard: { hitPx: 40, missLimit: 8 },
+        extreme: { hitPx: 30, missLimit: 5 },
+      };
+      const MODE_DIFFICULTY = {
+        techno: "normal",
+        crab: "easy",
+        shark: "medium",
+        baby: "hard",
+        viking: "extreme",
+      };
+      const DIFF_LABEL = {
+        easy: "★☆☆☆☆  EASY",
+        normal: "★★☆☆☆  NORMAL",
+        medium: "★★★☆☆  MEDIUM",
+        hard: "★★★★☆  HARD",
+        extreme: "★★★★★  EXTREME",
+      };
+      const DIFF_CLASS = {
+        easy: "diff-easy",
+        normal: "diff-normal",
+        medium: "diff-medium",
+        hard: "diff-hard",
+        extreme: "diff-extreme",
+      };
+      const GAME_DURATION = 90; // seconds for normal mode
+
+      let gameActive = false,
+        gameStarted = false;
+      let gameScore = 0,
+        gameCombo = 0;
+      let gameNotes = [],
+        gameParticles = [],
+        gameGrades = [];
+      let gameRaf = null,
+        gamePrevT = 0;
+      let gameSpawnAcc = 0,
+        gamePatStep = 0;
+      let gameSpriteImg = new Image(),
+        gameSpriteInfo = null;
+      let gameSpriteFrame = 0,
+        gameSpriteFrameT = 0;
+      // new state
+      let gamePaused = false;
+      let gameDifficulty = "normal";
+      let gameMode = "endless"; // 'endless' | 'normal'
+      let gameTimeElapsed = 0;
+      let gameTotalHits = 0,
+        gameTotalMisses = 0,
+        gameAccSum = 0; // weighted accuracy accumulator
+      let gameMissStreak = 0,
+        gameMaxCombo = 0;
+      let gameComboWindow = []; // rolling window of last 10 hit qualities
+      let gameOver_called = false; // guard re-entrancy
+      // selection screen state
+      let selDifficulty = "normal";
+      let selMode = "normal";
+
+      // ── Selection screen ──────────────────────────────────────
+      function showGameSelect() {
+        const overlay = document.getElementById("gameOverlay");
+        overlay.style.display = "block";
+        document.getElementById("gameCanvas").style.display = "none";
+        document.getElementById("gameHud").style.display = "none";
+        document.getElementById("gameHealth").style.display = "none";
+        document.getElementById("gamePauseBtn").style.display = "none";
+        document.getElementById("gameTitle").style.display = "none";
+        document.getElementById("gameExitBtn").style.display = "block";
+        document.getElementById("gameResult").classList.remove("visible");
+
+        selDifficulty = MODE_DIFFICULTY[currentMode] || "normal";
+        selMode = "normal";
+
+        const characters = [
+          {
+            mode: "techno",
+            name: "DEFAULT",
+            diff: "normal",
+            bpm: "138 BPM",
+            emoji: "🎵",
+          },
+          {
+            mode: "crab",
+            name: "CRAB",
+            diff: "easy",
+            bpm: "95 BPM",
+            emoji: "🦀",
+          },
+          {
+            mode: "shark",
+            name: "SHARK",
+            diff: "medium",
+            bpm: "116 BPM",
+            emoji: "🦈",
+          },
+          {
+            mode: "baby",
+            name: "BABY",
+            diff: "hard",
+            bpm: "120 BPM",
+            emoji: "👶",
+          },
+          {
+            mode: "viking",
+            name: "VIKING",
+            diff: "extreme",
+            bpm: "175 BPM",
+            emoji: "⚔️",
+          },
+        ];
+
+        const sel = document.getElementById("gameSelect");
+        sel.innerHTML = `
+          <div class="sel-title">SELECT CHARACTER</div>
+          <div class="sel-cards" id="selCards">
+            ${characters
+              .map(
+                (c) => `
+              <div class="sel-card${c.diff === selDifficulty ? " selected" : ""}"
+                   data-mode="${c.mode}" data-diff="${c.diff}" onclick="selectChar('${c.mode}','${c.diff}')">
+                <div style="font-size:2rem">${c.emoji}</div>
+                <div class="sel-card-name">${c.name}</div>
+                <div class="sel-card-diff ${DIFF_CLASS[c.diff]}">${DIFF_LABEL[c.diff]}</div>
+                <div class="sel-card-bpm">${c.bpm}</div>
+              </div>
+            `
+              )
+              .join("")}
+          </div>
+          <div class="sel-mode" id="selModeToggle">
+            <button class="sel-mode-btn"         id="modeEndless" onclick="selectGameMode('endless')">∞ ENDLESS</button>
+            <button class="sel-mode-btn active"  id="modeNormal"  onclick="selectGameMode('normal')">⏱ NORMAL (90s)</button>
+          </div>
+          <button class="sel-start" onclick="startGame()">▶ START</button>
+          <button class="sel-back"  onclick="exitGame()">← BACK</button>
+        `;
+        sel.classList.add("visible");
+      }
+
+      function selectChar(mode, diff) {
+        selDifficulty = diff;
+        setMode(mode);
+        document.querySelectorAll(".sel-card").forEach((el) => {
+          el.classList.toggle("selected", el.dataset.diff === diff);
+        });
+      }
+
+      function selectGameMode(mode) {
+        selMode = mode;
+        document
+          .getElementById("modeEndless")
+          .classList.toggle("active", mode === "endless");
+        document
+          .getElementById("modeNormal")
+          .classList.toggle("active", mode === "normal");
+      }
+
+      // ── Start game ────────────────────────────────────────────
+      function startGame() {
+        // hide selection
+        const sel = document.getElementById("gameSelect");
+        sel.classList.remove("visible");
+
+        const cv = document.getElementById("gameCanvas");
+        cv.width = window.innerWidth;
+        cv.height = window.innerHeight;
+        cv.style.display = "block";
+        document.getElementById("gameHud").style.display = "flex";
+        document.getElementById("gameHealth").style.display = "flex";
+        document.getElementById("gamePauseBtn").style.display = "block";
+        document.getElementById("gameTitle").style.display = "block";
+        document.getElementById("gameResult").classList.remove("visible");
+
+        const spriteId = MODE_SPRITE[currentMode];
+        const spriteEl = document.getElementById(spriteId);
+        const bg = window.getComputedStyle(spriteEl).backgroundImage;
+        const dataUrl = bg.slice(5, -2);
+        gameSpriteImg = new Image();
+        gameSpriteImg.src = dataUrl;
+        gameSpriteInfo = SPRITE_INFO[spriteId];
+
+        gameDifficulty = selDifficulty;
+        gameMode = selMode;
+
+        gameActive = true;
+        gameStarted = false;
+        gamePaused = false;
+        gameOver_called = false;
+        gameScore = 0;
+        gameCombo = 0;
+        gameTotalHits = 0;
+        gameTotalMisses = 0;
+        gameAccSum = 0;
+        gameMissStreak = 0;
+        gameMaxCombo = 0;
+        gameComboWindow = [];
+        gameTimeElapsed = 0;
+        gameNotes = [];
+        gameParticles = [];
+        gameGrades = [];
+        gamePatStep = 0;
+        gameSpawnAcc = 0;
+        gameSpriteFrame = 0;
+        gameSpriteFrameT = 0;
+
+        document.getElementById("gameScore").textContent = "0";
+        document.getElementById("gameCombo").textContent = "";
+        const timerEl = document.getElementById("gameTimer");
+        if (gameMode === "normal") {
+          timerEl.style.display = "block";
+          timerEl.textContent = formatTimer(GAME_DURATION);
+        } else {
+          timerEl.style.display = "none";
+        }
+        renderHealthPips();
+        document.getElementById("gamePauseBtn").textContent = "⏸ PAUSE";
+
+        // start audio if not already playing
+        if (!playing) toggleMusic();
+
+        gamePrevT = performance.now();
+        gameRaf = requestAnimationFrame(gameLoop);
+      }
+
+      function formatTimer(sec) {
+        const m = Math.floor(sec / 60);
+        const s = Math.floor(sec % 60);
+        return `${m}:${s.toString().padStart(2, "0")}`;
+      }
+
+      function renderHealthPips() {
+        const limit = DIFFICULTY_SETTINGS[gameDifficulty].missLimit;
+        const el = document.getElementById("gameHealth");
+        el.style.cssText =
+          "position:absolute;bottom:110px;left:50%;transform:translateX(-50%);display:flex;gap:4px;pointer-events:none;";
+        el.innerHTML = Array.from(
+          { length: limit },
+          (_, i) =>
+            `<div class="health-pip${i < gameMissStreak ? " empty" : ""}"></div>`
+        ).join("");
+      }
+
+      // ── Pause ─────────────────────────────────────────────────
+      function togglePause() {
+        if (!gameActive || gameOver_called) return;
+        gamePaused = !gamePaused;
+        const btn = document.getElementById("gamePauseBtn");
+        if (gamePaused) {
+          cancelAnimationFrame(gameRaf);
+          try {
+            getCtx().suspend();
+          } catch (e) {}
+          btn.textContent = "▶ RESUME";
+        } else {
+          try {
+            getCtx().resume();
+          } catch (e) {}
+          gamePrevT = performance.now();
+          gameRaf = requestAnimationFrame(gameLoop);
+          btn.textContent = "⏸ PAUSE";
+        }
+      }
+
+      // ── Exit / stop ───────────────────────────────────────────
+      function exitGame() {
+        gameActive = false;
+        gamePaused = false;
+        cancelAnimationFrame(gameRaf);
+        // resume audio context if it was suspended
+        try {
+          if (ctx && ctx.state === "suspended") ctx.resume();
+        } catch (e) {}
+        document.getElementById("gameOverlay").style.display = "none";
+        document.getElementById("gameSelect").classList.remove("visible");
+        document.getElementById("gameResult").classList.remove("visible");
+        document.getElementById("gameCanvas").style.display = "block";
+      }
+      // keep stopGame as alias for legacy inline
+      function stopGame() {
+        exitGame();
+      }
+
+      // ── Game over / win ───────────────────────────────────────
+      function endGame(win) {
+        if (gameOver_called) return;
+        gameOver_called = true;
+        gameActive = false;
+        cancelAnimationFrame(gameRaf);
+
+        // update max combo one last time
+        if (gameCombo > gameMaxCombo) gameMaxCombo = gameCombo;
+
+        const total = gameTotalHits + gameTotalMisses;
+        const accuracy = total > 0 ? gameAccSum / total : 0;
+        const grade = calcGrade(accuracy, win);
+        const accPct = Math.round(accuracy * 100);
+
+        // save to IndexedDB
+        saveHistory({
+          score: gameScore,
+          accuracy: accPct,
+          grade,
+          maxCombo: gameMaxCombo,
+          mode: gameMode,
+          difficulty: gameDifficulty,
+          character: currentMode,
+          win,
+        });
+
+        // show result screen
+        showResultScreen(win, grade, accPct);
+      }
+
+      function calcGrade(accuracy, win) {
+        if (!win) return "F";
+        if (accuracy < 0.5) return "F";
+        if (accuracy < 0.6) return "E";
+        if (accuracy < 0.7) return "D";
+        if (accuracy < 0.8) return "C";
+        if (accuracy < 0.9) return "B";
+        if (accuracy < 0.95) return "A";
+        if (accuracy < 0.99) return "S";
+        if (accuracy < 1.0) return "SS";
+        return "SSS";
+      }
+
+      const GRADE_CLASS = {
+        SSS: "grade-sss",
+        SS: "grade-ss",
+        S: "grade-s",
+        A: "grade-a",
+        B: "grade-b",
+        C: "grade-c",
+        D: "grade-d",
+        E: "grade-e",
+        F: "grade-f",
+      };
+      const GRADE_COLOR = {
+        SSS: "#fff",
+        SS: "#ffff00",
+        S: "#ffcc00",
+        A: "#00ff88",
+        B: "#00ccff",
+        C: "#ff9900",
+        D: "#ff6600",
+        E: "#ff4444",
+        F: "#aa0000",
+      };
+
+      function showResultScreen(win, grade, accPct) {
+        const el = document.getElementById("gameResult");
+        el.innerHTML = `
+          <div class="res-header ${win ? "win" : "loss"}">${win ? "★ CLEAR ★" : "GAME OVER"}</div>
+          <div class="res-grade ${GRADE_CLASS[grade]}">${grade}</div>
+          <div class="res-stats">
+            <div class="res-stat">
+              <div class="res-stat-val">${gameScore.toLocaleString()}</div>
+              <div class="res-stat-lbl">SCORE</div>
+            </div>
+            <div class="res-stat">
+              <div class="res-stat-val">${accPct}%</div>
+              <div class="res-stat-lbl">ACCURACY</div>
+            </div>
+            <div class="res-stat">
+              <div class="res-stat-val">${gameMaxCombo}×</div>
+              <div class="res-stat-lbl">MAX COMBO</div>
+            </div>
+            <div class="res-stat">
+              <div class="res-stat-val">${gameTotalHits}</div>
+              <div class="res-stat-lbl">HITS</div>
+            </div>
+            <div class="res-stat">
+              <div class="res-stat-val">${gameTotalMisses}</div>
+              <div class="res-stat-lbl">MISSES</div>
+            </div>
+          </div>
+          <div class="res-btns">
+            <button class="res-btn" onclick="showGameSelect()">▶ PLAY AGAIN</button>
+            <button class="res-btn secondary" onclick="exitGame()">MAIN MENU</button>
+          </div>
+        `;
+        el.classList.add("visible");
+        document.getElementById("gamePauseBtn").style.display = "none";
+      }
+
+      // ── History panel ─────────────────────────────────────────
+      let _historyEntries = [];
+      let _historyDiffFilter = 'all';
+
+      async function showHistoryPanel() {
+        const panel = document.getElementById("gameHistory");
+        panel.innerHTML =
+          '<div class="hist-title">🏆 HIGH SCORES</div><div style="color:#ff660088;font-size:0.75rem;letter-spacing:3px">LOADING…</div>';
+        panel.classList.add("visible");
+
+        _historyEntries = await loadHistory();
+        _historyDiffFilter = 'all';
+        renderHistoryPanel();
+      }
+
+      function renderHistoryPanel() {
+        const panel = document.getElementById("gameHistory");
+        const all = _historyEntries;
+
+        if (all.length === 0) {
+          panel.innerHTML = `
+            <div class="hist-title">🏆 HIGH SCORES</div>
+            <div class="hist-empty">NO SCORES YET — PLAY A GAME!</div>
+            <button class="hist-close" onclick="document.getElementById('gameHistory').classList.remove('visible')">CLOSE</button>
+          `;
+          return;
+        }
+
+        // filter
+        const filtered = _historyDiffFilter === 'all'
+          ? all
+          : all.filter(e => e.difficulty === _historyDiffFilter);
+
+        // sort: accuracy desc, then score desc
+        const sorted = [...filtered].sort((a, b) => {
+          const accDiff = (b.accuracy ?? 0) - (a.accuracy ?? 0);
+          if (accDiff !== 0) return accDiff;
+          return (b.score ?? 0) - (a.score ?? 0);
+        }).slice(0, 10);
+
+        // difficulty filter buttons
+        const diffs = ['all', 'easy', 'normal', 'medium', 'hard', 'extreme'];
+        const diffBtns = diffs.map(d => {
+          const active = d === _historyDiffFilter ? 'style="background:#ff660033;color:#ff6600;border-color:#ff6600"' : '';
+          const label = d === 'all' ? 'ALL' : d.toUpperCase();
+          return `<button class="game-btn" ${active} onclick="_historyDiffFilter='${d}';renderHistoryPanel()" style="padding:4px 10px;font-size:0.65rem">${label}</button>`;
+        }).join('');
+
+        const rows = sorted.map((e, i) => {
+          const date = new Date(e.date);
+          const ds = `${date.getMonth()+1}/${date.getDate()} ${date.getHours()}:${date.getMinutes().toString().padStart(2,'0')}`;
+          const gradeColor = GRADE_COLOR[e.grade] || '#ccc';
+          return `<tr>
+            <td style="color:#ffffff55">${i+1}</td>
+            <td style="color:${gradeColor};font-weight:bold;text-shadow:0 0 8px ${gradeColor}">${e.grade}</td>
+            <td>${(e.score||0).toLocaleString()}</td>
+            <td>${e.accuracy??0}%</td>
+            <td>${e.maxCombo??0}×</td>
+            <td style="text-transform:uppercase;color:#ff660088">${e.difficulty??''}</td>
+            <td style="color:#ffffff44">${ds}</td>
+          </tr>`;
+        }).join('');
+
+        const emptyMsg = sorted.length === 0
+          ? `<tr><td colspan="7" style="text-align:center;color:#ffffff33;padding:20px;letter-spacing:2px">NO SCORES FOR THIS DIFFICULTY</td></tr>`
+          : rows;
+
+        panel.innerHTML = `
+          <div class="hist-title">🏆 HIGH SCORES</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center">${diffBtns}</div>
+          <table class="hist-table">
+            <thead><tr>
+              <th>#</th><th>GRADE</th><th>SCORE</th><th>ACC</th><th>COMBO</th><th>DIFF</th><th>DATE</th>
+            </tr></thead>
+            <tbody>${emptyMsg}</tbody>
+          </table>
+          <button class="hist-close" onclick="document.getElementById('gameHistory').classList.remove('visible')">✕ CLOSE</button>
+        `;
+      }
+
+      // ── Game loop ─────────────────────────────────────────────
+      function gameLoop(now) {
+        if (!gameActive || gamePaused) return;
+        const dt = Math.min((now - gamePrevT) / 1000, 0.05);
+        gamePrevT = now;
+
+        const cv = document.getElementById("gameCanvas");
+        const g = cv.getContext("2d");
+        const W = cv.width,
+          H = cv.height;
+
+        const LANE_W = Math.min(90, ((W * 0.5) / 4) | 0);
+        const LANE_GAP = 6;
+        const NUM_LANES = 4;
+        const totalW = NUM_LANES * LANE_W + (NUM_LANES - 1) * LANE_GAP;
+        const laneX0 = (W - totalW) / 2;
+        const HIT_Y = H - 90;
+        const NOTE_H = 18;
+        const NOTE_SPEED = H * 0.55;
+
+        // Timer update — only count once the player has started hitting notes
+        if (gameStarted && gameMode === "normal") {
+          gameTimeElapsed += dt;
+          const remaining = Math.max(0, GAME_DURATION - gameTimeElapsed);
+          document.getElementById("gameTimer").textContent = formatTimer(remaining);
+          if (remaining <= 0) {
+            endGame(true);
+            return;
+          }
+        }
+
+        // Spawn notes
+        if (gameStarted) {
+          const bpm = MODES[currentMode].bpm;
+          const step16 = 60 / bpm / 2; // every 8th note (every other beat at 1x)
+          gameSpawnAcc += dt;
+          while (gameSpawnAcc >= step16) {
+            gameSpawnAcc -= step16;
+            const pat = GPATTERNS[currentMode];
+            const s = gamePatStep % 16;
+            const whole = Math.floor(noteDensity);
+            const frac  = noteDensity - whole;
+            // space extra notes by one full step interval so they arrive evenly timed
+            const noteSpacing = H * 0.55 * step16;
+            for (let lane = 0; lane < 4; lane++) {
+              if (!pat[lane][s]) continue;
+              const count = whole + (Math.random() < frac ? 1 : 0);
+              for (let n = 0; n < count; n++) {
+                gameNotes.push({ lane, y: -NOTE_H - n * noteSpacing, hit: false, miss: false, opacity: 1 });
+              }
+            }
+            gamePatStep++;
+          }
+        }
+
+        // Update notes
+        for (const n of gameNotes) {
+          if (!n.hit && !n.miss) {
+            n.y += NOTE_SPEED * dt;
+            if (n.y > HIT_Y + 80) {
+              n.miss = true;
+              onMiss();
+            }
+          } else if (n.hit) {
+            n.opacity -= dt * 6;
+          }
+        }
+        gameNotes = gameNotes.filter((n) => !n.miss && n.opacity > 0);
+
+        // Update particles
+        for (const p of gameParticles) {
+          p.x += p.vx * dt;
+          p.y += p.vy * dt;
+          p.vy += 500 * dt;
+          p.life -= dt;
+        }
+        gameParticles = gameParticles.filter((p) => p.life > 0);
+        for (const gr of gameGrades) {
+          gr.y -= 50 * dt;
+          gr.life -= dt;
+        }
+        gameGrades = gameGrades.filter((gr) => gr.life > 0);
+
+        // Animate sprite frame
+        gameSpriteFrameT += dt;
+        if (gameSpriteFrameT > 0.1) {
+          gameSpriteFrameT -= 0.1;
+          gameSpriteFrame =
+            (gameSpriteFrame + 1) % (gameSpriteInfo?.frames || 4);
+        }
+
+        // ── Draw ──
+        g.clearRect(0, 0, W, H);
+
+        // Background character (large, centered, dim)
+        if (
+          gameSpriteImg.complete &&
+          gameSpriteImg.naturalWidth > 0 &&
+          gameSpriteInfo
+        ) {
+          const scale = Math.min(W, H) / (gameSpriteInfo.fh * 2.5);
+          const dw = gameSpriteInfo.fw * scale,
+            dh = gameSpriteInfo.fh * scale;
+          g.globalAlpha = 0.18;
+          g.imageSmoothingEnabled = false;
+          g.drawImage(
+            gameSpriteImg,
+            gameSpriteFrame * gameSpriteInfo.fw,
+            0,
+            gameSpriteInfo.fw,
+            gameSpriteInfo.fh,
+            (W - dw) / 2,
+            (H - dh) / 2,
+            dw,
+            dh
+          );
+          g.globalAlpha = 1;
+        }
+
+        // Lane backgrounds
+        for (let i = 0; i < NUM_LANES; i++) {
+          const x = laneX0 + i * (LANE_W + LANE_GAP);
+          const col = GLANES[i].color;
+          g.fillStyle = "rgba(255,255,255,0.03)";
+          g.fillRect(x, 0, LANE_W, H);
+          g.strokeStyle = col + "28";
+          g.lineWidth = 1;
+          g.strokeRect(x, 0, LANE_W, H);
+          g.fillStyle = col + "30";
+          g.fillRect(x, HIT_Y - 4, LANE_W, 32);
+          g.strokeStyle = col + "cc";
+          g.lineWidth = 2;
+          g.beginPath();
+          g.moveTo(x, HIT_Y);
+          g.lineTo(x + LANE_W, HIT_Y);
+          g.stroke();
+          g.fillStyle = col;
+          g.font = `bold ${(LANE_W * 0.28) | 0}px monospace`;
+          g.textAlign = "center";
+          g.fillText(GLANES[i].label, x + LANE_W / 2, H - 28);
+        }
+
+        // Notes
+        g.imageSmoothingEnabled = true;
+        for (const n of gameNotes) {
+          if (n.miss) continue;
+          const x = laneX0 + n.lane * (LANE_W + LANE_GAP);
+          const col = GLANES[n.lane].color;
+          g.globalAlpha = n.opacity;
+          g.fillStyle = col;
+          g.shadowColor = col;
+          g.shadowBlur = 12;
+          g.beginPath();
+          if (g.roundRect) g.roundRect(x + 4, n.y, LANE_W - 8, NOTE_H, 4);
+          else g.rect(x + 4, n.y, LANE_W - 8, NOTE_H);
+          g.fill();
+          g.shadowBlur = 0;
+          g.globalAlpha = 1;
+        }
+
+        // Particles
+        for (const p of gameParticles) {
+          g.globalAlpha = Math.max(0, p.life);
+          g.fillStyle = p.color;
+          g.shadowColor = p.color;
+          g.shadowBlur = 6;
+          g.beginPath();
+          g.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          g.fill();
+          g.shadowBlur = 0;
+          g.globalAlpha = 1;
+        }
+
+        // Grade popups
+        for (const gr of gameGrades) {
+          g.globalAlpha = Math.max(0, gr.life);
+          g.fillStyle = gr.color;
+          g.shadowColor = gr.color;
+          g.shadowBlur = 10;
+          g.font = `bold ${gr.size}px monospace`;
+          g.textAlign = "center";
+          g.fillText(gr.text, gr.x, gr.y);
+          g.shadowBlur = 0;
+          g.globalAlpha = 1;
+        }
+
+        gameRaf = requestAnimationFrame(gameLoop);
+      }
+
+      function onMiss() {
+        if (!gameActive || gameOver_called) return;
+        gameTotalMisses++;
+        gameMissStreak++;
+        gameScore = Math.max(0, gameScore - 50);
+        const limit = DIFFICULTY_SETTINGS[gameDifficulty].missLimit;
+        if (gameMissStreak >= limit) {
+          endGame(false);
+          return;
+        }
+
+        if (gameCombo > 2) {
+          const cv = document.getElementById("gameCanvas");
+          gameGrades.push({
+            text: "MISS",
+            x: cv.width / 2,
+            y: cv.height * 0.5,
+            color: "#ff4444",
+            size: 28,
+            life: 0.8,
+          });
+        }
+        gameCombo = 0;
+        gameComboWindow = [];
+        updateGameHUD();
+        renderHealthPips();
+      }
+
+      function getComboTier(window) {
+        if (window.length < 10) return { mult: 1, color: '#ff6600' };
+        const allPerfect = window.every(h => h === 'PERFECT!');
+        const allGoodOrBetter = window.every(h => h === 'PERFECT!' || h === 'GOOD');
+        if (allPerfect)      return { mult: 10, color: '#ffd700' };
+        if (allGoodOrBetter) return { mult: 5,  color: '#c0c0c0' };
+        return                      { mult: 2,  color: '#00ff88' };
+      }
+
+      function hitLane(laneIdx) {
+        if (!gameActive || gamePaused || gameOver_called) return;
+        if (!gameStarted) {
+          gameStarted = true;
+          document.getElementById("gameTitle").style.display = "none";
+          return; // don't score or penalise the start keypress
+        }
+        const cv = document.getElementById("gameCanvas");
+        const H = cv.height;
+        const HIT_Y = H - 90;
+        const HIT_PX = DIFFICULTY_SETTINGS[gameDifficulty].hitPx;
+
+        let best = null,
+          bestDist = Infinity;
+        for (const n of gameNotes) {
+          if (n.lane !== laneIdx || n.hit || n.miss) continue;
+          const dist = Math.abs(n.y - HIT_Y);
+          if (dist < HIT_PX && dist < bestDist) {
+            best = n;
+            bestDist = dist;
+          }
+        }
+        if (!best) {
+          onMiss();
+          return;
+        }
+
+        best.hit = true;
+        gameTotalHits++;
+        const prevStreak = gameMissStreak;
+        gameMissStreak = 0;
+        if (prevStreak > 0) renderHealthPips();
+
+        let text, points, color, accWeight;
+        if (bestDist < 18) {
+          text = "PERFECT!"; points = 100 + gameCombo * 5; color = "#ffff00"; accWeight = 1.00;
+        } else if (bestDist < 40) {
+          text = "GOOD";     points = 50  + gameCombo * 2; color = "#00ff88"; accWeight = 0.85;
+        } else {
+          text = "OK";       points = 20;                  color = "#88aaff"; accWeight = 0.60;
+        }
+        gameAccSum += accWeight;
+
+        gameComboWindow.push(text);
+        if (gameComboWindow.length > 10) gameComboWindow.shift();
+
+        gameCombo++;
+        const tier = getComboTier(gameComboWindow);
+        gameScore += points * tier.mult;
+        if (gameCombo > gameMaxCombo) gameMaxCombo = gameCombo;
+
+        const LANE_W = Math.min(90, ((cv.width * 0.5) / 4) | 0);
+        const totalW = 4 * LANE_W + 3 * 6;
+        const laneX0 = (cv.width - totalW) / 2;
+        const cx = laneX0 + laneIdx * (LANE_W + 6) + LANE_W / 2;
+        const col = GLANES[laneIdx].color;
+        for (let i = 0; i < 14; i++) {
+          gameParticles.push({
+            x: cx,
+            y: HIT_Y,
+            vx: (Math.random() - 0.5) * 240,
+            vy: -Math.random() * 320 - 80,
+            r: 2 + Math.random() * 3,
+            color: col,
+            life: 0.6 + Math.random() * 0.3,
+          });
+        }
+        gameGrades.push({
+          text,
+          x: cx,
+          y: HIT_Y - 30,
+          color,
+          size: 22,
+          life: 1.0,
+        });
+        updateGameHUD();
+      }
+
+      function updateGameHUD() {
+        document.getElementById("gameScore").textContent =
+          gameScore.toLocaleString();
+        const el = document.getElementById("gameCombo");
+        const bonus = document.getElementById("gameComboBonus");
+        if (gameCombo > 1) {
+          const tier = getComboTier(gameComboWindow);
+          el.style.color = tier.color;
+          el.textContent = `${gameCombo}× COMBO`;
+          if (tier.mult > 1) {
+            bonus.textContent = `${tier.mult}× BONUS`;
+            bonus.style.color = tier.color;
+          } else {
+            bonus.textContent = "";
+          }
+        } else {
+          el.textContent = "";
+          bonus.textContent = "";
+        }
+      }
+
+      // ── Input: keyboard ───────────────────────────────────────
+      document.addEventListener("keydown", (e) => {
+        if (!gameActive) return;
+        if (e.key === "Escape") {
+          togglePause();
+          return;
+        }
+        if (e.key === "p" || e.key === "P") {
+          togglePause();
+          return;
+        }
+        if (e.repeat) return;
+        const idx = GLANES.findIndex((l) => l.key === e.key.toLowerCase());
+        if (idx !== -1) hitLane(idx);
+      });
+
+      // ── Input: touch / pointer on canvas ─────────────────────
+      (function setupCanvasTouch() {
+        const cv = document.getElementById("gameCanvas");
+        cv.addEventListener(
+          "pointerdown",
+          (e) => {
+            if (!gameActive || gamePaused || gameOver_called) return;
+            e.preventDefault();
+            const rect = cv.getBoundingClientRect();
+            const x = (e.clientX - rect.left) * (cv.width / rect.width);
+            const LANE_W = Math.min(90, ((cv.width * 0.5) / 4) | 0);
+            const totalW = 4 * LANE_W + 3 * 6;
+            const laneX0 = (cv.width - totalW) / 2;
+            for (let i = 0; i < 4; i++) {
+              const lx = laneX0 + i * (LANE_W + 6);
+              if (x >= lx && x <= lx + LANE_W) {
+                hitLane(i);
+                break;
+              }
+            }
+          },
+          { passive: false }
+        );
+      })();
+
+      // ── Click-to-change-music ─────────────────────────────────
+      document
+        .getElementById("crabSprite")
+        .addEventListener("click", () => setMode("crab"));
+      document
+        .getElementById("babySprite")
+        .addEventListener("click", () => setMode("baby"));
+      document
+        .getElementById("sharkSprite")
+        .addEventListener("click", () => setMode("shark"));
+      document
+        .getElementById("vikingSprite")
+        .addEventListener("click", () => setMode("viking"));
+      document
+        .getElementById("crabSprite")
+        .addEventListener("dblclick", () => setMode("techno"));
+    </script>
+  </body>
+</html>

@@ -28,6 +28,20 @@ export const games: Game[] = [
     emoji: "🏡",
     tags: ["decoration", "sandbox", "creative"],
   },
+  {
+    slug: "tile-composer",
+    title: "Tile Composer",
+    description: "Design tilemaps with a full-featured editor — paint tiles, place objects, and export your creations.",
+    emoji: "🗺️",
+    tags: ["creative", "editor", "sandbox"],
+  },
+  {
+    slug: "dancing-crab",
+    title: "Dancing Crab",
+    description: "Watch and interact with a funky dancing crab. Pure vibes.",
+    emoji: "🦀",
+    tags: ["casual", "fun", "single-player"],
+  },
   // Add more games here
 ];
 
