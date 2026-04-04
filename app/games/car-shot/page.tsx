@@ -142,6 +142,169 @@ export default function CarShotPage() {
           ],
           landZone: { x: 870, w: 75, overlap: 0.30 },
         },
+        // ── Levels 9–15: progressively lower billboard clearance ─────────────
+        {
+          // Arch opening = pillar_h = 165 px   |  pillar base gap to ground = 55 px
+          name: "Level 9 – The Drop",
+          bgId: 5, bgVariant: "Day", layerCount: 5,
+          groundColor: 0x1a1208, groundLine: 0xff9900,
+          neonPalette: [0xff9900, 0xffcc44, 0xff7700, 0xffdd88],
+          structures: [
+            // Main arch gate — pillars reach y=445, cap at y=280, opening 165 px
+            { x: 580, y: 445, w: 28, h: 165 }, { x: 680, y: 445, w: 28, h: 165 },
+            { x: 630, y: 280, w: 128, h: 30 },
+            { x: 630, y: 250, w: 34, h: 30 },
+            // Guard post right
+            { x: 822, y: 445, w: 30, h: 152 }, { x: 822, y: 293, w: 66, h: 28 },
+          ],
+          wheels: [
+            { x: 395, y: 215 }, { x: 465, y: 175 }, { x: 545, y: 140 },
+            { x: 635, y: 112 }, { x: 718, y: 128 }, { x: 800, y: 155 }, { x: 878, y: 196 },
+          ],
+          landZone: { x: 856, w: 84 },
+        },
+        {
+          // Gate 1 opening = 152 px  |  Gate 2 opening = 128 px  |  pillar base y=448
+          name: "Level 10 – Double Gate",
+          bgId: 6, bgVariant: "Day", layerCount: 5,
+          groundColor: 0x081510, groundLine: 0x00ccbb,
+          neonPalette: [0x00ccbb, 0x44ffee, 0x009988, 0x66ffdd],
+          structures: [
+            // Gate 1 (opening 152 px)
+            { x: 555, y: 448, w: 26, h: 152 }, { x: 651, y: 448, w: 26, h: 152 },
+            { x: 603, y: 296, w: 110, h: 28 },
+            { x: 603, y: 268, w: 32, h: 28 }, { x: 603, y: 240, w: 32, h: 28 },
+            // Gate 2 (opening 128 px — lower clearance)
+            { x: 718, y: 448, w: 26, h: 128 }, { x: 814, y: 448, w: 26, h: 128 },
+            { x: 766, y: 320, w: 110, h: 28 },
+            { x: 766, y: 292, w: 32, h: 28 }, { x: 766, y: 264, w: 32, h: 28 },
+          ],
+          wheels: [
+            { x: 390, y: 210 }, { x: 455, y: 168 }, { x: 530, y: 132 },
+            { x: 608, y: 104 }, { x: 688, y: 118 }, { x: 768, y: 144 }, { x: 845, y: 186 },
+          ],
+          landZone: { x: 860, w: 78 },
+        },
+        {
+          // Arch 1 opening = 118 px  |  Arch 2 opening = 100 px  |  pillar base y=452
+          name: "Level 11 – The Squeeze",
+          bgId: 7, bgVariant: "Day", layerCount: 5,
+          groundColor: 0x100814, groundLine: 0xdd44ff,
+          neonPalette: [0xdd44ff, 0xff88ee, 0xaa22dd, 0xee66ff],
+          structures: [
+            // Arch 1 (opening 118 px)
+            { x: 537, y: 452, w: 26, h: 118 }, { x: 633, y: 452, w: 26, h: 118 },
+            { x: 585, y: 334, w: 110, h: 28 },
+            { x: 585, y: 306, w: 32, h: 28 }, { x: 585, y: 278, w: 32, h: 28 },
+            // Arch 2 (opening 100 px — tighter)
+            { x: 698, y: 452, w: 26, h: 100 }, { x: 794, y: 452, w: 26, h: 100 },
+            { x: 746, y: 352, w: 110, h: 28 },
+            { x: 746, y: 324, w: 32, h: 28 }, { x: 746, y: 296, w: 32, h: 28 },
+            { x: 746, y: 268, w: 32, h: 28 },
+            // Right guard
+            { x: 866, y: 452, w: 28, h: 158 }, { x: 866, y: 294, w: 60, h: 28 },
+          ],
+          wheels: [
+            { x: 385, y: 205 }, { x: 450, y: 163 }, { x: 524, y: 126 },
+            { x: 600, y: 98 }, { x: 682, y: 110 }, { x: 762, y: 138 }, { x: 840, y: 180 },
+          ],
+          landZone: { x: 872, w: 74 },
+        },
+        {
+          // Single very wide arch — opening = 88 px  |  pillar base y=455 (45 px gap)
+          name: "Level 12 – The Bottleneck",
+          bgId: 8, bgVariant: "Day", layerCount: 5,
+          groundColor: 0x081015, groundLine: 0x0088ff,
+          neonPalette: [0x0088ff, 0x44aaff, 0x0055cc, 0x66ccff],
+          structures: [
+            // Wide arch — 149 px horizontal gap, 88 px vertical opening
+            { x: 545, y: 455, w: 26, h: 88 }, { x: 720, y: 455, w: 26, h: 88 },
+            { x: 633, y: 367, w: 201, h: 30 },
+            // Crate tower on cap
+            { x: 633, y: 337, w: 36, h: 30 }, { x: 633, y: 307, w: 36, h: 30 },
+            { x: 633, y: 277, w: 36, h: 30 }, { x: 633, y: 247, w: 36, h: 30 },
+            // Guard right
+            { x: 840, y: 455, w: 30, h: 162 }, { x: 840, y: 293, w: 62, h: 28 },
+          ],
+          wheels: [
+            { x: 380, y: 200 }, { x: 445, y: 157 }, { x: 517, y: 120 },
+            { x: 594, y: 90 }, { x: 674, y: 88 }, { x: 754, y: 114 }, { x: 830, y: 158 },
+          ],
+          landZone: { x: 864, w: 70 },
+        },
+        {
+          // Triple consecutive arches: 78 → 68 → 60 px openings  |  pillar base y=458–460
+          // Gap to ground ≤ 42 px — almost impossible to fly under
+          name: "Level 13 – Floor Scraper",
+          bgId: 5, bgVariant: "Night", layerCount: 5,
+          groundColor: 0x120810, groundLine: 0xff2299,
+          neonPalette: [0xff2299, 0xff66bb, 0xcc0077, 0xff99cc],
+          structures: [
+            // Arch 1 (opening 78 px)
+            { x: 518, y: 458, w: 24, h: 78 }, { x: 612, y: 458, w: 24, h: 78 },
+            { x: 565, y: 380, w: 106, h: 26 },
+            // Arch 2 (opening 68 px)
+            { x: 662, y: 459, w: 24, h: 68 }, { x: 756, y: 459, w: 24, h: 68 },
+            { x: 709, y: 391, w: 106, h: 26 },
+            // Arch 3 (opening 60 px)
+            { x: 800, y: 460, w: 24, h: 60 }, { x: 878, y: 460, w: 24, h: 60 },
+            { x: 839, y: 400, w: 90, h: 26 },
+          ],
+          wheels: [
+            { x: 375, y: 196 }, { x: 440, y: 153 }, { x: 511, y: 115 },
+            { x: 587, y: 88 }, { x: 667, y: 94 }, { x: 747, y: 120 }, { x: 818, y: 164 },
+          ],
+          landZone: { x: 892, w: 66 },
+        },
+        {
+          // Low flanking post + Gate 1 (62 px) + Gate 2 (54 px)  |  pillar base y=462–463
+          name: "Level 14 – Squeeze Play",
+          bgId: 6, bgVariant: "Night", layerCount: 5,
+          groundColor: 0x150808, groundLine: 0xff3322,
+          neonPalette: [0xff3322, 0xff7766, 0xcc1100, 0xff9988],
+          structures: [
+            // Low flanking post (base y=462, gap to ground 38 px)
+            { x: 528, y: 462, w: 28, h: 196 }, { x: 528, y: 266, w: 72, h: 26 },
+            // Gate 1 (opening 62 px)
+            { x: 618, y: 462, w: 24, h: 62 }, { x: 712, y: 462, w: 24, h: 62 },
+            { x: 665, y: 400, w: 106, h: 26 },
+            // Gate 2 (opening 54 px — near-limit)
+            { x: 776, y: 463, w: 24, h: 54 }, { x: 862, y: 463, w: 24, h: 54 },
+            { x: 819, y: 409, w: 98, h: 26 },
+            { x: 819, y: 383, w: 32, h: 26 }, { x: 819, y: 357, w: 32, h: 26 },
+          ],
+          wheels: [
+            { x: 370, y: 192 }, { x: 434, y: 148 }, { x: 505, y: 110 },
+            { x: 580, y: 82 }, { x: 658, y: 78 }, { x: 736, y: 104 }, { x: 808, y: 148 },
+          ],
+          landZone: { x: 874, w: 62 },
+        },
+        {
+          // Three barriers: flanking post + Gate 1 (58 px) + flanking post + Gate 2 (50 px)
+          // Pillar base y=462–464  |  gap to ground ≤ 38 px — flying under is impossible
+          name: "Level 15 – Final Gauntlet",
+          bgId: 7, bgVariant: "Night", layerCount: 5,
+          groundColor: 0x080c14, groundLine: 0x44aaff,
+          neonPalette: [0x44aaff, 0x88ccff, 0x0088dd, 0x99ddff],
+          structures: [
+            // Left flanking post
+            { x: 510, y: 462, w: 28, h: 196 }, { x: 510, y: 266, w: 72, h: 26 },
+            // Gate 1 (opening 58 px)
+            { x: 594, y: 462, w: 24, h: 58 }, { x: 688, y: 462, w: 24, h: 58 },
+            { x: 641, y: 404, w: 106, h: 26 },
+            // Mid flanking post
+            { x: 744, y: 462, w: 28, h: 196 }, { x: 744, y: 266, w: 72, h: 26 },
+            // Gate 2 (opening 50 px — extreme)
+            { x: 800, y: 464, w: 24, h: 50 }, { x: 876, y: 464, w: 24, h: 50 },
+            { x: 838, y: 414, w: 90, h: 26 },
+            { x: 838, y: 388, w: 32, h: 26 },
+          ],
+          wheels: [
+            { x: 365, y: 188 }, { x: 428, y: 143 }, { x: 498, y: 104 },
+            { x: 572, y: 76 }, { x: 650, y: 72 }, { x: 728, y: 98 }, { x: 800, y: 142 },
+          ],
+          landZone: { x: 890, w: 56 },
+        },
         // ── City levels (5–8) use real layered PNG backgrounds ──────────────
         {
           name: "Level 5 – Neon District",
