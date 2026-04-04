@@ -3,6 +3,9 @@
 import { useEffect, useRef } from "react";
 import Link from "next/link";
 
+const GROUND_H = 40;
+const LANDING_ZONE_H = 60;
+
 export default function CarShotPage() {
   const containerRef = useRef<HTMLDivElement>(null);
   const gameRef = useRef<unknown>(null);
@@ -20,7 +23,6 @@ export default function CarShotPage() {
       const CAR_DEFS = [
         {
           id: "jeep1", label: "Bandit", tagline: "Built for chaos",
-          previewKey: "jeep1_preview",
           folder: "Jeep_1",
           frameW: 192, frameH: 192, scale: 0.50,
           // bounding box of car within frame (original px)
@@ -30,7 +32,6 @@ export default function CarShotPage() {
         },
         {
           id: "jeep2", label: "Wrangler", tagline: "Tank of the ramp",
-          previewKey: "jeep2_preview",
           folder: "Jeep_2",
           frameW: 256, frameH: 256, scale: 0.38,
           bodyOffX: 15, bodyOffY: 177, bodyW: 205, bodyH: 79,
@@ -39,7 +40,6 @@ export default function CarShotPage() {
         },
         {
           id: "passenger", label: "Cruiser", tagline: "Loaded for launch",
-          previewKey: "passenger_preview",
           folder: "Passenger car",
           frameW: 192, frameH: 192, scale: 0.50,
           bodyOffX: 31, bodyOffY: 130, bodyW: 131, bodyH: 62,
@@ -57,18 +57,15 @@ export default function CarShotPage() {
           groundColor: 0x071a0e, groundLine: 0x00ff88,
           neonPalette: [0x00ff88, 0x44ffaa, 0x00cc55, 0x88ffcc],
           structures: [
-            // Single centre tower with wide cap
-            { x: 640, y: 420, w: 38, h: 130 },
-            { x: 640, y: 290, w: 76, h: 28 },
-            // Smaller right tower
-            { x: 790, y: 420, w: 34, h: 90 },
-            { x: 790, y: 330, w: 68, h: 26 },
+            // One short tower well left of the landing zone
+            { x: 610, y: 420, w: 40, h: 80 },
+            { x: 610, y: 340, w: 80, h: 26 },
           ],
           wheels: [
-            { x: 460, y: 290 }, { x: 540, y: 250 }, { x: 640, y: 200 },
-            { x: 730, y: 225 }, { x: 820, y: 270 }, { x: 890, y: 320 },
+            { x: 470, y: 330 }, { x: 560, y: 295 }, { x: 650, y: 270 },
+            { x: 745, y: 290 }, { x: 840, y: 320 },
           ],
-          landZone: { x: 850, w: 100 },
+          landZone: { x: 800, w: 150, overlap: 0.65 },
         },
         {
           name: "Level 2 – The Bridge",
@@ -91,7 +88,7 @@ export default function CarShotPage() {
             { x: 430, y: 220 }, { x: 500, y: 180 }, { x: 590, y: 148 },
             { x: 680, y: 128 }, { x: 770, y: 158 }, { x: 860, y: 210 },
           ],
-          landZone: { x: 850, w: 95 },
+          landZone: { x: 850, w: 95, overlap: 0.45 },
         },
         {
           name: "Level 3 – Staircase",
@@ -116,7 +113,7 @@ export default function CarShotPage() {
             { x: 420, y: 240 }, { x: 490, y: 195 }, { x: 570, y: 155 },
             { x: 650, y: 125 }, { x: 730, y: 108 }, { x: 810, y: 138 }, { x: 880, y: 185 },
           ],
-          landZone: { x: 860, w: 90 },
+          landZone: { x: 860, w: 90, overlap: 0.4 },
         },
         {
           name: "Level 4 – The Fortress",
@@ -143,7 +140,7 @@ export default function CarShotPage() {
             { x: 620, y: 100 }, { x: 710, y:  95 }, { x: 790, y: 118 },
             { x: 865, y: 162 }, { x: 925, y: 220 },
           ],
-          landZone: { x: 870, w: 75 },
+          landZone: { x: 870, w: 75, overlap: 0.30 },
         },
         // ── City levels (5–8) use real layered PNG backgrounds ──────────────
         {
@@ -162,7 +159,7 @@ export default function CarShotPage() {
             { x: 420, y: 230 }, { x: 490, y: 180 }, { x: 570, y: 145 },
             { x: 650, y: 120 }, { x: 730, y: 135 }, { x: 810, y: 160 }, { x: 890, y: 200 },
           ],
-          landZone: { x: 850, w: 100 },
+          landZone: { x: 850, w: 100, overlap: 0.55 },
         },
         {
           name: "Level 6 – Purple Heights",
@@ -184,7 +181,7 @@ export default function CarShotPage() {
             { x: 400, y: 210 }, { x: 470, y: 170 }, { x: 545, y: 135 },
             { x: 645, y: 105 }, { x: 730, y: 125 }, { x: 810, y: 155 }, { x: 890, y: 190 },
           ],
-          landZone: { x: 860, w: 95 },
+          landZone: { x: 860, w: 95, overlap: 0.5 },
         },
         {
           name: "Level 7 – Blue Skyline",
@@ -205,7 +202,7 @@ export default function CarShotPage() {
             { x: 430, y: 240 }, { x: 500, y: 195 }, { x: 575, y: 160 },
             { x: 650, y: 130 }, { x: 720, y: 110 }, { x: 800, y: 130 }, { x: 880, y: 170 },
           ],
-          landZone: { x: 860, w: 95 },
+          landZone: { x: 860, w: 95, overlap: 0.5 },
         },
         {
           name: "Level 8 – Desert Run",
@@ -226,7 +223,7 @@ export default function CarShotPage() {
             { x: 410, y: 220 }, { x: 480, y: 175 }, { x: 560, y: 140 },
             { x: 680, y: 115 }, { x: 760, y: 135 }, { x: 840, y: 165 }, { x: 910, y: 210 },
           ],
-          landZone: { x: 870, w: 90 },
+          landZone: { x: 870, w: 90, overlap: 0.5 },
         },
       ];
 
@@ -382,6 +379,9 @@ export default function CarShotPage() {
         private wheels!: Phaser.Physics.Arcade.StaticGroup;
         private ground!: Phaser.Physics.Arcade.StaticGroup;
         private particles!: Phaser.GameObjects.Graphics;
+        private lzGfx!: Phaser.GameObjects.Graphics;
+        private lzBaseColor!: number;
+        private lzTop!: number;
         private hud!: Phaser.GameObjects.Text;
         private levelText!: Phaser.GameObjects.Text;
         private powerBar!: Phaser.GameObjects.Graphics;
@@ -439,12 +439,6 @@ export default function CarShotPage() {
                 this.load.image(key, `/car_shot/backgrounds/${ld.bgId}/${ld.bgVariant}/${i}.png`);
             }
           }
-
-          // Preview sprites (needed if reloading scene)
-          CAR_DEFS.forEach(c => {
-            if (!this.textures.exists(c.previewKey))
-              this.load.image(c.previewKey, `/sprites/${c.previewKey}.png`);
-          });
 
           // Billboard frame assets
           const signFiles: [string, string][] = [
@@ -559,25 +553,24 @@ export default function CarShotPage() {
 
           // Ground
           this.ground = this.physics.add.staticGroup();
-          const groundH = 40;
-          const groundY = height - groundH / 2;
+          const groundY = height - GROUND_H / 2;
           const groundGfx = this.add.graphics();
 
           if (isCityLevel) {
             const gc = (ld.groundColor ?? 0x1a0a2e);
             const gl = (ld.groundLine ?? 0x9900ff);
             groundGfx.fillStyle(gc, 1);
-            groundGfx.fillRect(0, height - groundH, width, groundH);
+            groundGfx.fillRect(0, height - GROUND_H, width, GROUND_H);
             groundGfx.lineStyle(2, gl, 0.9);
-            groundGfx.lineBetween(0, height - groundH, width, height - groundH);
+            groundGfx.lineBetween(0, height - GROUND_H, width, height - GROUND_H);
             groundGfx.lineStyle(1, 0x00e8ff, 0.4);
             for (let x = 0; x < width; x += 60)
-              groundGfx.lineBetween(x, height - groundH + 20, x + 30, height - groundH + 20);
+              groundGfx.lineBetween(x, height - GROUND_H + 20, x + 30, height - GROUND_H + 20);
           } else {
             groundGfx.fillStyle(0x2d5016, 1);
-            groundGfx.fillRect(0, height - groundH, width, groundH);
+            groundGfx.fillRect(0, height - GROUND_H, width, GROUND_H);
             groundGfx.fillStyle(0x8B6914, 1);
-            groundGfx.fillRect(0, height - groundH, width, 8);
+            groundGfx.fillRect(0, height - GROUND_H, width, 8);
           }
 
           // Use staticImage + manually set body so Phaser 3.87 doesn't mis-size via display-scale
@@ -585,11 +578,11 @@ export default function CarShotPage() {
           groundImg.setVisible(false);
           const gsBody = groundImg.body as Phaser.Physics.Arcade.StaticBody;
           gsBody.position.x = 0;
-          gsBody.position.y = height - groundH;
+          gsBody.position.y = height - GROUND_H;
           gsBody.width     = width;
-          gsBody.height    = groundH;
+          gsBody.height    = GROUND_H;
           gsBody.halfWidth  = width  / 2;
-          gsBody.halfHeight = groundH / 2;
+          gsBody.halfHeight = GROUND_H / 2;
           gsBody.updateCenter();
           this.ground.add(groundImg);
 
@@ -602,49 +595,58 @@ export default function CarShotPage() {
           this.buildWheels();
 
           // Landing zone
-          const lz      = this.levelDef.landZone;
-          const lzColor = isCityLevel ? 0x00ffcc : 0x00ff00;
-          const lzHex   = isCityLevel ? "#00ffcc" : "#00ff00";
-          const lzTop   = height - groundH - 60;
-          const lzGfx   = this.add.graphics();
+          const lz           = this.levelDef.landZone;
+          this.lzBaseColor   = isCityLevel ? 0x00ffcc : 0x00ff00;
+          const lzHex        = isCityLevel ? "#00ffcc" : "#00ff00";
+          this.lzTop         = height - GROUND_H - LANDING_ZONE_H;
+          this.lzGfx         = this.add.graphics();
+          this.drawLandZone(this.lzBaseColor);
 
-          // Soft fill
-          lzGfx.fillStyle(lzColor, 0.09);
-          lzGfx.fillRect(lz.x, lzTop, lz.w, 60);
-
-          // Main border
-          lzGfx.lineStyle(2, lzColor, 0.65);
-          lzGfx.strokeRect(lz.x, lzTop, lz.w, 60);
-
-          // Corner accent ticks
-          const tk = 10;
-          lzGfx.lineStyle(3, lzColor, 1.0);
-          lzGfx.lineBetween(lz.x,        lzTop,      lz.x + tk, lzTop);
-          lzGfx.lineBetween(lz.x,        lzTop,      lz.x,      lzTop + tk);
-          lzGfx.lineBetween(lz.x + lz.w, lzTop,      lz.x + lz.w - tk, lzTop);
-          lzGfx.lineBetween(lz.x + lz.w, lzTop,      lz.x + lz.w,      lzTop + tk);
-          lzGfx.lineBetween(lz.x,        lzTop + 60, lz.x + tk, lzTop + 60);
-          lzGfx.lineBetween(lz.x,        lzTop + 60, lz.x,      lzTop + 60 - tk);
-          lzGfx.lineBetween(lz.x + lz.w, lzTop + 60, lz.x + lz.w - tk, lzTop + 60);
-          lzGfx.lineBetween(lz.x + lz.w, lzTop + 60, lz.x + lz.w,      lzTop + 60 - tk);
-
-          // Downward chevrons inside
+          // Downward chevrons inside (static, drawn once)
           const cxLZ = lz.x + lz.w / 2;
-          lzGfx.lineStyle(2, lzColor, 0.45);
+          const chevGfx = this.add.graphics();
+          chevGfx.lineStyle(2, this.lzBaseColor, 0.45);
           for (let ca = 0; ca < 3; ca++) {
-            const ay = lzTop + 14 + ca * 13;
-            lzGfx.lineBetween(cxLZ - 8, ay, cxLZ, ay + 7);
-            lzGfx.lineBetween(cxLZ,     ay + 7, cxLZ + 8, ay);
+            const ay = this.lzTop + 14 + ca * 13;
+            chevGfx.lineBetween(cxLZ - 8, ay, cxLZ, ay + 7);
+            chevGfx.lineBetween(cxLZ,     ay + 7, cxLZ + 8, ay);
           }
 
           // Pulsing label
-          const lzLabel = this.add.text(cxLZ, lzTop + 5, "▼ LAND ▼", {
+          const lzLabel = this.add.text(cxLZ, this.lzTop + 5, "▼ LAND ▼", {
             fontSize: "10px", fontFamily: "Arial", fontStyle: "bold",
             color: lzHex,
           }).setOrigin(0.5, 0).setAlpha(0.9);
           this.tweens.add({ targets: lzLabel, alpha: 0.35, duration: 700, yoyo: true, repeat: -1 });
 
           this.particles = this.add.graphics();
+        }
+
+        drawLandZone(color: number) {
+          const lz  = this.levelDef.landZone;
+          const top = this.lzTop;
+          const g   = this.lzGfx;
+          g.clear();
+
+          // Soft fill
+          g.fillStyle(color, color === 0xffd700 ? 0.14 : 0.09);
+          g.fillRect(lz.x, top, lz.w, 60);
+
+          // Main border
+          g.lineStyle(2, color, color === 0xffd700 ? 0.9 : 0.65);
+          g.strokeRect(lz.x, top, lz.w, 60);
+
+          // Corner accent ticks
+          const tk = 10;
+          g.lineStyle(3, color, 1.0);
+          g.lineBetween(lz.x,        top,      lz.x + tk, top);
+          g.lineBetween(lz.x,        top,      lz.x,      top + tk);
+          g.lineBetween(lz.x + lz.w, top,      lz.x + lz.w - tk, top);
+          g.lineBetween(lz.x + lz.w, top,      lz.x + lz.w,      top + tk);
+          g.lineBetween(lz.x,        top + 60, lz.x + tk, top + 60);
+          g.lineBetween(lz.x,        top + 60, lz.x,      top + 60 - tk);
+          g.lineBetween(lz.x + lz.w, top + 60, lz.x + lz.w - tk, top + 60);
+          g.lineBetween(lz.x + lz.w, top + 60, lz.x + lz.w,      top + 60 - tk);
         }
 
         buildCityBg() {
@@ -774,7 +776,7 @@ export default function CarShotPage() {
             platLeg.setDepth(2);
 
           } else {
-            // Non-city: wood plank ramp (same geometry, earthy colours)
+            // Non-city: wood plank ramp (same geometry, earthy colors)
             const p0x = rampBaseX,            p0y = rampBaseY;
             const p1x = rampTopX,             p1y = rampTopY;
             const p2x = rampTopX + abX*thick,  p2y = rampTopY + abY*thick;
@@ -832,9 +834,9 @@ export default function CarShotPage() {
             // ── Pole support below the billboard ──
             const poleTopLocal = bbLocalY + bbDispH / 2;   // billboard bottom in local space
             const poleH        = hh - poleTopLocal;        // space from bb-bottom to structure bottom
+            const poleW        = Math.max(4, Math.min(s.w * 0.28, 10));
 
             if (poleH > 1) {
-              const poleW   = Math.max(4, Math.min(s.w * 0.28, 10));
               const poleGfx = this.add.graphics();
               if (isCityLevel) {
                 // Sleek dark pole with neon side lines
@@ -870,22 +872,47 @@ export default function CarShotPage() {
             adImg.setScale(bbScale);
             container.add(adImg);
 
-            // ── Invisible physics body (unchanged bounds) ──
-            const body = this.physics.add.staticImage(cx, cy, "__DEFAULT");
-            body.setVisible(false);
-            const sBody = body.body as Phaser.Physics.Arcade.StaticBody;
-            sBody.position.x = cx - hw;
-            sBody.position.y = cy - hh;
-            sBody.width      = s.w;
-            sBody.height     = s.h;
-            sBody.halfWidth  = hw;
-            sBody.halfHeight = hh;
-            sBody.updateCenter();
-            body.setData("gfx",         container);  // container used for tween in destroyObstacle
-            body.setData("signOverlay", null);        // everything is inside container
-            body.setData("sw",  s.w);
-            body.setData("sh",  s.h);
-            this.structures.add(body);
+            // ── Two accurate physics bodies: billboard frame + pole ──
+            // Billboard frame body — spans the top portion where the image sits
+            const bbBodyW  = bb.bbW * bbScale;          // actual rendered frame width
+            const bbBodyH  = bbDispH;                   // actual rendered frame height
+            const bbWorldY = (cy - hh) + bbBodyH / 2;  // world-y center of frame
+
+            const bbBody  = this.physics.add.staticImage(cx, bbWorldY, "__DEFAULT");
+            bbBody.setVisible(false);
+            const bbSBody = bbBody.body as Phaser.Physics.Arcade.StaticBody;
+            bbSBody.position.x = cx       - bbBodyW / 2;
+            bbSBody.position.y = bbWorldY - bbBodyH / 2;
+            bbSBody.width      = bbBodyW;   bbSBody.height     = bbBodyH;
+            bbSBody.halfWidth  = bbBodyW / 2; bbSBody.halfHeight = bbBodyH / 2;
+            bbSBody.updateCenter();
+            bbBody.setData("gfx",         container);
+            bbBody.setData("signOverlay", null);
+            bbBody.setData("sw", s.w); bbBody.setData("sh", s.h);
+
+            // Pole body — narrow column below the frame
+            let poleBody: Phaser.Physics.Arcade.Image | null = null;
+            if (poleH > 1) {
+              const poleBodyW   = Math.max(poleW + 6, 14);   // slightly wider than drawn
+              const poleWorldY  = (cy - hh) + bbBodyH + poleH / 2;
+              poleBody = this.physics.add.staticImage(cx, poleWorldY, "__DEFAULT");
+              poleBody.setVisible(false);
+              const pSBody = poleBody.body as Phaser.Physics.Arcade.StaticBody;
+              pSBody.position.x = cx        - poleBodyW / 2;
+              pSBody.position.y = poleWorldY - poleH / 2;
+              pSBody.width      = poleBodyW;   pSBody.height     = poleH;
+              pSBody.halfWidth  = poleBodyW / 2; pSBody.halfHeight = poleH / 2;
+              pSBody.updateCenter();
+              poleBody.setData("gfx",         container);
+              poleBody.setData("signOverlay", null);
+              poleBody.setData("sw", s.w); poleBody.setData("sh", s.h);
+              // Cross-link so hitting either body destroys both
+              bbBody.setData("partner",   poleBody);
+              poleBody.setData("partner", bbBody);
+              this.structures.add(poleBody);
+            }
+
+            this.structures.add(bbBody);
           });
         }
 
@@ -893,6 +920,13 @@ export default function CarShotPage() {
           if (!body.active) return;
           body.setActive(false);
           (body.body as Phaser.Physics.Arcade.StaticBody).enable = false;
+
+          // Disable linked partner body (billboard frame ↔ pole)
+          const partner = body.getData("partner") as Phaser.Physics.Arcade.Image | null;
+          if (partner && partner.active) {
+            partner.setActive(false);
+            (partner.body as Phaser.Physics.Arcade.StaticBody).enable = false;
+          }
 
           // gfx is a Graphics object with x/y at structure center
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -969,6 +1003,7 @@ export default function CarShotPage() {
             this.tweens.add({ targets: innerHalo, alpha: 0.05, duration: 700, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
 
             const img = this.physics.add.staticImage(w.x, w.y, "wheel");
+            (img.body as Phaser.Physics.Arcade.StaticBody).setSize(72, 72, true);
             this.wheels.add(img);
             this.tweens.add({ targets: img, angle: 360, duration: 2000, repeat: -1 });
             // Bob up/down — move halos in sync with wheel
@@ -1142,16 +1177,69 @@ export default function CarShotPage() {
         }
 
         onLand() {
-          if (this.landed || this.wasDestroyed) return;
-          this.landed = true;
-          const lz = this.levelDef.landZone;
-          const inZone = this.car.x >= lz.x && this.car.x <= lz.x + lz.w;
+          if (this.landed) return;
 
-          // Play brake animation on landing
+          const carBody = this.car.body as Phaser.Physics.Arcade.Body;
+
+          const getOverlap = () => {
+            const cd        = this.carDef;
+            const lz        = this.levelDef.landZone;
+            const overlapThreshold = lz.overlap ?? 0.65;
+            const carLeftX  = this.car.x - (cd.frameW / 2 - cd.bodyOffX) * cd.scale;
+            const carRightX = this.car.x + (cd.bodyOffX + cd.bodyW - cd.frameW / 2) * cd.scale;
+            const carBodyW  = carRightX - carLeftX;
+            const overlapL  = Math.max(carLeftX, lz.x);
+            const overlapR  = Math.min(carRightX, lz.x + lz.w);
+            const overlap   = Math.max(0, overlapR - overlapL);
+            return overlap / carBodyW >= overlapThreshold;
+          }
+
+          // ── Nose-dive slam: high downward velocity on ground contact ──
+          if (carBody.velocity.y > 150 && !this.slamTriggered) {
+            this.slamTriggered = true;
+            this.wasDestroyed  = true;
+            this.landed = true;
+            carBody.setAllowGravity(false);
+            carBody.velocity.x *= 0.25;
+            carBody.velocity.y  = 0;
+
+            const flash = this.add.graphics();
+            flash.fillStyle(0xffffff, 0.75);
+            flash.fillRect(this.car.x - 48, this.scale.height - 30, 96, 12);
+            this.time.delayedCall(70, () => flash.destroy());
+
+            this.car.play(`${this.carDef.id}_destroyed`);
+
+            const cd    = this.carDef;
+            const bB    = (cd.bodyOffY + cd.bodyH - cd.frameH) * cd.scale;
+            const restY = this.scale.height - 20 - bB;
+            this.tweens.add({
+              targets: this.car,
+              angle: 0,
+              y: restY,
+              duration: 380,
+              ease: "Back.easeOut",
+              onComplete: () => {
+                this.car.y = restY;
+                this.time.delayedCall(450, () => {
+                  this.showResult(getOverlap());
+                });
+              },
+            });
+            return;
+          }
+
+          // ── Normal landing: scrub velocity, drag to a stop, then check zone ──
+          this.landed = true;
+          carBody.setVelocityY(0);
+          carBody.setVelocityX(carBody.velocity.x * 0.8);
+          carBody.setDragX(180);
           this.car.play(`${this.carDef.id}_brake`);
           this.car.setAngle(0);
 
-          this.time.delayedCall(800, () => this.showResult(inZone));
+          this.time.delayedCall(700, () => {
+            this.showResult(getOverlap());
+          });
         }
 
         onHitStructure(_car: unknown, structure: unknown) {
@@ -1162,7 +1250,7 @@ export default function CarShotPage() {
 
           // Slow the car slightly on each impact
           const carBody = this.car.body as Phaser.Physics.Arcade.Body;
-          carBody.setVelocity(carBody.velocity.x * 0.7, carBody.velocity.y * 0.7);
+          carBody.setVelocity(carBody.velocity.x * 0.88, carBody.velocity.y * 0.88);
 
           // Play damage anim briefly on the car, then return to ride
           if (!this.wasDestroyed) {
@@ -1174,7 +1262,7 @@ export default function CarShotPage() {
           }
 
           // If car is going too slow after impact, treat it as a crash
-          if (carBody.speed < 80 && !this.wasDestroyed) {
+          if (carBody.speed < 15 && !this.wasDestroyed) {
             this.wasDestroyed = true;
             this.car.play(`${this.carDef.id}_destroyed`);
             this.car.setAngularVelocity(0);
@@ -1271,7 +1359,7 @@ export default function CarShotPage() {
 
           // Golden wheels – under the badge with a bit of breathing room
           const wheelsY = badgeY + 66;
-          this.add.text(cx, wheelsY, `Golden wheels: ${this.wheelsThisRun}`, {
+          this.add.text(cx, wheelsY, `Golden wheels: ${this.wheelsThisRun}/${this.totalWheels}`, {
             fontSize: "15px", fontFamily: "Arial", color: "#f1c40f",
           }).setOrigin(0.5).setDepth(32);
 
@@ -1364,30 +1452,67 @@ export default function CarShotPage() {
         }
 
         update(_time: number, delta: number) {
-          if (this.launched && !this.landed) {
-            const body = this.car.body as Phaser.Physics.Arcade.Body;
+          if (this.launched) {
+            const cd       = this.carDef;
 
-            // Rotate car to match velocity direction only while not destroyed
-            if (!this.wasDestroyed) {
-              const angle = Math.atan2(body.velocity.y, body.velocity.x) * (180 / Math.PI);
-              this.car.setAngle(angle);
-            }
-
-            // Fell back into launch half — end immediately once past mid-line
-            if (this.landTimer > 500 &&
-                this.car.x < this.scale.width  / 2 &&
-                this.car.y > this.scale.height / 2) {
-              this.landed = true;
-              this.time.delayedCall(150, () => this.showResult(false));
-            }
-
-            // Dynamic floor — keep every corner of the car body above height-20
-            // at any rotation angle.
-            // The car uses origin (0.5, 1.0) so car.y == the BOTTOM of the sprite.
-            // We rotate the four body-rectangle corners around that origin point and
-            // find the one that dips lowest.
+            // Live landing-zone coverage indicator
             {
-              const cd = this.carDef;
+              const lz     = this.levelDef.landZone;
+              const height = this.scale.height;
+              const lzTop  = height - GROUND_H - LANDING_ZONE_H;
+
+              if (this.car.y >= lzTop) {
+                const carLeftX  = this.car.x - (cd.frameW / 2 - cd.bodyOffX) * cd.scale;
+                const carRightX = this.car.x + (cd.bodyOffX + cd.bodyW - cd.frameW / 2) * cd.scale;
+                const carBodyW  = carRightX - carLeftX;
+                const overlapL  = Math.max(carLeftX, lz.x);
+                const overlapR  = Math.min(carRightX, lz.x + lz.w);
+                const ratio     = Math.max(0, overlapR - overlapL) / carBodyW;
+                const wantGold  = ratio >= (lz.overlap ?? 0.65);
+                const isGold    = (this.lzGfx.getData("gold") as boolean) ?? false;
+                console.log("landing-zone coverage indicator", { ratio, wantGold, isGold });
+                if (wantGold !== isGold) {
+                  this.lzGfx.setData("gold", wantGold);
+                  this.drawLandZone(wantGold ? 0xffd700 : this.lzBaseColor);
+                }
+              }
+            }
+
+
+            if (!this.landed) {
+              const body = this.car.body as Phaser.Physics.Arcade.Body;
+
+              // Rotate car to match velocity direction only while not destroyed
+              if (!this.wasDestroyed) {
+                const angle = Math.atan2(body.velocity.y, body.velocity.x) * (180 / Math.PI);
+                this.car.setAngle(angle);
+              }
+
+              const stop = () => {
+                this.landed = true;
+                this.time.delayedCall(250, () => this.showResult(false));
+              }
+
+              // Fell back into launch half — only trigger if the car has reversed
+              // direction (actually traveling back left) AND enough time has passed
+              // for a genuine arc to have completed
+              if (this.landTimer > 2000 &&
+                  body.velocity.x < 0 &&
+                  this.car.x < this.scale.width  / 2 &&
+                  this.car.y > this.scale.height / 2) stop();
+
+              // Safety net: car fell off the bottom without hitting the ground collider
+              if (this.car.y > this.scale.height + 60) stop();
+
+              // Hard out-of-bounds fallback (right edge)
+              if (this.car.x > this.scale.width + 100 && !this.landed) stop();
+
+              // Dynamic floor — keep every corner of the car body above height-20
+              // at any rotation angle.
+              // The car uses origin (0.5, 1.0) so car.y == the BOTTOM of the sprite.
+              // We rotate the four body-rectangle corners around that origin point and
+              // find the one that dips lowest.
+              
               const s   = cd.scale;
               // Body corner positions relative to the sprite's bottom-center origin
               const bL = (cd.bodyOffX               - cd.frameW / 2) * s;  // left x
@@ -1439,43 +1564,32 @@ export default function CarShotPage() {
                     ease: "Back.easeOut",
                     onComplete: () => {
                       this.car.y = restY;   // snap to exact rest position
-                      if (!this.landed) {
-                        this.landed = true;
-                        this.time.delayedCall(450, () => this.showResult(false));
-                      }
+                      this.time.delayedCall(450, () => this.onLand());
                     },
                   });
                 } else {
                   body.velocity.y = 0;
                 }
               }
-            }
+              
+              this.landTimer += delta;
 
-            // Hard out-of-bounds fallback (right edge)
-            if (this.car.x > this.scale.width + 100) {
-              if (!this.landed) {
-                this.landed = true;
-                this.time.delayedCall(200, () => this.showResult(false));
-              }
-            }
-
-            this.landTimer += delta;
-
-            // Stuck detection: low speed for 2.5s after first second of flight
-            if (this.landTimer > 1000 && !this.wasDestroyed) {
-              if (body.speed < 20) {
-                this.stuckTimer += delta;
-                if (this.stuckTimer >= 2500) {
-                  this.landed = true;
-                  const { width, height } = this.scale;
-                  const flash = this.add.text(width / 2, height / 2 - 20, "⚠️ Stuck!", {
-                    fontSize: "28px", fontFamily: "Arial Black, Arial",
-                    color: "#f59e0b", stroke: "#000", strokeThickness: 5,
-                  }).setOrigin(0.5).setDepth(50);
-                  this.time.delayedCall(700, () => { flash.destroy(); this.showResult(false); });
+              // Stuck detection: low speed for 2.5s after first second of flight
+              if (this.landTimer > 1000 && !this.wasDestroyed) {
+                if (body.speed < 20) {
+                  this.stuckTimer += delta;
+                  if (this.stuckTimer >= 2500) {
+                    this.landed = true;
+                    const { width, height } = this.scale;
+                    const flash = this.add.text(width / 2, height / 2 - 20, "⚠️ Stuck!", {
+                      fontSize: "28px", fontFamily: "Arial Black, Arial",
+                      color: "#f59e0b", stroke: "#000", strokeThickness: 5,
+                    }).setOrigin(0.5).setDepth(50);
+                    this.time.delayedCall(700, () => { flash.destroy(); this.showResult(false); });
+                  }
+                } else {
+                  this.stuckTimer = 0;
                 }
-              } else {
-                this.stuckTimer = 0;
               }
             }
           }
