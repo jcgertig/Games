@@ -640,8 +640,13 @@ export default function CarShotPage() {
             hit.on("pointerdown",  () => {
               this.sound.play("sfx_select", { volume: 0.6 });
               this.registry.set("selectedCar", car);
-              this.registry.set("currentLevel", 0);
-              this.registry.set("totalWheels", 0);
+              // If arriving from a mid-run "Switch Car", preserve level & wheels
+              if (this.registry.get("keepProgress")) {
+                this.registry.set("keepProgress", false);
+              } else {
+                this.registry.set("currentLevel", 0);
+                this.registry.set("totalWheels", 0);
+              }
               this.scene.start("Game");
             });
             sprite.setAlpha(0.85);
@@ -1719,34 +1724,64 @@ export default function CarShotPage() {
             fontSize: "15px", fontFamily: "Arial", color: "#f1c40f",
           }).setOrigin(0.5).setDepth(32);
 
+          // ── Shared helper: start-over action ──────────────────────────────
+          const doStartOver = () => {
+            this.registry.set("currentLevel", 0);
+            this.registry.set("totalWheels",  0);
+            this.registry.set("keepProgress", false);
+            this.scene.start("CarSelect");
+          };
+
           // Below the monitor frame (bottom edge ≈ cy + 140)
-          const nextLevel = this.levelIdx < LEVELS.length - 1;
+          const nextLevel    = this.levelIdx < LEVELS.length - 1;
           const belowMonitor = cy + 155;
+          const startOverY   = belowMonitor + 36;   // second row for Start Over
 
           if (inZone && nextLevel) {
-            // Next Level: button left, Retry text-only right
-            this.createTextButton("Next Level: button left", "Next Level →", cx - 90, belowMonitor, 90, 28, 33, () => {
+            // ── SUCCESS with more levels ──────────────────────────────────────
+            // Row 1: Next Level  |  Retry
+            this.createTextButton("res-next", "Next Level →", cx - 90, belowMonitor, 90, 28, 33, () => {
               this.registry.set("currentLevel", this.levelIdx + 1);
               this.registry.set("totalWheels", this.totalWheels + this.wheelsThisRun);
               this.scene.restart();
             }, "13px", "#6366F1", true);
 
-            // Retry – text only (next-level branch)
-            this.createTextButton("Retry – text only (next-level branch)", "↩ Retry", cx + 90, belowMonitor, 90, 28, 33, () => {
-              this.registry.set("totalWheels", this.totalWheels);
-              this.scene.restart();
-            }, "13px", "#00ffcc", true);
-          } else {
-            // Retry – text only, left side
-            this.createTextButton("Retry – text only, left side", "↩ Retry", cx - 80, belowMonitor, 90, 28, 33, () => {
+            this.createTextButton("res-retry-s", "↩ Retry", cx + 90, belowMonitor, 90, 28, 33, () => {
               this.registry.set("totalWheels", this.totalWheels);
               this.scene.restart();
             }, "13px", "#00ffcc", true);
 
-            // Change Car – text only, right side
-            this.createTextButton("Change Car – text only, right side", "Change Car", cx + 80, belowMonitor, 100, 28, 33, () => {
+            // Row 2: Start Over (smaller, dimmer — always available)
+            this.createTextButton("res-startover-s", "↺ Start Over", cx, startOverY, 110, 22, 33,
+              doStartOver, "11px", "#94a3b8", true);
+
+          } else if (inZone) {
+            // ── SUCCESS — final level (all done!) ────────────────────────────
+            this.createTextButton("res-again", "↩ Play Again", cx - 90, belowMonitor, 100, 28, 33, () => {
+              this.registry.set("totalWheels", this.totalWheels);
+              this.scene.restart();
+            }, "13px", "#00ffcc", true);
+
+            this.createTextButton("res-startover-f", "↺ Start Over", cx + 90, belowMonitor, 100, 28, 33,
+              doStartOver, "13px", "#94a3b8", true);
+
+          } else {
+            // ── FAIL ─────────────────────────────────────────────────────────
+            // Row 1: Retry  |  Switch Car (keeps progress)
+            this.createTextButton("res-retry-f", "↩ Retry", cx - 90, belowMonitor, 90, 28, 33, () => {
+              this.registry.set("totalWheels", this.totalWheels);
+              this.scene.restart();
+            }, "13px", "#00ffcc", true);
+
+            this.createTextButton("res-switchcar", "Switch Car", cx + 90, belowMonitor, 90, 28, 33, () => {
+              this.registry.set("totalWheels", this.totalWheels);
+              this.registry.set("keepProgress", true);
               this.scene.start("CarSelect");
             }, "13px", "#00ffcc", true);
+
+            // Row 2: Start Over
+            this.createTextButton("res-startover-fail", "↺ Start Over", cx, startOverY, 110, 22, 33,
+              doStartOver, "11px", "#94a3b8", true);
           }
         }
 
