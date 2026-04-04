@@ -228,6 +228,127 @@ export default function CarShotPage() {
       ];
 
       // ════════════════════════════════════════════════════════════════════════
+      //  MUSIC
+      // ════════════════════════════════════════════════════════════════════════
+      const MUSIC_NOSTALGIA = "music_nostalgia";
+      const MUSIC_TRACKS = [
+        { key: "music_retro",     src: "/car_shot/music/bransboynd-retro-game-402454.mp3" },
+        { key: "music_cyberpunk", src: "/car_shot/music/humanstudioedm-cyberpunk-gaming-505294.mp3" },
+        { key: MUSIC_NOSTALGIA,   src: "/car_shot/music/ribhavagrawal-nostalgic-cyberpunk-music-230625.mp3" },
+        { key: "music_space",     src: "/car_shot/music/serhii_kliets-spaceship-arcade-shooter-game-background-soundtrack-318508.mp3" },
+      ];
+
+      class MusicScene extends Phaser.Scene {
+        private music: Phaser.Sound.BaseSound | null = null;
+        private muted = false;
+        private levelTrackIdx = 0;
+        private menuVisited = false;          // prevents double-play on first launch
+        private muteBtn!: Phaser.GameObjects.Text;
+        private muteBg!: Phaser.GameObjects.Graphics;
+
+        constructor() { super({ key: "Music", active: true }); }
+
+        preload() {
+          MUSIC_TRACKS.forEach(t => this.load.audio(t.key, t.src));
+          // Load SFX here so they're available in all scenes from the start
+          const sfx: [string, string][] = [
+            ["sfx_select",  "/car_shot/sound_effects/creatorshome-video-game-select-337214.mp3"],
+            ["sfx_collect", "/car_shot/sound_effects/liecio-collect-points-190037.mp3"],
+            ["sfx_crash",   "/car_shot/sound_effects/dragon-studio-car-crash-sound-376882.mp3"],
+            ["sfx_success", "/car_shot/sound_effects/freesound_community-success-48018.mp3"],
+            ["sfx_fail",    "/car_shot/sound_effects/freesound_community-warning-sound-6686.mp3"],
+          ];
+          sfx.forEach(([key, src]) => this.load.audio(key, src));
+        }
+
+        create() {
+          // React to scene transitions — set up BEFORE launching CarSelect
+          const gameScene   = this.game.scene.getScene("Game");
+          const selectScene = this.game.scene.getScene("CarSelect");
+
+          gameScene.events.on("create", () => {
+            const track = MUSIC_TRACKS[this.levelTrackIdx % MUSIC_TRACKS.length];
+            this.levelTrackIdx++;
+            this.playTrack(track.key);
+          }, this);
+
+          // Only switch to nostalgia when RETURNING to the menu, not on first launch
+          // (first launch is handled by the playTrack call below)
+          selectScene.events.on("create", () => {
+            if (this.menuVisited) this.playTrack(MUSIC_NOSTALGIA);
+            this.menuVisited = true;
+          }, this);
+
+          // Mute button — bottom-right corner, always on top
+          const { width, height } = this.scale;
+          const bx = width - 14, by = height - 14;
+
+          this.muteBg = this.add.graphics().setDepth(200);
+          this.muteBtn = this.add.text(bx, by, "🔊", {
+            fontSize: "22px",
+          }).setOrigin(1, 1).setDepth(201).setInteractive({ cursor: "pointer" });
+
+          this.drawMuteBtn();
+
+          this.muteBtn.on("pointerover",  () => this.muteBg.setAlpha(0.9));
+          this.muteBtn.on("pointerout",   () => this.muteBg.setAlpha(0.7));
+          this.muteBtn.on("pointerdown",  () => { this.sound.play("sfx_select", { volume: 0.6 }); this.toggleMute(); });
+
+          // Always render on top of other scenes
+          this.scene.bringToTop();
+
+          // Start nostalgia — Phaser's WebAudioSound.play() internally queues
+          // resumePlay() for the UNLOCKED event when the AudioContext is suspended,
+          // so this is safe to call before any user interaction.
+          this.playTrack(MUSIC_NOSTALGIA);
+
+          // Extra safety net: some browsers / HTML5Audio backends don't auto-queue.
+          // On first pointer interaction, ensure the current track is playing.
+          this.input.once("pointerdown", () => {
+            if (!this.muted && this.music && !(this.music as Phaser.Sound.WebAudioSound).isPlaying) {
+              this.music.play();
+            }
+          }, this);
+
+          // Start the menu scene
+          this.scene.launch("CarSelect");
+        }
+
+        drawMuteBtn() {
+          const { width, height } = this.scale;
+          const bx = width - 14, by = height - 14;
+          this.muteBg.clear();
+          this.muteBg.fillStyle(0x000000, 0.55);
+          this.muteBg.fillRoundedRect(bx - 34, by - 30, 36, 32, 8);
+          this.muteBg.lineStyle(1, this.muted ? 0x666666 : 0x00ffcc, 0.7);
+          this.muteBg.strokeRoundedRect(bx - 34, by - 30, 36, 32, 8);
+          this.muteBg.setAlpha(0.7);
+        }
+
+        // Swap in a new looping track. Phaser's WebAudioSound.play() registers
+        // an internal resumePlay handler for the UNLOCKED event when the
+        // AudioContext is suspended, so no manual locked-check needed here.
+        playTrack(key: string) {
+          if (this.music) { this.music.stop(); this.music.destroy(); this.music = null; }
+          this.music = this.sound.add(key, { loop: true, volume: 0.45 });
+          if (!this.muted) this.music.play();
+        }
+
+        toggleMute() {
+          this.muted = !this.muted;
+          if (this.music) {
+            if (this.muted) {
+              (this.music as Phaser.Sound.WebAudioSound).pause?.();
+            } else {
+              (this.music as Phaser.Sound.WebAudioSound).resume?.();
+            }
+          }
+          this.muteBtn.setText(this.muted ? "🔇" : "🔊");
+          this.drawMuteBtn();
+        }
+      }
+
+      // ════════════════════════════════════════════════════════════════════════
       //  SCENE 1 – Car Select
       // ════════════════════════════════════════════════════════════════════════
       class CarSelectScene extends Phaser.Scene {
@@ -354,6 +475,7 @@ export default function CarShotPage() {
             hit.on("pointerover",  () => { monFrame.setTint(0x88ffee); sprite.setAlpha(1); });
             hit.on("pointerout",   () => { monFrame.clearTint();        sprite.setAlpha(0.85); });
             hit.on("pointerdown",  () => {
+              this.sound.play("sfx_select", { volume: 0.6 });
               this.registry.set("selectedCar", car);
               this.registry.set("currentLevel", 0);
               this.registry.set("totalWheels", 0);
@@ -400,6 +522,7 @@ export default function CarShotPage() {
         private landed = false;
         private landTimer = 0;
         private stuckTimer = 0;
+        private groundHitPlayed = false;
         private cursorZones: Map<string, { hit: Phaser.Geom.Rectangle; cursor: string }> = new Map();
 
         constructor() { super("Game"); }
@@ -477,6 +600,7 @@ export default function CarShotPage() {
           this.landed = false;
           this.landTimer = 0;
           this.stuckTimer = 0;
+          this.groundHitPlayed = false;
           this.wheelsThisRun = 0;
           this.cursorZones = new Map();
 
@@ -1221,7 +1345,7 @@ export default function CarShotPage() {
               ease: "Back.easeOut",
               onComplete: () => {
                 this.car.y = restY;
-                this.time.delayedCall(450, () => {
+                this.time.delayedCall(250, () => {
                   this.showResult(getOverlap());
                 });
               },
@@ -1233,11 +1357,11 @@ export default function CarShotPage() {
           this.landed = true;
           carBody.setVelocityY(0);
           carBody.setVelocityX(carBody.velocity.x * 0.8);
-          carBody.setDragX(180);
+          carBody.setDragX(280);
           this.car.play(`${this.carDef.id}_brake`);
           this.car.setAngle(0);
 
-          this.time.delayedCall(700, () => {
+          this.time.delayedCall(450, () => {
             this.showResult(getOverlap());
           });
         }
@@ -1247,6 +1371,7 @@ export default function CarShotPage() {
 
           // Destroy the obstacle (visual + physics removal)
           this.destroyObstacle(s);
+          this.sound.play("sfx_crash", { volume: 0.6 });
 
           // Slow the car slightly on each impact
           const carBody = this.car.body as Phaser.Physics.Arcade.Body;
@@ -1282,6 +1407,7 @@ export default function CarShotPage() {
           this.wheelsThisRun++;
           this.hud.setText(this.getHudText());
           this.spawnSparkle(w.x, w.y);
+          this.sound.play("sfx_collect", { volume: 0.7 });
         }
 
         spawnSparkle(x: number, y: number) {
@@ -1333,12 +1459,13 @@ export default function CarShotPage() {
               .setInteractive({ cursor: "pointer" }).setDepth(z + 1);
             hit.on("pointerover", () => txt.setAlpha(0.7));
             hit.on("pointerout", () => txt.setAlpha(1));
-            hit.on("pointerdown", cb);
+            hit.on("pointerdown", () => { this.sound.play("sfx_select", { volume: 0.6 }); cb(); });
             this.addCursorZone(id, new Phaser.Geom.Rectangle(x-2, y-2, w+4, h+4), "pointer");
           }
         }
 
         showResult(inZone: boolean) {
+          this.sound.play(inZone ? "sfx_success" : "sfx_fail", { volume: 0.75 });
           const { width, height } = this.scale;
           const cx = width / 2, cy = height / 2;
 
@@ -1447,7 +1574,7 @@ export default function CarShotPage() {
             .setInteractive().setDepth(34);
           hit.on("pointerover", () => btnImg.setTint(0x88ffee));
           hit.on("pointerout",  () => btnImg.clearTint());
-          hit.on("pointerdown", cb);
+          hit.on("pointerdown", () => { this.sound.play("sfx_select", { volume: 0.6 }); cb(); });
           this.addCursorZone(label, new Phaser.Geom.Rectangle(x, y, bw, bh), "pointer");
         }
 
@@ -1538,6 +1665,11 @@ export default function CarShotPage() {
               if (this.car.y > effectiveFloorY) {
                 this.car.y = effectiveFloorY;
 
+                if (!this.groundHitPlayed) {
+                  this.groundHitPlayed = true;
+                  this.sound.play("sfx_crash", { volume: 0.5 });
+                }
+
                 if (body.velocity.y > 150 && !this.wasDestroyed && !this.slamTriggered) {
                   // Nose-dive slam: kill physics then flop flat via tween
                   this.slamTriggered = true;
@@ -1606,7 +1738,8 @@ export default function CarShotPage() {
           default: "arcade",
           arcade: { gravity: { x: 0, y: 500 }, debug: false },
         },
-        scene: [CarSelectScene, GameScene],
+        audio: { disableWebAudio: false },
+        scene: [MusicScene, CarSelectScene, GameScene],
         scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
       };
 
