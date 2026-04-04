@@ -7,10 +7,10 @@ export default function TileComposerPage() {
     <div className="flex flex-col h-screen">
       <div className="flex items-center gap-4 px-4 py-3 bg-slate-900 border-b border-slate-800 flex-shrink-0">
         <Link
-          href="/"
+          href="/tools"
           className="text-slate-500 hover:text-slate-300 text-sm transition-colors"
         >
-          ← Back to games
+          ← Back to tools
         </Link>
         <h1 className="text-white font-semibold">Tile Composer</h1>
       </div>
