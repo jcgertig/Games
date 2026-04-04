@@ -23,6 +23,7 @@ export default function RootLayout({
             <nav className="flex gap-6 text-sm text-slate-400">
               <Link href="/" className="hover:text-white transition-colors">Home</Link>
               <Link href="/games" className="hover:text-white transition-colors">All Games</Link>
+              <Link href="/changelog" className="hover:text-white transition-colors">Changelog</Link>
             </nav>
           </div>
         </header>
