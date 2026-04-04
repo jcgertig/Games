@@ -686,6 +686,7 @@ export default function CarShotPage() {
         private landTimer = 0;
         private stuckTimer = 0;
         private groundHitPlayed = false;
+        private preHitVelocity = { x: 0, y: 0 };
         private cursorZones: Map<string, { hit: Phaser.Geom.Rectangle; cursor: string }> = new Map();
 
         constructor() { super("Game"); }
@@ -1459,7 +1460,14 @@ export default function CarShotPage() {
           this.car.play(`${this.carDef.id}_ride`);
 
           this.physics.add.collider(this.car, this.ground,     this.onLand,         undefined, this);
-          this.physics.add.collider(this.car, this.structures, this.onHitStructure,  undefined, this);
+          this.physics.add.collider(this.car, this.structures, this.onHitStructure,
+            // processCallback fires BEFORE Phaser zeroes the velocity on separation —
+            // snapshot it here so onHitStructure can read the true pre-impact speed.
+            (_car) => {
+              const b = (this.car.body as Phaser.Physics.Arcade.Body);
+              this.preHitVelocity = { x: b.velocity.x, y: b.velocity.y };
+              return true;
+            }, this);
           this.physics.add.overlap(this.car,  this.wheels,     this.onCollectWheel,  undefined, this);
         }
 
@@ -1530,15 +1538,72 @@ export default function CarShotPage() {
         }
 
         onHitStructure(_car: unknown, structure: unknown) {
-          const s = structure as Phaser.Physics.Arcade.Image;
-
-          // Destroy the obstacle (visual + physics removal)
-          this.destroyObstacle(s);
-          this.sound.play("sfx_crash", { volume: 0.6 });
-
-          // Slow the car slightly on each impact
+          const s       = structure as Phaser.Physics.Arcade.Image;
           const carBody = this.car.body as Phaser.Physics.Arcade.Body;
-          carBody.setVelocity(carBody.velocity.x * 0.88, carBody.velocity.y * 0.88);
+
+          // Use the pre-collision snapshot — by the time this callback fires,
+          // Phaser's arcade physics has already zeroed velocity.x (the axis
+          // perpendicular to the static body surface), so carBody.velocity is
+          // useless for determining impact speed or restoring momentum.
+          const pvx   = this.preHitVelocity.x;
+          const pvy   = this.preHitVelocity.y;
+          const speed = Math.sqrt(pvx * pvx + pvy * pvy);
+
+          // ── Velocity-dependent breakthrough ────────────────────────────────
+          // LOW speed  (<180):  car bounces off — billboard survives
+          // MED speed (180-400): punches through with heavy speed loss + shake
+          // HIGH speed (>400):  clean smash-through, minor speed loss
+          // ──────────────────────────────────────────────────────────────────
+
+          if (speed < 180 && !this.wasDestroyed) {
+            // Too slow — bounce off, billboard stays intact
+            this.sound.play("sfx_crash", { volume: 0.8 });
+            this.cameras.main.shake(200, 0.018);
+
+            // Disable the obstacle's physics body so the collider stops firing,
+            // but leave the graphics visible (billboard survives visually)
+            const sBody = s.body as Phaser.Physics.Arcade.StaticBody;
+            sBody.enable = false;
+            const partner = s.getData("partner") as Phaser.Physics.Arcade.Image | null;
+            if (partner) {
+              (partner.body as Phaser.Physics.Arcade.StaticBody).enable = false;
+            }
+
+            // Bounce the car back using pre-collision velocity (x is already 0 otherwise)
+            carBody.setVelocity(pvx * -0.35, pvy * 0.25);
+            carBody.setAngularVelocity(0);
+
+            // Crash sequence
+            this.wasDestroyed = true;
+            this.car.play(`${this.carDef.id}_destroyed`);
+            this.car.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
+              if (!this.landed) {
+                this.landed = true;
+                this.time.delayedCall(300, () => this.showResult(false));
+              }
+            });
+            return;
+          }
+
+          // Medium or high speed — car breaks through
+          this.destroyObstacle(s);
+
+          if (speed < 400) {
+            // Medium impact: heavy speed penalty + camera shake
+            this.sound.play("sfx_crash", { volume: 0.75 });
+            this.cameras.main.shake(120, 0.010);
+            carBody.setVelocity(pvx * 0.55, pvy * 0.55);
+          } else if (speed < 800) {
+            // High speed: clean smash-through, minor penalty
+            this.sound.play("sfx_crash", { volume: 0.6 });
+            this.cameras.main.shake(60, 0.006);
+            carBody.setVelocity(pvx * 0.70, pvy * 0.70);
+          } else {
+            // Huge speed: clean smash-through
+            this.sound.play("sfx_crash", { volume: 0.4 });
+            this.cameras.main.shake(60, 0.006);
+            carBody.setVelocity(pvx * 0.88, pvy * 0.88);
+          }
 
           // Play damage anim briefly on the car, then return to ride
           if (!this.wasDestroyed) {
@@ -1549,8 +1614,9 @@ export default function CarShotPage() {
             });
           }
 
-          // If car is going too slow after impact, treat it as a crash
-          if (carBody.speed < 15 && !this.wasDestroyed) {
+          // If the restored speed is still very low, treat it as a crash
+          const restoredSpeed = speed * (speed < 400 ? 0.45 : 0.88);
+          if (restoredSpeed < 15 && !this.wasDestroyed) {
             this.wasDestroyed = true;
             this.car.play(`${this.carDef.id}_destroyed`);
             this.car.setAngularVelocity(0);
@@ -1760,7 +1826,7 @@ export default function CarShotPage() {
                 const ratio     = Math.max(0, overlapR - overlapL) / carBodyW;
                 const wantGold  = ratio >= (lz.overlap ?? 0.65);
                 const isGold    = (this.lzGfx.getData("gold") as boolean) ?? false;
-                console.log("landing-zone coverage indicator", { ratio, wantGold, isGold });
+
                 if (wantGold !== isGold) {
                   this.lzGfx.setData("gold", wantGold);
                   this.drawLandZone(wantGold ? 0xffd700 : this.lzBaseColor);
