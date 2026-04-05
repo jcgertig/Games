@@ -1,5 +1,6 @@
 // ***********************************************
 // Custom Cypress commands
+// Type declarations live in cypress/support/index.d.ts
 // ***********************************************
 
 // Example usage:
@@ -8,13 +9,3 @@
 Cypress.Commands.add('dataCy', (value: string) => {
   return cy.get(`[data-cy="${value}"]`);
 });
-
-// Type declarations are in cypress/support/index.d.ts
-declare global {
-  // eslint-disable-next-line @typescript-eslint/no-namespace
-  namespace Cypress {
-    interface Chainable {
-      dataCy(value: string): Chainable<JQuery<HTMLElement>>;
-    }
-  }
-}
