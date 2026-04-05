@@ -1723,9 +1723,11 @@ export default function CarShotPage() {
 
         showResult(inZone: boolean) {
           this.sound.play(inZone ? "sfx_success" : "sfx_fail", { volume: 0.75 });
-          // Report score to the leaderboard SDK
-          const onRunEnd = this.registry.get('onRunEnd') as ((w: number, l: number) => void) | undefined;
-          onRunEnd?.(this.totalWheels + this.wheelsThisRun, this.levelIdx + 1);
+          // Only report to the leaderboard on a successful level completion
+          if (inZone) {
+            const onRunEnd = this.registry.get('onRunEnd') as ((w: number, l: number) => void) | undefined;
+            onRunEnd?.(this.totalWheels + this.wheelsThisRun, this.levelIdx + 1);
+          }
           const { width, height } = this.scale;
           const cx = width / 2, cy = height / 2;
 
