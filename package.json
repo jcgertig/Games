@@ -4,7 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "npx supabase db push --yes && next build",
+    "sb:login": "npx supabase login --token=$SUPABASE_ACCESS_TOKEN",
+    "sb:link": "npx supabase link --project-ref=$SUPABASE_PROJECT_ID",
+    "sb:push": "npx supabase db push --yes",
+    "build": "npm sb:login && npm sb:link && npm sb:push && npm build:app",
+    "build:app": "next build",
     "start": "next start",
     "lint": "next lint",
     "prepare": "husky",
