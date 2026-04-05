@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Link from "next/link";
+import { AuthModalProvider } from "@/lib/scores/components/AuthModalProvider";
 
 export const metadata: Metadata = {
   title: "Games",
@@ -28,9 +29,11 @@ export default function RootLayout({
             </nav>
           </div>
         </header>
-        <main className="flex-1">
-          {children}
-        </main>
+        <AuthModalProvider>
+          <main className="flex-1">
+            {children}
+          </main>
+        </AuthModalProvider>
       </body>
     </html>
   );

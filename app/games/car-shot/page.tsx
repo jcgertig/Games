@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
+import { useSubmitScore } from "@/lib/scores/hooks/useSubmitScore";
+import { useScoresClient } from "@/lib/scores/components/AuthModalProvider";
 
 const GROUND_H = 40;
 const LANDING_ZONE_H = 60;
@@ -9,6 +11,27 @@ const LANDING_ZONE_H = 60;
 export default function CarShotPage() {
   const containerRef = useRef<HTMLDivElement>(null);
   const gameRef = useRef<unknown>(null);
+  const { submit } = useSubmitScore();
+  const client = useScoresClient();
+
+  // Stable ref so Phaser scenes always call the latest version
+  const onRunEndRef = useRef<(wheels: number, level: number) => void>(() => {});
+  onRunEndRef.current = useCallback((wheels: number, level: number) => {
+    // Submit to global composite ladder (wheels = primary, highest level = secondary)
+    submit({
+      gameSlug:       "car-shot",
+      ladderSlug:     "global",
+      primaryValue:   wheels,
+      secondaryValue: level,
+      metadata:       { highestLevel: level, totalWheels: wheels },
+    });
+    client.updatePlayerStats("car-shot", {
+      plays:      1,
+      totalScore: wheels,
+      bestScore:  wheels,
+      extra:      { highestLevel: level },
+    });
+  }, [submit, client]);
 
   useEffect(() => {
     let destroyed = false;
@@ -1700,6 +1723,9 @@ export default function CarShotPage() {
 
         showResult(inZone: boolean) {
           this.sound.play(inZone ? "sfx_success" : "sfx_fail", { volume: 0.75 });
+          // Report score to the leaderboard SDK
+          const onRunEnd = this.registry.get('onRunEnd') as ((w: number, l: number) => void) | undefined;
+          onRunEnd?.(this.totalWheels + this.wheelsThisRun, this.levelIdx + 1);
           const { width, height } = this.scale;
           const cx = width / 2, cy = height / 2;
 
@@ -2007,7 +2033,14 @@ export default function CarShotPage() {
         scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
       };
 
-      gameRef.current = new Phaser.Game(config);
+      const game = new Phaser.Game(config);
+      gameRef.current = game;
+      // Pass the score callback into Phaser via the registry after boot
+      game.events.once('ready', () => {
+        game.registry.set('onRunEnd', (wheels: number, level: number) => {
+          onRunEndRef.current(wheels, level);
+        });
+      });
     });
 
     return () => {

@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <title>Dancing Crab</title>
+    <script src="/dancing-crab/scores-shim.js"></script>
     <style>
       * {
         margin: 0;
@@ -2703,7 +2704,7 @@
         const grade = calcGrade(accuracy, win);
         const accPct = Math.round(accuracy * 100);
 
-        // save to IndexedDB
+        // save to IndexedDB (local history)
         saveHistory({
           score: gameScore,
           accuracy: accPct,
@@ -2714,6 +2715,43 @@
           character: currentMode,
           win,
         });
+
+        // submit to global leaderboard via SDK (only completed runs count)
+        if (win && typeof window.ScoresShim !== "undefined") {
+          const meta = {
+            grade,
+            maxCombo: gameMaxCombo,
+            difficulty: gameDifficulty,
+            character: currentMode,
+            win,
+          };
+          // Global ladder
+          window.ScoresShim.submitScore({
+            gameSlug: "dancing-crab",
+            ladderSlug: "global",
+            primaryValue: gameScore,
+            secondaryValue: accPct,
+            metadata: meta,
+          });
+          // Per-song ladder (slug uses currentMode as the song identifier)
+          const songSlug = "song:" + currentMode;
+          window.ScoresShim.submitScore({
+            gameSlug: "dancing-crab",
+            ladderSlug: songSlug,
+            primaryValue: gameScore,
+            secondaryValue: accPct,
+            metadata: meta,
+          });
+          // Update play stats
+          window.ScoresShim.updateStats("dancing-crab", {
+            plays: 1,
+            wins: win ? 1 : 0,
+            losses: win ? 0 : 1,
+            totalScore: gameScore,
+            bestScore: gameScore,
+            extra: { grade, maxCombo: gameMaxCombo },
+          });
+        }
 
         // show result screen
         showResultScreen(win, grade, accPct);

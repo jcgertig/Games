@@ -2,6 +2,8 @@
 
 import { useState, useCallback } from "react";
 import Link from "next/link";
+import { useSubmitScore } from "@/lib/scores/hooks/useSubmitScore";
+import { useScoresClient } from "@/lib/scores/components/AuthModalProvider";
 
 type Player = "X" | "O";
 type Cell = Player | null;
@@ -32,6 +34,8 @@ export default function TicTacToePage() {
   const [currentPlayer, setCurrentPlayer] = useState<Player>("X");
   const [nextStarter, setNextStarter] = useState<Player>("O");
   const [scores, setScores] = useState({ X: 0, O: 0 });
+  const { submit } = useSubmitScore();
+  const client = useScoresClient();
 
   const result = checkWinner(board);
   const draw = !result && isDraw(board);
@@ -47,6 +51,18 @@ export default function TicTacToePage() {
       const newResult = checkWinner(next);
       if (newResult) {
         setScores((s) => ({ ...s, [newResult.winner]: s[newResult.winner] + 1 }));
+        // Submit win to leaderboard (auth modal fires if not logged in)
+        submit({
+          gameSlug:     "tic-tac-toe",
+          ladderSlug:   "global",
+          primaryValue: 1,
+          metadata:     { playedAs: newResult.winner, opponentType: "local" },
+        });
+        // Update play stats regardless of auth
+        client.updatePlayerStats("tic-tac-toe", { plays: 1, wins: 1 });
+      } else if (isDraw(next)) {
+        client.updatePlayerStats("tic-tac-toe", { plays: 1 });
+        setCurrentPlayer(currentPlayer === "X" ? "O" : "X");
       } else {
         setCurrentPlayer(currentPlayer === "X" ? "O" : "X");
       }
