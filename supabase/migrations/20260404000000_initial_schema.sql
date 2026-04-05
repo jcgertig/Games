@@ -108,8 +108,7 @@ create table public.score_submissions (
 );
 
 create index idx_submissions_recent
-  on public.score_submissions (server_ts desc)
-  where server_ts > now() - interval '90 days';
+  on public.score_submissions (server_ts desc);
 
 -- ============================================================
 -- FUNCTION: upsert_leaderboard_entry
