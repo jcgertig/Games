@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.2.0](https://github.com/jcgertig/Games/releases/tag/v0.2.0) (2026-04-05)
+
+
+### ✨ Features
+
+* add high score SDK, API, and Supabase leaderboard system ([3837d8b](https://github.com/jcgertig/Games/commit/3837d8b))
+* add tools page and move Tile Composer there ([f35912c](https://github.com/jcgertig/Games/commit/f35912c))
+
+
+### 🧪 Tests
+
+* add unit tests and Cypress e2e suite with 80%+ coverage ([2601c3c](https://github.com/jcgertig/Games/commit/2601c3c))
+
+
 ## [0.1.0](https://github.com/jcgertig/Games/releases/tag/v0.1.0) (2026-04-04)
 
 
