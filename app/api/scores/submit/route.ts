@@ -24,17 +24,10 @@ export async function POST(req: NextRequest) {
   const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
 
   if (authError || !user) {
-    // Also try cookie-based session (for SSR flows)
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-  }
-
-  const userId = user?.id ?? (await supabase.auth.getSession()).data.session?.user.id;
-  if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+
+  const userId = user.id;
 
   // ── Parse body ────────────────────────────────────────────────────────────
   let body: SubmitBody;

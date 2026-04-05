@@ -21,7 +21,7 @@ export class ScoresClient {
   // If the user is not logged in, triggers the auth modal first.
   // If the user skips, returns { saved: false }.
   async submitScore(options: SubmitScoreOptions): Promise<SubmitScoreResult> {
-    const { data: { session } } = await this.supabase.auth.getSession();
+    let { data: { session } } = await this.supabase.auth.getSession();
 
     if (!session) {
       const outcome = await this.config.onAuthRequired();
@@ -33,11 +33,15 @@ export class ScoresClient {
       if (!refreshed) {
         return { saved: false, isImprovement: false, rank: 0 };
       }
+      session = refreshed;
     }
 
     const response = await fetch('/api/scores/submit', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
       body: JSON.stringify({
         gameSlug:       options.gameSlug,
         ladderSlug:     options.ladderSlug,
@@ -83,7 +87,9 @@ export class ScoresClient {
     const { data: { session } } = await this.supabase.auth.getSession();
     if (!session) return null;
 
-    const response = await fetch(`/api/scores/player/stats?gameSlug=${gameSlug}`);
+    const response = await fetch(`/api/scores/player/stats?gameSlug=${gameSlug}`, {
+      headers: { 'Authorization': `Bearer ${session.access_token}` },
+    });
     if (response.status === 404) return null;
     if (!response.ok) throw new Error('Failed to fetch player stats');
     return response.json();
@@ -97,7 +103,10 @@ export class ScoresClient {
 
     await fetch('/api/scores/player/stats', {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
       body: JSON.stringify({ gameSlug, delta }),
     });
   }

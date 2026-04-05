@@ -111,20 +111,11 @@ describe('GET /api/scores/player/stats', () => {
     expect(body.lastPlayedAt).toBe('2026-01-01T00:00:00Z');
   });
 
-  it('falls back to session when bearer token is empty', async () => {
-    const session = mockSession();
-    mockClient.auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
-    mockClient.auth.getSession.mockResolvedValue({ data: { session }, error: null });
-
-    const gamesChain = buildChain({ single: { data: { id: 'gid' }, error: null } });
-    const statsChain = buildChain({ single: { data: STATS_ROW, error: null } });
-
-    mockClient.from
-      .mockReturnValueOnce(gamesChain)
-      .mockReturnValueOnce(statsChain);
-
+  it('returns 401 when bearer token is empty (no cookie fallback)', async () => {
+    // The service-role client has no access to browser cookies, so an empty
+    // Authorization header must be rejected immediately without a session fallback.
     const res = await GET(makeGet('car-shot'));
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(401);
   });
 });
 

@@ -5,12 +5,9 @@ import { NextRequest, NextResponse } from 'next/server';
 async function getUserId(req: NextRequest, supabase: SupabaseClient<any>): Promise<string | null> {
   const authHeader = req.headers.get('authorization') ?? '';
   const accessToken = authHeader.replace('Bearer ', '');
-  if (accessToken) {
-    const { data: { user } } = await supabase.auth.getUser(accessToken);
-    if (user) return user.id;
-  }
-  const { data: { session } } = await supabase.auth.getSession();
-  return session?.user?.id ?? null;
+  if (!accessToken) return null;
+  const { data: { user } } = await supabase.auth.getUser(accessToken);
+  return user?.id ?? null;
 }
 
 // ── GET /api/scores/player/stats?gameSlug= ────────────────────────────────────
