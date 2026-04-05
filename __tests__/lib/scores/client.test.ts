@@ -51,7 +51,8 @@ describe('getScoresClient', () => {
 
 describe('ScoresClient', () => {
   let supabaseMock: ReturnType<typeof buildSupabaseMock>;
-  let onAuthRequired: ReturnType<typeof vi.fn>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let onAuthRequired: any;
   let client: ScoresClient;
 
   beforeEach(() => {
