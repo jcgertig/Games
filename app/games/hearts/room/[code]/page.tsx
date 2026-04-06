@@ -1,10 +1,9 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { createClient } from '@supabase/supabase-js';
-import { useScoresClient } from '@/lib/scores/components/AuthModalProvider';
 import type { HeartsRoomState } from '@/app/api/hearts/_game';
+import { useRoomBootstrap, RoomLobby } from '@/lib/online-rooms';
 
 // ── Layout / visual constants (same as solo game) ─────────────────────────────
 
@@ -36,15 +35,6 @@ const TRICK_POS = [
 ];
 const FELT_COLOR = 0x1a5c2a, FELT_DARK = 0x134520;
 const SUIT_ORDER: Record<string, number> = { C:0, D:1, S:2, H:3 };
-
-// ── Supabase browser client ───────────────────────────────────────────────────
-
-function makeBrowserClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  );
-}
 
 // ── Phaser Preload scene (reused from solo) ───────────────────────────────────
 
@@ -413,144 +403,20 @@ function makeOnlineGameScene(mySeat: number, sendAction: (type: 'play' | 'pass',
 
 // ── React page ────────────────────────────────────────────────────────────────
 
-type RoomStatus = 'loading' | 'waiting' | 'playing' | 'done' | 'error';
-
-interface SeatInfo {
-  seat: number;
-  display_name: string;
-  is_bot: boolean;
-  user_id: string | null;
-}
-
 export default function OnlineHeartsRoom() {
   const { code } = useParams<{ code: string }>();
   const router = useRouter();
-  const scoresClient = useScoresClient();
   const containerRef = useRef<HTMLDivElement>(null);
-  const gameRef = useRef<any>(null);
+  const gameRef  = useRef<any>(null);
   const phaserRef = useRef<any>(null);
 
-  const [roomStatus, setRoomStatus] = useState<RoomStatus>('loading');
-  const [mySeat, setMySeat] = useState<number | null>(null);
-  const [seats, setSeats] = useState<SeatInfo[]>([]);
-  const [isOwner, setIsOwner] = useState(false);
-  const [error, setError] = useState('');
-  const [starting, setStarting] = useState(false);
-  const [gameState, setGameState] = useState<HeartsRoomState | null>(null);
-
-  const supabase = useRef(makeBrowserClient());
-
-  // Get current user session token
-  const getToken = useCallback(async () => {
-    const { data: { session } } = await supabase.current.auth.getSession();
-    if (session) return session.access_token;
-    // Fall back to scores client session
-    const sc = scoresClient.getSupabaseClient();
-    const { data: { session: s2 } } = await sc.auth.refreshSession();
-    return s2?.access_token ?? null;
-  }, [scoresClient]);
-
-  // Send an action to the API
-  const sendAction = useCallback(async (type: 'play' | 'pass', payload: any) => {
-    const token = await getToken();
-    if (!token) return;
-    const url = `/api/hearts/rooms/${code}/${type}`;
-    await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify(payload),
-    });
-  }, [code, getToken]);
-
-  // ── Bootstrap: join room, fetch initial state, subscribe to Realtime ─────
-
-  useEffect(() => {
-    if (!code) return;
-    const upperCode = (code as string).toUpperCase();
-    let channel: any;
-    let cancelled = false;
-
-    (async () => {
-      // Ensure session is active
-      const token = await getToken();
-
-      // Join the room (idempotent if already seated)
-      if (token) {
-        const joinRes = await fetch(`/api/hearts/rooms/${upperCode}/join`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const joinJson = await joinRes.json();
-        if (cancelled) return;
-        if (!joinRes.ok) {
-          // Surface a meaningful error and stop — with restricted RLS the
-          // browser query below will return nothing if we have no seat.
-          setError(joinJson.error ?? 'Could not join room');
-          setRoomStatus('error');
-          return;
-        }
-        setMySeat(joinJson.yourSeat ?? null);
-      } else {
-        if (!cancelled) { setError('Sign in to join a room'); setRoomStatus('error'); }
-        return;
-      }
-
-      // Fetch room + seats directly from Supabase (RLS ensures visibility)
-      const { data: room } = await supabase.current
-        .from('hearts_rooms')
-        .select('id, status, owner_id, hearts_seats(*), hearts_game_state(state)')
-        .eq('code', upperCode)
-        .maybeSingle();
-
-      if (cancelled) return;
-      if (!room) { setError('Room not found'); setRoomStatus('error'); return; }
-
-      const currentUser = (await supabase.current.auth.getUser()).data.user;
-      setIsOwner(room.owner_id === currentUser?.id);
-      setSeats((room as any).hearts_seats ?? []);
-      setRoomStatus(room.status as RoomStatus);
-
-      const state = (room as any).hearts_game_state?.[0]?.state ?? null;
-      if (state) setGameState(state);
-
-      // ── Realtime subscription ────────────────────────────────────────────
-      channel = supabase.current
-        .channel(`hearts:${room.id}`)
-        .on(
-          'postgres_changes',
-          { event: 'UPDATE', schema: 'public', table: 'hearts_game_state', filter: `room_id=eq.${room.id}` },
-          (payload: any) => {
-            if (cancelled) return;
-            const newState: HeartsRoomState = payload.new.state;
-            setGameState(newState);
-            setRoomStatus(newState.phase === 'game_over' ? 'done' : 'playing');
-            // Push into Phaser scene if it's running
-            if (phaserRef.current) {
-              phaserRef.current.registry.events.emit('stateUpdate', newState);
-            }
-          },
-        )
-        .subscribe();
-
-      // Also watch room status changes (e.g. someone starts the game)
-      supabase.current
-        .channel(`hearts-room:${room.id}`)
-        .on(
-          'postgres_changes',
-          { event: 'UPDATE', schema: 'public', table: 'hearts_rooms', filter: `id=eq.${room.id}` },
-          (payload: any) => {
-            if (cancelled) return;
-            setRoomStatus(payload.new.status as RoomStatus);
-          },
-        )
-        .subscribe();
-    })();
-
-    return () => {
-      cancelled = true;
-      channel?.unsubscribe();
-    };
-  }, [code, getToken]);
+  const {
+    roomStatus, mySeat, seats, isOwner, gameState, error,
+    sendAction, startGame, starting,
+  } = useRoomBootstrap<HeartsRoomState>({
+    code:     (code as string) ?? '',
+    gameSlug: 'hearts',
+  });
 
   // ── Start Phaser once mySeat is known and we're in 'playing' state ─────────
 
@@ -600,31 +466,13 @@ export default function OnlineHeartsRoom() {
     };
   }, [roomStatus, mySeat, gameState, sendAction]);
 
-  // ── Trigger delayed state push once Phaser is ready ───────────────────────
+  // ── Push state into Phaser whenever it changes (Realtime updates) ────────────
 
   useEffect(() => {
-    if (!phaserRef.current || !gameState) return;
-    // Small delay to let Phaser scene init
-    const t = setTimeout(() => {
-      phaserRef.current?.registry.events.emit('stateUpdate', gameState);
-    }, 500);
-    return () => clearTimeout(t);
-  }, [phaserRef.current]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // ── Start game (host only) ─────────────────────────────────────────────────
-
-  async function startGame() {
-    setStarting(true);
-    const token = await getToken();
-    if (!token) { setError('Not signed in'); setStarting(false); return; }
-    const res = await fetch(`/api/hearts/rooms/${(code as string).toUpperCase()}/start`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const json = await res.json();
-    if (!res.ok) { setError(json.error ?? 'Failed to start'); }
-    setStarting(false);
-  }
+    if (phaserRef.current && gameState) {
+      phaserRef.current.registry.events.emit('stateUpdate', gameState);
+    }
+  }, [gameState]);
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
@@ -649,54 +497,20 @@ export default function OnlineHeartsRoom() {
   // Lobby view — waiting for players
   if (roomStatus === 'waiting') {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 gap-8">
-        <div className="text-center">
-          <div className="text-5xl mb-2">♥</div>
-          <h1 className="text-3xl font-bold text-red-400 font-serif">Room {(code as string).toUpperCase()}</h1>
-          <p className="text-slate-400 mt-1">Share this code with friends to join</p>
-        </div>
-
-        {/* Seat list */}
-        <div className="w-full max-w-sm flex flex-col gap-2">
-          {[0,1,2,3].map(s => {
-            const seat = seats.find(x => x.seat === s);
-            const isMe = s === mySeat;
-            return (
-              <div key={s} className={`flex items-center gap-3 rounded-xl px-4 py-3 border ${
-                isMe ? 'bg-green-900/40 border-green-600' : 'bg-slate-800 border-slate-700'
-              }`}>
-                <span className="text-slate-500 w-6">#{s}</span>
-                {seat ? (
-                  <>
-                    <span className="text-white font-medium flex-1">{seat.display_name}</span>
-                    {seat.is_bot
-                      ? <span className="text-xs text-slate-500">Bot</span>
-                      : <span className="text-xs text-green-400">Ready</span>
-                    }
-                    {isMe && <span className="text-xs text-green-400 font-bold">YOU</span>}
-                  </>
-                ) : (
-                  <span className="text-slate-500 italic flex-1">Empty</span>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        {error && <p className="text-red-400 text-sm">{error}</p>}
-
-        {isOwner ? (
-          <button
-            onClick={startGame}
-            disabled={starting}
-            className="bg-green-600 hover:bg-green-500 disabled:opacity-50 text-white font-bold py-3 px-8 rounded-xl text-lg transition-colors"
-          >
-            {starting ? 'Starting…' : 'Start Game'}
-          </button>
-        ) : (
-          <p className="text-slate-400 text-sm animate-pulse">Waiting for host to start…</p>
-        )}
-      </div>
+      <RoomLobby
+        code={(code as string).toUpperCase()}
+        seats={seats}
+        mySeat={mySeat}
+        maxSeats={4}
+        isOwner={isOwner}
+        starting={starting}
+        onStart={startGame}
+        error={error}
+        icon="♥"
+        title="Hearts Online"
+        backPath="/games/hearts/lobby"
+        onBack={() => router.push('/games/hearts/lobby')}
+      />
     );
   }
 

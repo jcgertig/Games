@@ -30,10 +30,14 @@ export default defineConfig({
         'lib/scores/components/**',
         'lib/scores/hooks/**',
         'lib/scores/index.ts',
+        'lib/online-rooms/components/**',
+        'lib/online-rooms/useRoomBootstrap.ts',
+        'lib/online-rooms/index.ts',
         '**/*.d.ts',
         'node_modules/**',
-        // TODO: add tests for hearts multiplayer API routes
+        // TODO: add tests for multiplayer API routes
         'app/api/hearts/**',
+        'app/api/online/**',
         'app/games/hearts/**',
       ],
     },

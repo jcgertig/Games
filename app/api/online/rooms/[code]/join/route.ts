@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
+import { getGameConfig } from '../../../_registry';
 
 function serviceClient() {
   return createClient(
@@ -9,73 +10,75 @@ function serviceClient() {
   );
 }
 
-/** POST /api/hearts/rooms/[code]/join — join an open bot seat. */
+/** POST /api/online/rooms/[code]/join — join an open bot seat, or rejoin existing seat. */
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ code: string }> },
 ) {
   const { code } = await params;
-  const token = (req.headers.get('authorization') ?? '').replace('Bearer ', '');
+  const token = (req.headers.get('authorization') ?? '').replace('Bearer ', '').trim();
   if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const sb = serviceClient();
-  const { data: { user }, error } = await sb.auth.getUser(token);
-  if (error || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const { data: { user }, error: authErr } = await sb.auth.getUser(token);
+  if (authErr || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  // Find room
   const { data: room } = await sb
-    .from('hearts_rooms')
-    .select('id, status')
+    .from('online_rooms')
+    .select('id, game_slug, status')
     .eq('code', code.toUpperCase())
     .maybeSingle();
-  if (!room) return NextResponse.json({ error: 'Room not found' }, { status: 404 });
-  if (room.status === 'done')
-    return NextResponse.json({ error: 'Game is over' }, { status: 409 });
 
-  // Check user isn't already seated — always allow rejoining regardless of status
+  if (!room) return NextResponse.json({ error: 'Room not found' }, { status: 404 });
+  if (room.status === 'done') return NextResponse.json({ error: 'Game is over' }, { status: 409 });
+
+  // Check existing seat first — always allow rejoining regardless of game status
   const { data: existing } = await sb
-    .from('hearts_seats')
+    .from('online_seats')
     .select('seat')
     .eq('room_id', room.id)
     .eq('user_id', user.id)
     .maybeSingle();
   if (existing) return NextResponse.json({ yourSeat: existing.seat });
 
-  // Game in progress — can't claim a new seat, but the user has none
+  // Only allow claiming a new seat while the game hasn't started
   if (room.status !== 'waiting')
     return NextResponse.json({ error: 'Game already started' }, { status: 409 });
 
   // Find the first open bot seat
   const { data: seats } = await sb
-    .from('hearts_seats')
+    .from('online_seats')
     .select('seat, is_bot')
     .eq('room_id', room.id)
     .order('seat');
-  const openSeat = seats?.find((s) => s.is_bot)?.seat;
+  const openSeat = seats?.find(s => s.is_bot)?.seat;
   if (openSeat === undefined)
     return NextResponse.json({ error: 'Room is full' }, { status: 409 });
 
   const displayName: string =
     user.user_metadata?.display_name ?? user.email?.split('@')[0] ?? 'Player';
 
-  // Replace the bot seat with this user
+  // Claim the bot seat
   await sb
-    .from('hearts_seats')
+    .from('online_seats')
     .update({ user_id: user.id, display_name: displayName, is_bot: false })
     .eq('room_id', room.id)
     .eq('seat', openSeat);
 
-  // Update player name in game state
+  // Update player metadata in game state via the game config
   const { data: gs } = await sb
-    .from('hearts_game_state')
+    .from('online_game_state')
     .select('state')
     .eq('room_id', room.id)
     .single();
   if (gs?.state) {
-    const newState = { ...gs.state };
-    newState.playerNames[openSeat] = displayName;
-    newState.isBot[openSeat] = false;
-    await sb.from('hearts_game_state').update({ state: newState }).eq('room_id', room.id);
+    try {
+      const config = getGameConfig(room.game_slug);
+      const newState = config.patchPlayerName(gs.state, openSeat, displayName);
+      await sb.from('online_game_state').update({ state: newState }).eq('room_id', room.id);
+    } catch {
+      // Non-fatal: game can still proceed with stale player name
+    }
   }
 
   return NextResponse.json({ yourSeat: openSeat });
