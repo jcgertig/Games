@@ -494,42 +494,58 @@ function makeGameScene() {
         left: '← Pass Left', right: '→ Pass Right',
         across: '↑ Pass Across', none: 'No Pass',
       };
-      this.showStatus(`${labels[dir]}: select 3 cards`);
+      this.showStatus(`${labels[dir]}: select 3 cards  ·  Enter to confirm`);
 
       // Pass button (hidden until 3 cards chosen)
-      const btnBg = this.add.rectangle(W/2, H - 30, 160, 36, 0x16a34a)
+      const btnBg = this.add.rectangle(W/2, H - 30, 200, 38, 0x15803d)
         .setInteractive({ cursor: 'pointer' })
-        .setAlpha(0).setDepth(20);
-      const btnTxt = this.add.text(W/2, H - 30, 'Pass Cards', {
+        .setAlpha(0).setDepth(20)
+        .setStrokeStyle(1, 0x4ade80);
+      const btnTxt = this.add.text(W/2, H - 30, 'Pass Cards  ↵', {
         fontSize: '16px', color: '#fff', fontFamily: 'sans-serif',
       }).setOrigin(0.5).setAlpha(0).setDepth(20);
 
       this.passIndicator = { btnBg, btnTxt };
 
-      btnBg.on('pointerdown', () => {
+      const confirm = () => {
         if (this.selectedPassCards.size !== 3) return;
         this.executePass();
-      });
+      };
+
+      btnBg.on('pointerdown', confirm);
+      btnBg.on('pointerover', () => btnBg.setFillStyle(0x16a34a));
+      btnBg.on('pointerout',  () => btnBg.setFillStyle(0x15803d));
+
+      // Enter key confirms once 3 cards are selected
+      const enterKey = this.input.keyboard!.addKey(
+        (window as any).Phaser.Input.Keyboard.KeyCodes.ENTER
+      );
+      enterKey.on('down', confirm);
+      // Store so we can remove it after passing
+      this.passIndicator.enterKey = enterKey;
     }
 
     private onCardClick(card: string, img: any, baseY: number) {
-      if (this.gs.phase === 'passing' && this.gs.currentPlayerIdx === 0) {
+      // During pass phase the human can always select cards — currentPlayerIdx
+      // points to whoever holds 2♣ (not necessarily player 0) so we must not
+      // gate on it here.
+      if (this.gs.phase === 'passing') {
         // Toggle selection
         if (this.selectedPassCards.has(card)) {
           this.selectedPassCards.delete(card);
           this.tweens.add({ targets: img, y: baseY, duration: 150 });
-          img.setTint(0xffffff);
+          img.clearTint();
         } else if (this.selectedPassCards.size < 3) {
           this.selectedPassCards.add(card);
           this.tweens.add({ targets: img, y: baseY - 22, duration: 150 });
-          img.setTint(0xbbffbb);
+          img.setTint(0x88ff88);
         }
-        // Show/hide pass button
-        const show = this.selectedPassCards.size === 3;
+        // Show / hide the pass button
+        const ready = this.selectedPassCards.size === 3;
         if (this.passIndicator) {
           this.tweens.add({
             targets: [this.passIndicator.btnBg, this.passIndicator.btnTxt],
-            alpha: show ? 1 : 0, duration: 200,
+            alpha: ready ? 1 : 0, duration: 200,
           });
         }
         return;
@@ -551,6 +567,11 @@ function makeGameScene() {
       if (this.passIndicator) {
         this.passIndicator.btnBg.destroy();
         this.passIndicator.btnTxt.destroy();
+        // Remove the Enter key listener so it doesn't fire again
+        if (this.passIndicator.enterKey) {
+          this.passIndicator.enterKey.removeAllListeners();
+          this.input.keyboard!.removeKey(this.passIndicator.enterKey);
+        }
         this.passIndicator = null;
       }
       this.hideStatus();
