@@ -52,9 +52,14 @@ function EditNameModal({
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-sm bg-slate-900 border border-slate-700 rounded-2xl p-6 shadow-2xl">
+    <div
+      className="fixed inset-0 z-50 w-full h-full bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-sm bg-slate-900 border border-slate-700 rounded-2xl p-6 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
         <h2 className="text-xl font-bold text-white mb-1">Display Name</h2>
         <p className="text-slate-400 text-sm mb-5">
           This is the name shown on leaderboards. Max {DISPLAY_NAME_MAX} characters.

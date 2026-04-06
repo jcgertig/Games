@@ -73,15 +73,15 @@ export function AuthModal({ isOpen, supabase, onSuccess, onSkip }: AuthModalProp
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
+    <div
+      className="fixed inset-0 z-50 w-full h-full bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+      onClick={onSkip}
+    >
+      {/* Card — stop clicks bubbling to the backdrop */}
       <div
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
-        onClick={onSkip}
-      />
-
-      {/* Card */}
-      <div className="relative z-10 w-full max-w-sm bg-slate-900 border border-slate-700 rounded-2xl p-6 shadow-2xl">
+        className="w-full max-w-sm bg-slate-900 border border-slate-700 rounded-2xl p-6 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
 
         {/* ── Prompt view ─────────────────────────────────── */}
         {view === 'prompt' && (
