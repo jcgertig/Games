@@ -113,7 +113,8 @@ export class ScoresClient {
 
   // ── updateDisplayName ────────────────────────────────────────────────────
   async updateDisplayName(name: string): Promise<string> {
-    const { data: { session } } = await this.supabase.auth.getSession();
+    // refreshSession() guarantees a valid, non-expired access token
+    const { data: { session } } = await this.supabase.auth.refreshSession();
     if (!session) throw new Error('Not authenticated');
 
     const response = await fetch('/api/user/display-name', {

@@ -15,7 +15,8 @@ export async function PATCH(req: NextRequest) {
 
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
   );
 
   const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
@@ -53,6 +54,18 @@ export async function PATCH(req: NextRequest) {
   if (updateError) {
     console.error('[display-name] update error:', updateError);
     return NextResponse.json({ error: 'Failed to update display name.' }, { status: 500 });
+  }
+
+  // ── Sync leaderboard entries ──────────────────────────────────────────────
+  // Update all historical leaderboard rows so the new name shows immediately.
+  const { error: leaderboardError } = await supabase
+    .from('leaderboard_entries')
+    .update({ display_name: formatResult.name })
+    .eq('user_id', user.id);
+
+  if (leaderboardError) {
+    // Non-fatal: auth metadata was updated successfully; log and continue.
+    console.error('[display-name] leaderboard sync error:', leaderboardError);
   }
 
   return NextResponse.json({ displayName: formatResult.name });
