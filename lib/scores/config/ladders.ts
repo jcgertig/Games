@@ -27,10 +27,18 @@ export const LADDER_CONFIGS: LadderConfig[] = [
   {
     gameSlug:     'hearts',
     ladderSlug:   'global',
-    name:         'Global Wins',
+    name:         'Total Wins',
     scoreType:    'total_wins',
     primaryLabel: 'Wins',
     sortPrimary:  'desc',
+  },
+  {
+    gameSlug:     'hearts',
+    ladderSlug:   'avg-points',
+    name:         'Avg Points Per Game',
+    scoreType:    'running_avg',
+    primaryLabel: 'Avg Pts',
+    sortPrimary:  'asc',
   },
 
   // ── Dancing Crab ─────────────────────────────────────────────────────────

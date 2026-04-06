@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import type { HeartsRoomState } from '@/app/api/hearts/_game';
 import { useRoomBootstrap, RoomLobby } from '@/lib/online-rooms';
+import { useSubmitScore, useScoresClient } from '@/lib/scores';
 
 // ── Layout / visual constants (same as solo game) ─────────────────────────────
 
@@ -409,6 +410,10 @@ export default function OnlineHeartsRoom() {
   const containerRef = useRef<HTMLDivElement>(null);
   const gameRef  = useRef<any>(null);
   const phaserRef = useRef<any>(null);
+  const scoreSubmittedRef = useRef(false);
+
+  const { submit } = useSubmitScore();
+  const client     = useScoresClient();
 
   const {
     roomStatus, mySeat, seats, isOwner, gameState, error,
@@ -473,6 +478,27 @@ export default function OnlineHeartsRoom() {
       phaserRef.current.registry.events.emit('stateUpdate', gameState);
     }
   }, [gameState]);
+
+  // ── Submit scores once when the game ends ─────────────────────────────────
+
+  useEffect(() => {
+    if (
+      roomStatus !== 'done' ||
+      mySeat === null ||
+      !gameState ||
+      scoreSubmittedRef.current
+    ) return;
+
+    scoreSubmittedRef.current = true;
+    const won = gameState.winnerSeat === mySeat;
+    const points = gameState.gamePoints[mySeat] ?? 0;
+
+    if (won) {
+      submit({ gameSlug: 'hearts', ladderSlug: 'global', primaryValue: 1 });
+    }
+    submit({ gameSlug: 'hearts', ladderSlug: 'avg-points', primaryValue: points });
+    client.updatePlayerStats('hearts', { plays: 1, wins: won ? 1 : 0, losses: won ? 0 : 1 });
+  }, [roomStatus, mySeat, gameState, submit, client]);
 
   // ── Render ─────────────────────────────────────────────────────────────────
 

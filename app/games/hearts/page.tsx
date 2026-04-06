@@ -903,8 +903,8 @@ function makeGameScene() {
         () => { this.hideModal(); this.startNewGame(); }
       );
 
-      const onGameEnd = this.registry.get('onGameEnd') as (won: boolean) => void;
-      onGameEnd(humanWon);
+      const onGameEnd = this.registry.get('onGameEnd') as (won: boolean, points: number) => void;
+      onGameEnd(humanWon, this.gamePoints[0]);
     }
 
     // ── Score display ───────────────────────────────────────────────────────
@@ -1003,7 +1003,7 @@ export default function HeartsPage() {
 
   // Stable callback ref
   const onGameEndRef = useRef<(won: boolean) => void>(() => {});
-  onGameEndRef.current = useCallback((won: boolean) => {
+  onGameEndRef.current = useCallback((won: boolean, points: number) => {
     if (won) {
       submit({
         gameSlug:     'hearts',
@@ -1011,6 +1011,11 @@ export default function HeartsPage() {
         primaryValue: 1,
       });
     }
+    submit({
+      gameSlug:     'hearts',
+      ladderSlug:   'avg-points',
+      primaryValue: points,
+    });
     client.updatePlayerStats('hearts', {
       plays: 1,
       wins:  won ? 1 : 0,

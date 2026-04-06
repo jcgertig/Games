@@ -1,6 +1,6 @@
 // ── Ladder & Game config ────────────────────────────────────────────────────
 
-export type ScoreType = 'highest_score' | 'lowest_time' | 'total_wins' | 'composite';
+export type ScoreType = 'highest_score' | 'lowest_time' | 'total_wins' | 'composite' | 'running_avg';
 export type SortDirection = 'asc' | 'desc';
 
 export interface LadderConfig {

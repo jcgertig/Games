@@ -11,6 +11,7 @@ import type { LadderConfig, LeaderboardEntry } from '@/lib/scores/types';
 const GAMES: { slug: string; name: string; emoji: string }[] = [
   { slug: 'tic-tac-toe',   name: 'Tic Tac Toe',   emoji: '⭕' },
   { slug: 'car-shot',      name: 'Car Shot',       emoji: '🚗' },
+  { slug: 'hearts',        name: 'Hearts',         emoji: '♥' },
   { slug: 'dancing-crab',  name: 'Dancing Crab',   emoji: '🦀' },
 ];
 
