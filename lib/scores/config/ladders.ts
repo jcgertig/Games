@@ -23,6 +23,16 @@ export const LADDER_CONFIGS: LadderConfig[] = [
     sortSecondary:   'desc',
   },
 
+  // ── Hearts ───────────────────────────────────────────────────────────────
+  {
+    gameSlug:     'hearts',
+    ladderSlug:   'global',
+    name:         'Global Wins',
+    scoreType:    'total_wins',
+    primaryLabel: 'Wins',
+    sortPrimary:  'desc',
+  },
+
   // ── Dancing Crab ─────────────────────────────────────────────────────────
   {
     gameSlug:        'dancing-crab',

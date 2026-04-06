@@ -35,6 +35,13 @@ export const games: Game[] = [
     emoji: "🦀",
     tags: ["casual", "fun", "single-player"],
   },
+  {
+    slug: "hearts",
+    title: "Hearts",
+    description: "Classic trick-taking card game. Avoid hearts and the Queen of Spades — or shoot the moon to flip the table on everyone!",
+    emoji: "♥️",
+    tags: ["cards", "strategy", "vs-bots"],
+  },
   // Add more games here
 ];
 

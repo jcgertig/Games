@@ -80,6 +80,11 @@
   dependencies:
     css-tree "^3.0.0"
 
+"@card-games/engine@^1.1.1":
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/@card-games/engine/-/engine-1.1.1.tgz#184785015f6f83ae4eb2953c1262dec0fa0dc2ad"
+  integrity sha512-YeT7ONo7qh/fZp0k4J7L5Sd8iitWaMSNxgH+n/rWIvEGW3PfJDrGpMxcKNG4f9uKnGB4Ezpkn8mAHM/E4OGwCA==
+
 "@commitlint/cli@^19.0.0":
   version "19.8.1"
   resolved "https://registry.yarnpkg.com/@commitlint/cli/-/cli-19.8.1.tgz#85f7d9f331344e1f0a2b9d8b24fd3695466e1158"

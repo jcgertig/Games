@@ -19,6 +19,7 @@
     "test:e2e:ci": "start-server-and-test start http://localhost:3000 'cypress run'"
   },
   "dependencies": {
+    "@card-games/engine": "^1.1.1",
     "@supabase/supabase-js": "^2.101.1",
     "bad-words": "^4.0.0",
     "marked": "^14.0.0",
