@@ -98,13 +98,13 @@ function makePreloadScene() {
     }
 
     private async buildCardTextures(svgText: string): Promise<void> {
-      // Parse the SVG document to extract symbol defs
-      const parser = new DOMParser();
+      const parser     = new DOMParser();
+      const serializer = new XMLSerializer();
       const doc = parser.parseFromString(svgText, 'image/svg+xml');
 
-      // Collect all SVG defs (contains the card symbols)
-      const defs = doc.querySelector('defs');
-      const defsString = defs ? new XMLSerializer().serializeToString(defs) : '';
+      // Embed ALL defs so gradients, patterns, and clip-paths resolve correctly
+      const defs    = doc.querySelector('defs');
+      const defsStr = defs ? serializer.serializeToString(defs) : '<defs/>';
 
       const allCards = [
         'back',
@@ -116,16 +116,34 @@ function makePreloadScene() {
 
       await Promise.all(allCards.map(card => new Promise<void>((resolve) => {
         const id = card === 'back' ? 'back' : cardToSvgId(card);
-        const svgFrag = `<svg xmlns="http://www.w3.org/2000/svg"
-          xmlns:xlink="http://www.w3.org/1999/xlink"
-          viewBox="0 0 169.075 244.64"
-          width="${CARD_W}" height="${CARD_H}">
-          ${defsString}
-          <use xlink:href="#${id}"/>
-        </svg>`;
-        const blob = new Blob([svgFrag], { type: 'image/svg+xml' });
+        // Grab the actual <g> element from the parsed document.
+        // Using <use href="#…"> in a *new* document won't work because the
+        // referenced ID lives in a different document.
+        const el = doc.getElementById(id);
+
+        if (!el) {
+          this.makeFallbackTexture(card);
+          resolve();
+          return;
+        }
+
+        const elStr = serializer.serializeToString(el);
+        // Wrap in a fresh SVG with the same viewBox; embed the defs so all
+        // internal gradient/pattern references continue to resolve.
+        const svgBlob = [
+          '<svg xmlns="http://www.w3.org/2000/svg"',
+          '     xmlns:xlink="http://www.w3.org/1999/xlink"',
+          '     viewBox="0 0 169.075 244.64"',
+          `     width="${CARD_W}" height="${CARD_H}">`,
+          defsStr,
+          elStr,
+          '</svg>',
+        ].join('\n');
+
+        const blob = new Blob([svgBlob], { type: 'image/svg+xml;charset=utf-8' });
         const url  = URL.createObjectURL(blob);
         const img  = new Image(CARD_W, CARD_H);
+
         img.onload = () => {
           const canvas = document.createElement('canvas');
           canvas.width  = CARD_W;
@@ -136,22 +154,53 @@ function makePreloadScene() {
           resolve();
         };
         img.onerror = () => {
-          // Fallback: generate a placeholder card texture
-          const canvas = document.createElement('canvas');
-          canvas.width  = CARD_W;
-          canvas.height = CARD_H;
-          const ctx = canvas.getContext('2d')!;
-          ctx.fillStyle = '#ffffff';
-          ctx.strokeStyle = '#333333';
-          ctx.lineWidth = 2;
-          ctx.roundRect(0, 0, CARD_W, CARD_H, 6);
-          ctx.fill(); ctx.stroke();
-          this.textures.addCanvas(card, canvas);
+          this.makeFallbackTexture(card);
           URL.revokeObjectURL(url);
           resolve();
         };
         img.src = url;
       })));
+    }
+
+    /** Plain-canvas fallback for cards whose SVG element couldn't be found/loaded */
+    private makeFallbackTexture(card: string) {
+      const canvas = document.createElement('canvas');
+      canvas.width  = CARD_W;
+      canvas.height = CARD_H;
+      const ctx = canvas.getContext('2d')!;
+
+      // White card face with rounded corners
+      ctx.fillStyle   = '#ffffff';
+      ctx.strokeStyle = '#555555';
+      ctx.lineWidth   = 2;
+      ctx.beginPath();
+      ctx.roundRect(1, 1, CARD_W - 2, CARD_H - 2, 6);
+      ctx.fill();
+      ctx.stroke();
+
+      if (card === 'back') {
+        ctx.fillStyle = '#1a3a8e';
+        ctx.fillRect(5, 5, CARD_W - 10, CARD_H - 10);
+        ctx.fillStyle = '#ffd700';
+        ctx.font = '24px serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('♠', CARD_W / 2, CARD_H / 2 + 8);
+      } else {
+        const suit = card.slice(-1);
+        const rank = card.slice(0, -1);
+        const sym  = ({ H: '♥', D: '♦', C: '♣', S: '♠' } as any)[suit];
+        const col  = suit === 'H' || suit === 'D' ? '#cc0000' : '#111111';
+        ctx.fillStyle  = col;
+        ctx.font       = 'bold 14px sans-serif';
+        ctx.textAlign  = 'left';
+        ctx.fillText(rank, 4, 16);
+        ctx.fillText(sym,  4, 30);
+        ctx.font       = 'bold 30px serif';
+        ctx.textAlign  = 'center';
+        ctx.fillText(sym, CARD_W / 2, CARD_H / 2 + 10);
+      }
+
+      this.textures.addCanvas(card, canvas);
     }
   }
   return PreloadScene;
@@ -858,10 +907,16 @@ export default function HeartsPage() {
   }, [submit, client]);
 
   useEffect(() => {
-    if (!containerRef.current || gameRef.current) return;
+    if (!containerRef.current) return;
+    // `cancelled` prevents the async Phaser import from creating a second
+    // game instance when React StrictMode fires the cleanup before the
+    // dynamic import resolves (dev-mode double-invoke behaviour).
+    let cancelled = false;
     let game: any;
 
     import('phaser').then(Phaser => {
+      if (cancelled || !containerRef.current || gameRef.current) return;
+
       (window as any).Phaser = Phaser.default ?? Phaser;
 
       const BootScene    = makeBootScene(onGameEndRef, setOverlay);
@@ -881,10 +936,11 @@ export default function HeartsPage() {
           autoCenter: (window as any).Phaser.Scale.CENTER_BOTH,
         },
       });
-      gameRef.current = game;
+      if (!cancelled) gameRef.current = game;
     });
 
     return () => {
+      cancelled = true;
       game?.destroy(true);
       gameRef.current = null;
     };
