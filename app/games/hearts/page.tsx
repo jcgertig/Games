@@ -1002,7 +1002,7 @@ export default function HeartsPage() {
   const client     = useScoresClient();
 
   // Stable callback ref
-  const onGameEndRef = useRef<(won: boolean) => void>(() => {});
+  const onGameEndRef = useRef<(won: boolean, points: number) => void>(() => {});
   onGameEndRef.current = useCallback((won: boolean, points: number) => {
     if (won) {
       submit({
