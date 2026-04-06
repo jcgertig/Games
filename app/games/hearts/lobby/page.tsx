@@ -110,9 +110,14 @@ export default function HeartsLobby() {
         </p>
       )}
 
-      <Link href="/games/hearts" className="text-slate-500 hover:text-slate-300 text-sm transition-colors">
-        ← Play vs bots instead
-      </Link>
+      <div className="flex gap-6 text-sm text-slate-500">
+        <Link href="/games/hearts/online" className="hover:text-slate-300 transition-colors">
+          My active rooms →
+        </Link>
+        <Link href="/games/hearts" className="hover:text-slate-300 transition-colors">
+          ← Play vs bots instead
+        </Link>
+      </div>
     </div>
   );
 }

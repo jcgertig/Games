@@ -481,10 +481,21 @@ export default function OnlineHeartsRoom() {
           headers: { Authorization: `Bearer ${token}` },
         });
         const joinJson = await joinRes.json();
-        if (!cancelled && joinRes.ok) setMySeat(joinJson.yourSeat ?? null);
+        if (cancelled) return;
+        if (!joinRes.ok) {
+          // Surface a meaningful error and stop — with restricted RLS the
+          // browser query below will return nothing if we have no seat.
+          setError(joinJson.error ?? 'Could not join room');
+          setRoomStatus('error');
+          return;
+        }
+        setMySeat(joinJson.yourSeat ?? null);
+      } else {
+        if (!cancelled) { setError('Sign in to join a room'); setRoomStatus('error'); }
+        return;
       }
 
-      // Fetch room + seats directly from Supabase
+      // Fetch room + seats directly from Supabase (RLS ensures visibility)
       const { data: room } = await supabase.current
         .from('hearts_rooms')
         .select('id, status, owner_id, hearts_seats(*), hearts_game_state(state)')
