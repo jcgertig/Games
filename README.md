@@ -198,6 +198,21 @@ See [CHANGELOG.md](./CHANGELOG.md) for the full history.
 
 ---
 
+## Assets & Resources
+
+Free asset sources used in this project:
+
+| Resource | What it provides |
+|---|---|
+| [CraftPix.net](https://craftpix.net/) | 2D sprite sheets, tilesets, game UI kits, and character assets |
+| [Graphemica](https://graphemica.com/) | Unicode character search — useful for emoji and symbol lookup in game UI |
+| [Pixabay Sound Effects](https://pixabay.com/sound-effects/search/) | Free sound effects (CC0) |
+| [Pixabay Music](https://pixabay.com/music/search/) | Free background music tracks (CC0) |
+
+> Always verify the individual license for each asset before use. CraftPix assets may require a free or paid account and have their own terms of use.
+
+---
+
 ## License
 
 MIT
