@@ -20,8 +20,9 @@ function mockFetch(status: number, body: unknown) {
 function buildSupabaseMock(session: unknown = null) {
   return {
     auth: {
-      getSession: vi.fn().mockResolvedValue({ data: { session }, error: null }),
-      getUser:    vi.fn().mockResolvedValue({ data: { user: session ? (session as { user: unknown }).user : null }, error: null }),
+      getSession:     vi.fn().mockResolvedValue({ data: { session }, error: null }),
+      getUser:        vi.fn().mockResolvedValue({ data: { user: session ? (session as { user: unknown }).user : null }, error: null }),
+      refreshSession: vi.fn().mockResolvedValue({ data: { session }, error: null }),
     },
   };
 }
@@ -302,6 +303,79 @@ describe('ScoresClient', () => {
       const sent = JSON.parse(opts.body);
       expect(sent.gameSlug).toBe('tic-tac-toe');
       expect(sent.delta).toEqual({ plays: 1, wins: 1 });
+    });
+  });
+
+  // ── updateDisplayName ─────────────────────────────────────────────────────
+
+  describe('updateDisplayName', () => {
+    it('throws when session is null after refreshSession', async () => {
+      supabaseMock = {
+        auth: {
+          getSession:     vi.fn().mockResolvedValue({ data: { session: null }, error: null }),
+          getUser:        vi.fn().mockResolvedValue({ data: { user: null }, error: null }),
+          refreshSession: vi.fn().mockResolvedValue({ data: { session: null }, error: null }),
+        },
+      };
+      vi.mocked(createClient).mockReturnValue(supabaseMock as never);
+      client = new ScoresClient({
+        supabaseUrl: 'https://test.supabase.co',
+        supabaseAnonKey: 'anon',
+        onAuthRequired,
+      });
+
+      await expect(client.updateDisplayName('NewName')).rejects.toThrow('Not authenticated');
+    });
+
+    it('PATCHes /api/user/display-name and returns the updated name', async () => {
+      const session = { ...MOCK_SESSION };
+      supabaseMock = {
+        auth: {
+          getSession:     vi.fn().mockResolvedValue({ data: { session }, error: null }),
+          getUser:        vi.fn().mockResolvedValue({ data: { user: session.user }, error: null }),
+          refreshSession: vi.fn().mockResolvedValue({ data: { session }, error: null }),
+        },
+      };
+      vi.mocked(createClient).mockReturnValue(supabaseMock as never);
+      client = new ScoresClient({
+        supabaseUrl: 'https://test.supabase.co',
+        supabaseAnonKey: 'anon',
+        onAuthRequired,
+      });
+
+      const fetchMock = mockFetch(200, { displayName: 'NewName' });
+      vi.stubGlobal('fetch', fetchMock);
+
+      const result = await client.updateDisplayName('NewName');
+      expect(result).toBe('NewName');
+
+      const [url, opts] = fetchMock.mock.calls[0];
+      expect(url).toBe('/api/user/display-name');
+      expect(opts.method).toBe('PATCH');
+      expect(opts.headers.Authorization).toBe(`Bearer ${session.access_token}`);
+      const sent = JSON.parse(opts.body);
+      expect(sent.displayName).toBe('NewName');
+    });
+
+    it('throws when the API returns a non-ok response', async () => {
+      const session = { ...MOCK_SESSION };
+      supabaseMock = {
+        auth: {
+          getSession:     vi.fn().mockResolvedValue({ data: { session }, error: null }),
+          getUser:        vi.fn().mockResolvedValue({ data: { user: session.user }, error: null }),
+          refreshSession: vi.fn().mockResolvedValue({ data: { session }, error: null }),
+        },
+      };
+      vi.mocked(createClient).mockReturnValue(supabaseMock as never);
+      client = new ScoresClient({
+        supabaseUrl: 'https://test.supabase.co',
+        supabaseAnonKey: 'anon',
+        onAuthRequired,
+      });
+
+      vi.stubGlobal('fetch', mockFetch(422, { error: 'Name too short' }));
+
+      await expect(client.updateDisplayName('X')).rejects.toThrow('Name too short');
     });
   });
 
