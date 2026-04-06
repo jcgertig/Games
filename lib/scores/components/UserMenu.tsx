@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, type FormEvent } from 'react';
+import { createPortal } from 'react-dom';
 import type { Session } from '@supabase/supabase-js';
 import { useScoresClient, useTriggerAuth } from './AuthModalProvider';
 import { validateDisplayNameFormat, DISPLAY_NAME_MAX } from '@/lib/display-name';
@@ -50,7 +51,7 @@ function EditNameModal({
     }
   };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
       <div className="relative z-10 w-full max-w-sm bg-slate-900 border border-slate-700 rounded-2xl p-6 shadow-2xl">
@@ -87,7 +88,8 @@ function EditNameModal({
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

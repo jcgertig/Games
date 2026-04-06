@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, type FormEvent } from 'react';
+import { createPortal } from 'react-dom';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { validateDisplayNameFormat, DISPLAY_NAME_MAX } from '@/lib/display-name';
 
@@ -71,7 +72,7 @@ export function AuthModal({ isOpen, supabase, onSuccess, onSkip }: AuthModalProp
     }
   };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
@@ -247,6 +248,7 @@ export function AuthModal({ isOpen, supabase, onSuccess, onSkip }: AuthModalProp
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
