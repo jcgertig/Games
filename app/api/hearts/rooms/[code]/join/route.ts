@@ -29,10 +29,10 @@ export async function POST(
     .eq('code', code.toUpperCase())
     .maybeSingle();
   if (!room) return NextResponse.json({ error: 'Room not found' }, { status: 404 });
-  if (room.status !== 'waiting')
-    return NextResponse.json({ error: 'Game already started' }, { status: 409 });
+  if (room.status === 'done')
+    return NextResponse.json({ error: 'Game is over' }, { status: 409 });
 
-  // Check user isn't already seated
+  // Check user isn't already seated — always allow rejoining regardless of status
   const { data: existing } = await sb
     .from('hearts_seats')
     .select('seat')
@@ -40,6 +40,10 @@ export async function POST(
     .eq('user_id', user.id)
     .maybeSingle();
   if (existing) return NextResponse.json({ yourSeat: existing.seat });
+
+  // Game in progress — can't claim a new seat, but the user has none
+  if (room.status !== 'waiting')
+    return NextResponse.json({ error: 'Game already started' }, { status: 409 });
 
   // Find the first open bot seat
   const { data: seats } = await sb
