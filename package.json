@@ -4,9 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "sb:login": "npx supabase login --token=$SUPABASE_ACCESS_TOKEN",
-    "sb:link": "npx supabase link --project-ref=$SUPABASE_PROJECT_ID",
-    "sb:push": "npx supabase db push --yes",
+    "local:build": "dotenv-flow -- npm run build",
+    "sb:login": "npx --yes supabase login --token=$SUPABASE_ACCESS_TOKEN",
+    "sb:link": "npx --yes supabase link --project-ref=$SUPABASE_PROJECT_ID",
+    "sb:push": "npx --yes supabase db push --yes --debug",
     "build": "npm run sb:login && npm run sb:link && npm run sb:push && npm run build:app",
     "build:app": "next build",
     "start": "next start",
@@ -31,6 +32,7 @@
   },
   "devDependencies": {
     "@commitlint/cli": "^19.0.0",
+    "dotenv-flow-cli": "^1.1.1",
     "@commitlint/config-conventional": "^19.0.0",
     "@commitlint/types": "^19.0.0",
     "@tailwindcss/typography": "^0.5.0",
