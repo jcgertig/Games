@@ -1,5 +1,18 @@
 {
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cat /dev/stdin | /Users/jonathan.gertig/Documents/Claude/Projects/Games/.claude/check-migration-immutable.sh",
+            "timeout": 10,
+            "statusMessage": "Checking migration immutability…"
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "Write|Edit",
