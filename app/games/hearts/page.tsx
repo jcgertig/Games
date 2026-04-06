@@ -246,23 +246,33 @@ function makeMenuScene() {
       }).setOrigin(0.5).setAlpha(0);
       this.tweens.add({ targets: sub, alpha: 1, duration: 600, delay: 200 });
 
-      // Play button
-      const btnBg = this.add.rectangle(W/2, 310, 200, 56, 0x16a34a, 1)
-        .setInteractive({ cursor: 'pointer' })
-        .setStrokeStyle(2, 0x4ade80);
-      const btnText = this.add.text(W/2, 310, 'New Game', {
-        fontSize: '22px', color: '#ffffff', fontFamily: 'sans-serif', fontStyle: 'bold',
-      }).setOrigin(0.5);
+      // ── Buttons ────────────────────────────────────────────────────────────
+      const mkBtn = (x: number, y: number, w: number, label: string, color: number) => {
+        const bg = this.add.rectangle(x, y, w, 50, color, 1)
+          .setInteractive({ cursor: 'pointer' })
+          .setStrokeStyle(2, 0x4ade80)
+          .setAlpha(0);
+        const txt = this.add.text(x, y, label, {
+          fontSize: '20px', color: '#ffffff', fontFamily: 'sans-serif', fontStyle: 'bold',
+        }).setOrigin(0.5).setAlpha(0);
+        this.tweens.add({ targets: [bg, txt], alpha: 1, duration: 400, delay: 400 });
+        return { bg, txt };
+      };
 
-      [btnBg, btnText].forEach(o => o.setAlpha(0));
-      this.tweens.add({ targets: [btnBg, btnText], alpha: 1, duration: 400, delay: 400 });
-
-      btnBg.on('pointerover',  () => btnBg.setFillStyle(0x22c55e));
-      btnBg.on('pointerout',   () => btnBg.setFillStyle(0x16a34a));
-      btnBg.on('pointerdown',  () => {
+      // "Play vs Bots" button
+      const solo = mkBtn(W/2 - 112, 310, 200, 'Play vs Bots', 0x16a34a);
+      solo.bg.on('pointerover',  () => solo.bg.setFillStyle(0x22c55e));
+      solo.bg.on('pointerout',   () => solo.bg.setFillStyle(0x16a34a));
+      solo.bg.on('pointerdown',  () => {
         this.cameras.main.fadeOut(300, 0, 0, 0);
         this.time.delayedCall(300, () => this.scene.start('Game'));
       });
+
+      // "Play Online" button
+      const online = mkBtn(W/2 + 112, 310, 200, '🌐 Play Online', 0x1d4ed8);
+      online.bg.on('pointerover',  () => online.bg.setFillStyle(0x2563eb));
+      online.bg.on('pointerout',   () => online.bg.setFillStyle(0x1d4ed8));
+      online.bg.on('pointerdown',  () => { window.location.href = '/games/hearts/lobby'; });
 
       // Rules summary
       const rules = [
