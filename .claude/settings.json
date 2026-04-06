@@ -11,6 +11,17 @@
             "statusMessage": "Checking migration immutability…"
           }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cat /dev/stdin | /Users/jonathan.gertig/Documents/Claude/Projects/Games/.claude/check-build.sh",
+            "timeout": 120,
+            "statusMessage": "Verifying build before commit…"
+          }
+        ]
       }
     ],
     "PostToolUse": [

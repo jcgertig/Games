@@ -52,13 +52,13 @@ const FELT_DARK  = 0x134520;
 // ── Phaser scene: Boot ────────────────────────────────────────────────────────
 
 function makeBootScene(
-  onGameEnd: React.MutableRefObject<(won: boolean) => void>,
+  onGameEnd: React.MutableRefObject<(won: boolean, points: number) => void>,
   setOverlay: (o: OverlayState) => void,
 ) {
   class BootScene extends (window as any).Phaser.Scene {
     constructor() { super({ key: 'Boot' }); }
     create() {
-      this.registry.set('onGameEnd', (won: boolean) => onGameEnd.current(won));
+      this.registry.set('onGameEnd', (won: boolean, points: number) => onGameEnd.current(won, points));
       this.registry.set('setOverlay', setOverlay);
       this.scene.start('Preload');
     }
