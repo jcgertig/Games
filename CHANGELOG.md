@@ -1,5 +1,42 @@
 # Changelog
 
+## [0.3.0](https://github.com/jcgertig/Games/releases/tag/v0.3.0) (2026-04-06)
+
+
+### ✨ Features
+
+* add hearts card game — local vs bots (phase 1) ([4798a13](https://github.com/jcgertig/Games/commit/4798a13))
+* add hearts online multiplayer — create/join rooms, real-time play (phase 2) ([af5a04f](https://github.com/jcgertig/Games/commit/af5a04f))
+* add hearts online rooms page with member-only RLS ([720bb00](https://github.com/jcgertig/Games/commit/720bb00))
+* generalize online multiplayer into reusable framework for all games ([0355b70](https://github.com/jcgertig/Games/commit/0355b70))
+* add leaderboards page with game and ladder tabs ([0c15389](https://github.com/jcgertig/Games/commit/0c15389))
+* add display name editing with profanity filtering ([c13c749](https://github.com/jcgertig/Games/commit/c13c749))
+
+
+### 🐛 Bug Fixes
+
+* drop old hearts_* tables before creating generic online_* tables ([3fb624f](https://github.com/jcgertig/Games/commit/3fb624f))
+* allow rejoining an in-progress hearts room on refresh ([ea60a59](https://github.com/jcgertig/Games/commit/ea60a59))
+* correct hearts game engine and pass phase card selection ([3a27596](https://github.com/jcgertig/Games/commit/3a27596))
+* pass phase card selection and enter-to-confirm ([118da00](https://github.com/jcgertig/Games/commit/118da00))
+* double canvas and invisible cards in hearts game ([ff17037](https://github.com/jcgertig/Games/commit/ff17037))
+* sync leaderboard display name on update ([b7696bd](https://github.com/jcgertig/Games/commit/b7696bd))
+* forward bearer token from client to all score API routes ([77cc3c5](https://github.com/jcgertig/Games/commit/77cc3c5))
+* only submit car shot score on successful level completion ([772af12](https://github.com/jcgertig/Games/commit/772af12))
+* render auth and edit-name modals via portal into document.body ([643a34e](https://github.com/jcgertig/Games/commit/643a34e))
+* modal overlay fills viewport with visible backdrop ([9f2d0a7](https://github.com/jcgertig/Games/commit/9f2d0a7))
+* backdrop click skips modal; add space above login button ([ed82daf](https://github.com/jcgertig/Games/commit/ed82daf))
+* add lib/** to tailwind content paths ([8aeac02](https://github.com/jcgertig/Games/commit/8aeac02))
+* remove immutable violation from score_submissions index ([f743948](https://github.com/jcgertig/Games/commit/f743948))
+* move cypress chainable type augmentation to index.d.ts ([44dc544](https://github.com/jcgertig/Games/commit/44dc544))
+
+
+### 🧪 Tests
+
+* add coverage for display-name route and client update method ([c3f8b11](https://github.com/jcgertig/Games/commit/c3f8b11))
+* enforce test coverage ratchet via PostToolUse hook ([2144a7c](https://github.com/jcgertig/Games/commit/2144a7c))
+
+
 ## [0.2.0](https://github.com/jcgertig/Games/releases/tag/v0.2.0) (2026-04-05)
 
 
