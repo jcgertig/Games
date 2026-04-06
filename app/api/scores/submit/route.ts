@@ -1,5 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
+import { Filter } from 'bad-words';
+
+const profanityFilter = new Filter();
 
 interface SubmitBody {
   gameSlug: string;
@@ -72,10 +75,14 @@ export async function POST(req: NextRequest) {
 
   // ── Get display name ──────────────────────────────────────────────────────
   const { data: { user: fullUser } } = await supabase.auth.admin.getUserById(userId);
-  const displayName =
+  const rawName =
     fullUser?.user_metadata?.display_name ??
     fullUser?.email?.split('@')[0] ??
     'Player';
+  // Sanitize: replace any profane words with asterisks so nothing slips through
+  const displayName = profanityFilter.isProfane(rawName)
+    ? profanityFilter.clean(rawName)
+    : rawName;
 
   // ── Upsert via RPC ────────────────────────────────────────────────────────
   const { data: rpcResult, error: rpcError } = await supabase.rpc(

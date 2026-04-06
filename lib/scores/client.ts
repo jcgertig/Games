@@ -111,6 +111,25 @@ export class ScoresClient {
     });
   }
 
+  // ── updateDisplayName ────────────────────────────────────────────────────
+  async updateDisplayName(name: string): Promise<string> {
+    const { data: { session } } = await this.supabase.auth.getSession();
+    if (!session) throw new Error('Not authenticated');
+
+    const response = await fetch('/api/user/display-name', {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ displayName: name }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error ?? 'Failed to update display name');
+    return data.displayName as string;
+  }
+
   // ── auth helpers ─────────────────────────────────────────────────────────
   getSupabaseClient(): SupabaseClient {
     return this.supabase;

@@ -902,6 +902,11 @@
   dependencies:
     tslib "^2.4.0"
 
+"@types/bad-words@^3.0.3":
+  version "3.0.3"
+  resolved "https://registry.yarnpkg.com/@types/bad-words/-/bad-words-3.0.3.tgz#fcda6626a916d8de76f605f64e33a3c6162b6f57"
+  integrity sha512-jYdpTxDOJ+EENnsCwt8cOZhV/+4+qcwhks1igrOSg4zwwA17rsPqLsZpTo1l+OwViNu+5SPus0v5g7iGx+ofzA==
+
 "@types/chai@^5.2.2":
   version "5.2.3"
   resolved "https://registry.yarnpkg.com/@types/chai/-/chai-5.2.3.tgz#8e9cd9e1c3581fa6b341a5aed5588eb285be0b4a"
@@ -1553,6 +1558,18 @@ axobject-query@^4.1.0:
   version "4.1.0"
   resolved "https://registry.yarnpkg.com/axobject-query/-/axobject-query-4.1.0.tgz#28768c76d0e3cff21bc62a9e2d0b6ac30042a1ee"
   integrity sha512-qIj0G9wZbMGNLjLmg1PT6v2mE9AH2zlnADJD/2tC6E00hgmhUOfEB6greHPAfLRSufHqROIUTkw6E+M3lH0PTQ==
+
+bad-words@^4.0.0:
+  version "4.0.0"
+  resolved "https://registry.yarnpkg.com/bad-words/-/bad-words-4.0.0.tgz#6d71274b7747a751a61f000127345523144faa90"
+  integrity sha512-fLjG/I0N3I7xhurqGnGitSRD10UeEE63a7hyXtutQDpxo4+Eal+i7veWeZxZJPNtsl6X1mUIoWPwt8gQ7NMQUw==
+  dependencies:
+    badwords-list "^2.0.1-4"
+
+badwords-list@^2.0.1-4:
+  version "2.0.1-4"
+  resolved "https://registry.yarnpkg.com/badwords-list/-/badwords-list-2.0.1-4.tgz#a6705b6f1c775f795bce1f34b854e44b44bf64a0"
+  integrity sha512-FxfZUp7B9yCnesNtFQS9v6PvZdxTYa14Q60JR6vhjdQdWI4naTjJIyx22JzoER8ooeT8SAAKoHLjKfCV7XgYUQ==
 
 balanced-match@^1.0.0:
   version "1.0.2"

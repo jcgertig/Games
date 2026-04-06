@@ -2,6 +2,7 @@
 
 import { useState, useEffect, type FormEvent } from 'react';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { validateDisplayNameFormat, DISPLAY_NAME_MAX } from '@/lib/display-name';
 
 type View = 'prompt' | 'login' | 'register';
 
@@ -48,12 +49,19 @@ export function AuthModal({ isOpen, supabase, onSuccess, onSkip }: AuthModalProp
 
   const handleRegister = async (e: FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setErrorMsg('');
+
+    const nameCheck = validateDisplayNameFormat(displayName);
+    if (!nameCheck.ok) {
+      setErrorMsg(nameCheck.error);
+      return;
+    }
+
+    setLoading(true);
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { display_name: displayName } },
+      options: { data: { display_name: nameCheck.name } },
     });
     setLoading(false);
     if (error) {
@@ -179,14 +187,20 @@ export function AuthModal({ isOpen, supabase, onSuccess, onSkip }: AuthModalProp
               <h2 className="text-xl font-bold text-white">Create Account</h2>
             </div>
             <form onSubmit={handleRegister} className="flex flex-col gap-3">
-              <input
-                type="text"
-                placeholder="Display name"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                required
-                className="w-full px-4 py-2.5 rounded-lg bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
-              />
+              <div>
+                <input
+                  type="text"
+                  placeholder="Display name"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  required
+                  maxLength={DISPLAY_NAME_MAX}
+                  className="w-full px-4 py-2.5 rounded-lg bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
+                />
+                <p className="text-xs text-slate-600 mt-1">
+                  Letters, numbers, spaces, _, -, and ' — max {DISPLAY_NAME_MAX} chars
+                </p>
+              </div>
               <input
                 type="email"
                 placeholder="Email"

@@ -15,6 +15,7 @@ import { AuthModal } from './AuthModal';
 
 interface AuthModalContextValue {
   client: ScoresClient;
+  triggerAuth: () => Promise<'logged_in' | 'skipped'>;
 }
 
 const AuthModalContext = createContext<AuthModalContextValue | null>(null);
@@ -55,7 +56,7 @@ export function AuthModalProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthModalContext.Provider value={{ client }}>
+    <AuthModalContext.Provider value={{ client, triggerAuth: onAuthRequired }}>
       {children}
       <AuthModal
         isOpen={isOpen}
@@ -67,12 +68,16 @@ export function AuthModalProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// ── Consumer hook ─────────────────────────────────────────────────────────────
+// ── Consumer hooks ────────────────────────────────────────────────────────────
 
 export function useScoresClient(): ScoresClient {
   const ctx = useContext(AuthModalContext);
-  if (!ctx) {
-    throw new Error('useScoresClient must be used inside <AuthModalProvider>');
-  }
+  if (!ctx) throw new Error('useScoresClient must be used inside <AuthModalProvider>');
   return ctx.client;
+}
+
+export function useTriggerAuth(): () => Promise<'logged_in' | 'skipped'> {
+  const ctx = useContext(AuthModalContext);
+  if (!ctx) throw new Error('useTriggerAuth must be used inside <AuthModalProvider>');
+  return ctx.triggerAuth;
 }
