@@ -92,7 +92,7 @@ export function AuthModal({ isOpen, supabase, onSuccess, onSkip }: AuthModalProp
                 Create a free account to track your best scores and appear on the leaderboard.
               </p>
             </div>
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 mt-4">
               <button
                 onClick={() => setView('login')}
                 className="w-full py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold transition-colors"
