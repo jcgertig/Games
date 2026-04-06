@@ -1,3 +1,15 @@
+-- ── Drop old hearts-specific tables (replaced by generic online_* tables) ────
+--
+-- These were created by the original version of this migration.  Drop them
+-- first so the generic tables can be created cleanly.
+
+DROP TABLE IF EXISTS public.hearts_game_state CASCADE;
+DROP TABLE IF EXISTS public.hearts_seats        CASCADE;
+DROP TABLE IF EXISTS public.hearts_rooms        CASCADE;
+
+-- Drop the old per-game helper function if it exists.
+DROP FUNCTION IF EXISTS public.user_hearts_room_ids();
+
 -- ── Generic online multiplayer tables ────────────────────────────────────────
 --
 -- One set of tables serves all games (hearts, deuces, spades, etc.).
