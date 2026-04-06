@@ -285,25 +285,38 @@ function makeMenuScene() {
 // ── Phaser scene: Game ────────────────────────────────────────────────────────
 
 function makeGameScene() {
-  // Lazy-import the engine functions inside the scene so they are only
-  // resolved in the browser (avoids SSR issues with Phaser dynamic import).
   class GameScene extends (window as any).Phaser.Scene {
-    // Engine state
-    private gs: any; // HeartsState
+    // Engine modules (lazy-loaded to avoid SSR issues)
+    private engine: any = null;
+    private bot: any = null;
+
+    // @card-games/engine Game instance — one per hand, recreated on each deal.
+    // Used for: card dealing, hand state, follow-suit validation via
+    // checkAllowedPlay(), and pass application via applyPasses().
+    private game!: any;
+
+    // Game state (tracked manually — the engine handles dealing/validation
+    // but not Hearts-specific scoring/phasing)
+    private playerNames = ['You', 'West', 'North', 'East'];
+    private gamePoints  = [0, 0, 0, 0];
+    private handPoints  = [0, 0, 0, 0];
+    private heartsBroken = false;
+    private trickCards: { card: string; playerIdx: number }[] = [];
+    private trickLedSuit: string | null = null;
+    private tricksInHand = 0;
+    private handNumber   = 0;
+    private gamePhase: 'passing' | 'playing' | 'trick_end' | 'hand_end' | 'game_over' = 'playing';
+    private curPlayerIdx = 0;
+    private winnerIdx: number | null = null;
 
     // Phaser display objects
-    private cardObjects: { [key: string]: any } = {}; // card key → Image
-    private handContainers: any[] = [];               // Container per player
+    private cardObjects: { [key: string]: any } = {};
     private trickGroup!: any;
     private scoreTexts: any[] = [];
-    private nameTexts: any[] = [];
     private passIndicator: any = null;
     private statusText!: any;
     private selectedPassCards: Set<string> = new Set();
-
-    // Engine functions (loaded lazily)
-    private engine: any = null;
-    private bot: any = null;
+    private modalGroup: any[] = [];
 
     constructor() { super({ key: 'Game' }); }
 
@@ -323,22 +336,12 @@ function makeGameScene() {
     // ── Table background ────────────────────────────────────────────────────
 
     private drawTable() {
-      const Phaser = (window as any).Phaser;
       // Felt
       this.add.rectangle(W/2, H/2, W, H, FELT_COLOR);
       // Inner oval shadow
       const g = this.add.graphics();
       g.fillStyle(FELT_DARK, 0.5);
       g.fillEllipse(W/2, H/2, 580, 400);
-
-      // Player name plates
-      const namePlate = (x: number, y: number, label: string, anchor: {ox: number; oy: number}) => {
-        this.add.rectangle(x, y, 130, 32, 0x000000, 0.45).setOrigin(anchor.ox, anchor.oy);
-        return this.add.text(x + (anchor.ox === 0 ? 65 : anchor.ox === 1 ? -65 : 0),
-          y + (anchor.oy === 0 ? 16 : anchor.oy === 1 ? -16 : 16), label, {
-          fontSize: '14px', color: '#ffffff', fontFamily: 'sans-serif',
-        }).setOrigin(0.5);
-      };
 
       // Score readouts per player
       ['','','',''].forEach((_, i) => {
@@ -369,15 +372,92 @@ function makeGameScene() {
       this.trickGroup = this.add.group();
     }
 
+    // ── Engine helpers ──────────────────────────────────────────────────────
+
+    /** Create and start a fresh @card-games/engine Game for one hand. */
+    private createHandGame(): any {
+      const { Game, games } = this.engine;
+      const g = new Game({ config: games.hearts, playerIds: ['0', '1', '2', '3'] });
+      g.start(); // deals cards, sets firstPlayerIdx to 2C holder
+      return g;
+    }
+
+    /** Read a player's current hand from the engine's JSON state. */
+    private getHand(playerIdx: number): string[] {
+      const state = this.game.asJSON();
+      return [...state.rounds[state.currentRoundIdx].players[playerIdx].hand];
+    }
+
+    /**
+     * Determine which cards the current human player may legally play.
+     *
+     * Leading rules are implemented manually (Hearts-specific):
+     *   - First trick: must lead 2♣
+     *   - Subsequent leads: cannot lead ♥ until hearts are broken
+     *
+     * Follow-suit validation delegates to the engine's checkAllowedPlay(),
+     * which uses the "recent played" logic to check whether the current
+     * player must follow the led suit.
+     */
+    private getLegalPlays(): string[] {
+      const hand = this.getHand(this.curPlayerIdx);
+
+      if (this.trickCards.length === 0) {
+        // ── Leading ──────────────────────────────────────────────────────
+        if (this.tricksInHand === 0) {
+          // Very first trick: 2♣ must be led
+          return hand.includes('2C') ? ['2C'] : hand;
+        }
+        if (!this.heartsBroken) {
+          const nonHearts = hand.filter(c => this.engine.parseCard(c).suit !== 'H');
+          return nonHearts.length > 0 ? nonHearts : hand; // all-hearts hand: anything goes
+        }
+        return hand;
+      }
+
+      // ── Following suit ─────────────────────────────────────────────────
+      // The engine's checkAllowedPlay() uses `recent(firstPlayer.played)` to
+      // identify the led suit and enforces follow-suit correctly here.
+      return hand.filter(card => {
+        try { return this.game.checkAllowedPlay([card], 'table'); }
+        catch { return false; }
+      });
+    }
+
     // ── Game lifecycle ──────────────────────────────────────────────────────
 
     private startNewGame() {
-      const { createInitialState } = this.engine;
-      this.gs = createInitialState(['You', 'West', 'North', 'East']);
+      this.gamePoints = [0, 0, 0, 0];
+      this.handNumber = 0;
+      this.winnerIdx  = null;
       this.selectedPassCards.clear();
+      this.startNewHand();
+    }
+
+    private startNewHand() {
+      // Fresh engine Game instance → shuffles deck, deals 13 cards each,
+      // sets currentPlayerIdx to the holder of 2♣.
+      this.game = this.createHandGame();
+
+      // Reset hand-level tracking
+      this.handPoints   = [0, 0, 0, 0];
+      this.heartsBroken = false;
+      this.trickCards   = [];
+      this.trickLedSuit = null;
+      this.tricksInHand = 0;
+      this.selectedPassCards.clear();
+
+      const dir = this.engine.passDirectionForHand(this.handNumber);
+      if (dir !== 'none') {
+        this.gamePhase = 'passing';
+      } else {
+        this.gamePhase    = 'playing';
+        this.curPlayerIdx = this.game.currentPlayerIdx;
+      }
+
       this.dealAnimation(() => {
         this.updateScoreDisplay();
-        if (this.gs.phase === 'passing') {
+        if (this.gamePhase === 'passing') {
           this.showPassPhase();
         } else {
           this.advanceTurn();
@@ -397,29 +477,36 @@ function makeGameScene() {
       this.trickGroup.clear(true, true);
     }
 
-    /** Lay out a player's hand horizontally (or vertically for left/right bots). */
+    /** Lay out a player's hand (horizontal for top/bottom, vertical for sides). */
     private layoutHand(playerIdx: number, animate = false, onComplete?: () => void) {
-      const hand  = this.gs.players[playerIdx].hand;
-      const faceUp = playerIdx === 0;
+      const raw      = this.getHand(playerIdx);
+      // For the human player sort by suit group (C → D → S → H) then rank low→high.
+      // Bots show card backs so order doesn't matter visually.
+      const SUIT_ORDER: Record<string, number> = { C: 0, D: 1, S: 2, H: 3 };
+      const hand = playerIdx === 0
+        ? [...raw].sort((a, b) => {
+            const sa = SUIT_ORDER[this.engine.parseCard(a).suit] ?? 0;
+            const sb = SUIT_ORDER[this.engine.parseCard(b).suit] ?? 0;
+            if (sa !== sb) return sa - sb;
+            return this.engine.cardStrength(a) - this.engine.cardStrength(b);
+          })
+        : raw;
+      const faceUp   = playerIdx === 0;
       const isVertical = playerIdx === 1 || playerIdx === 3;
-      const pos   = PLAYER_POS[playerIdx];
-      const count = hand.length;
-
-      const overlap = playerIdx === 0 ? CARD_OVERLAP : BOT_OVERLAP;
-      const span = (count - 1) * overlap;
+      const pos      = PLAYER_POS[playerIdx];
+      const count    = hand.length;
+      const overlap  = playerIdx === 0 ? CARD_OVERLAP : BOT_OVERLAP;
+      const span     = (count - 1) * overlap;
 
       hand.forEach((card: string, idx: number) => {
-        const key = `hand_${playerIdx}_${card}`;
+        const key    = `hand_${playerIdx}_${card}`;
         const offset = -span / 2 + idx * overlap;
 
         let tx: number, ty: number, angle = 0;
         if (isVertical) {
-          tx = pos.x;
-          ty = pos.y + offset;
-          angle = 90;
+          tx = pos.x; ty = pos.y + offset; angle = 90;
         } else {
-          tx = pos.x + offset;
-          ty = pos.y;
+          tx = pos.x + offset; ty = pos.y;
         }
 
         if (!this.cardObjects[key]) {
@@ -428,22 +515,17 @@ function makeGameScene() {
             .setAngle(angle)
             .setDepth(idx + 1);
           this.cardObjects[key] = img;
-
-          if (animate) {
-            // Start from deck centre
-            img.setPosition(W/2, H/2).setAlpha(0);
-          }
+          if (animate) img.setPosition(W/2, H/2).setAlpha(0);
         }
 
         const img = this.cardObjects[key];
 
-        // Make human cards interactive
         if (playerIdx === 0 && !img.input) {
           img.setInteractive({ cursor: 'pointer' });
           img.on('pointerover', () => {
-            if (this.gs.phase === 'playing' && this.gs.currentPlayerIdx === 0) {
+            if (this.gamePhase === 'playing' && this.curPlayerIdx === 0) {
               img.setY(ty - 14);
-            } else if (this.gs.phase === 'passing') {
+            } else if (this.gamePhase === 'passing') {
               img.setY(ty - 10);
             }
           });
@@ -455,8 +537,7 @@ function makeGameScene() {
 
         if (animate) {
           this.tweens.add({
-            targets: img,
-            x: tx, y: ty, alpha: 1,
+            targets: img, x: tx, y: ty, alpha: 1,
             duration: 350,
             delay: (playerIdx * 13 + idx) * 45,
             ease: 'Quad.easeOut',
@@ -470,11 +551,7 @@ function makeGameScene() {
 
     private dealAnimation(onComplete: () => void) {
       this.destroyCardObjects();
-      // Shuffle visual — create a deck pile, then deal outwards
-      const pile = this.add.image(W/2, H/2, 'back')
-        .setDisplaySize(CARD_W, CARD_H);
-
-      // Brief "shuffle" wobble
+      const pile = this.add.image(W/2, H/2, 'back').setDisplaySize(CARD_W, CARD_H);
       this.tweens.add({
         targets: pile, x: W/2 + 8, duration: 80, yoyo: true, repeat: 3,
         onComplete: () => {
@@ -482,21 +559,20 @@ function makeGameScene() {
           [0, 1, 2, 3].forEach(i => this.layoutHand(i, true,
             i === 3 ? onComplete : undefined
           ));
-        }
+        },
       });
     }
 
     // ── Passing phase ───────────────────────────────────────────────────────
 
     private showPassPhase() {
-      const dir = this.gs.passDirection;
+      const dir = this.engine.passDirectionForHand(this.handNumber);
       const labels: Record<string, string> = {
         left: '← Pass Left', right: '→ Pass Right',
         across: '↑ Pass Across', none: 'No Pass',
       };
       this.showStatus(`${labels[dir]}: select 3 cards  ·  Enter to confirm`);
 
-      // Pass button (hidden until 3 cards chosen)
       const btnBg = this.add.rectangle(W/2, H - 30, 200, 38, 0x15803d)
         .setInteractive({ cursor: 'pointer' })
         .setAlpha(0).setDepth(20)
@@ -516,21 +592,15 @@ function makeGameScene() {
       btnBg.on('pointerover', () => btnBg.setFillStyle(0x16a34a));
       btnBg.on('pointerout',  () => btnBg.setFillStyle(0x15803d));
 
-      // Enter key confirms once 3 cards are selected
       const enterKey = this.input.keyboard!.addKey(
         (window as any).Phaser.Input.Keyboard.KeyCodes.ENTER
       );
       enterKey.on('down', confirm);
-      // Store so we can remove it after passing
       this.passIndicator.enterKey = enterKey;
     }
 
     private onCardClick(card: string, img: any, baseY: number) {
-      // During pass phase the human can always select cards — currentPlayerIdx
-      // points to whoever holds 2♣ (not necessarily player 0) so we must not
-      // gate on it here.
-      if (this.gs.phase === 'passing') {
-        // Toggle selection
+      if (this.gamePhase === 'passing') {
         if (this.selectedPassCards.has(card)) {
           this.selectedPassCards.delete(card);
           this.tweens.add({ targets: img, y: baseY, duration: 150 });
@@ -540,7 +610,6 @@ function makeGameScene() {
           this.tweens.add({ targets: img, y: baseY - 22, duration: 150 });
           img.setTint(0x88ff88);
         }
-        // Show / hide the pass button
         const ready = this.selectedPassCards.size === 3;
         if (this.passIndicator) {
           this.tweens.add({
@@ -551,13 +620,10 @@ function makeGameScene() {
         return;
       }
 
-      if (this.gs.phase !== 'playing' || this.gs.currentPlayerIdx !== 0) return;
-      const { isLegalPlay } = this.engine;
-      if (!isLegalPlay(this.gs, 0, card)) {
-        // Shake to indicate illegal move
-        this.tweens.add({
-          targets: img, x: img.x + 8, duration: 60, yoyo: true, repeat: 2,
-        });
+      if (this.gamePhase !== 'playing' || this.curPlayerIdx !== 0) return;
+      if (!this.getLegalPlays().includes(card)) {
+        // Shake — illegal move
+        this.tweens.add({ targets: img, x: img.x + 8, duration: 60, yoyo: true, repeat: 2 });
         return;
       }
       this.doPlay(0, card);
@@ -567,7 +633,6 @@ function makeGameScene() {
       if (this.passIndicator) {
         this.passIndicator.btnBg.destroy();
         this.passIndicator.btnTxt.destroy();
-        // Remove the Enter key listener so it doesn't fire again
         if (this.passIndicator.enterKey) {
           this.passIndicator.enterKey.removeAllListeners();
           this.input.keyboard!.removeKey(this.passIndicator.enterKey);
@@ -579,28 +644,26 @@ function makeGameScene() {
       const humanCards = [...this.selectedPassCards];
       this.selectedPassCards.clear();
 
-      // Bots choose their pass cards
-      const { submitPass } = this.engine;
-      const { chooseBotPass } = this.bot;
-      let state = this.gs;
+      const dir = this.engine.passDirectionForHand(this.handNumber);
 
-      // Submit all passes
-      [0, 1, 2, 3].forEach(i => {
-        const cards = i === 0
+      // Each bot independently chooses 3 cards to pass
+      const passes = [0, 1, 2, 3].map((i: number) =>
+        i === 0
           ? humanCards
-          : chooseBotPass(state.players[i].hand, state.passDirection);
-        state = submitPass(state, i, cards);
-      });
+          : this.bot.chooseBotPass(this.getHand(i), dir)
+      );
 
-      this.gs = state;
+      // applyPasses() works around the engine's player-0 bug (0 is falsy in
+      // `playerIdxOverride || currentPlayerIdx`) by patching JSON state directly.
+      this.game = this.engine.applyPasses(this.game, passes, dir);
+      this.curPlayerIdx = this.game.currentPlayerIdx; // 2♣ holder after passing
 
-      // Animate a brief "pass" flash then rebuild hands
       this.showStatus('Passing cards…');
       this.time.delayedCall(500, () => {
         this.hideStatus();
         this.destroyCardObjects();
         [0, 1, 2, 3].forEach(i => this.layoutHand(i, true, i === 3
-          ? () => this.advanceTurn()
+          ? () => { this.gamePhase = 'playing'; this.advanceTurn(); }
           : undefined
         ));
       });
@@ -609,39 +672,28 @@ function makeGameScene() {
     // ── Trick play ──────────────────────────────────────────────────────────
 
     private advanceTurn() {
-      if (this.gs.phase === 'game_over') {
-        this.showGameOver();
-        return;
-      }
-      if (this.gs.phase === 'hand_end') {
-        this.showHandEnd();
-        return;
-      }
-      if (this.gs.phase === 'trick_end') {
-        this.resolveTrick();
-        return;
-      }
-      if (this.gs.phase !== 'playing') return;
+      if (this.gamePhase === 'game_over') { this.showGameOver(); return; }
+      if (this.gamePhase === 'hand_end')  { this.showHandEnd();  return; }
+      if (this.gamePhase === 'trick_end') { this.resolveTrick(); return; }
+      if (this.gamePhase !== 'playing') return;
 
-      const { currentPlayerIdx } = this.gs;
-      if (currentPlayerIdx === 0) {
+      if (this.curPlayerIdx === 0) {
         this.highlightLegalCards();
       } else {
-        // Bot turn — short pause for realism
         this.time.delayedCall(500, () => {
-          const { chooseBotPlay } = this.bot;
-          const card = chooseBotPlay(this.gs, currentPlayerIdx);
-          this.doPlay(currentPlayerIdx, card);
+          // chooseBotPlay uses game.checkAllowedPlay() internally for validation
+          const card = this.bot.chooseBotPlay(
+            this.game, this.curPlayerIdx, this.trickCards, this.trickLedSuit
+          );
+          this.doPlay(this.curPlayerIdx, card);
         });
       }
     }
 
     private highlightLegalCards() {
-      const { legalPlays } = this.engine;
-      const legal = legalPlays(this.gs, 0);
-      this.gs.players[0].hand.forEach((card: string) => {
-        const key = `hand_0_${card}`;
-        const img = this.cardObjects[key];
+      const legal = this.getLegalPlays();
+      this.getHand(0).forEach((card: string) => {
+        const img = this.cardObjects[`hand_0_${card}`];
         if (!img) return;
         if (legal.includes(card)) {
           img.setAlpha(1).clearTint();
@@ -652,9 +704,8 @@ function makeGameScene() {
     }
 
     private clearHighlights() {
-      this.gs.players[0].hand.forEach((card: string) => {
-        const key = `hand_0_${card}`;
-        const img = this.cardObjects[key];
+      this.getHand(0).forEach((card: string) => {
+        const img = this.cardObjects[`hand_0_${card}`];
         if (img) img.setAlpha(1).clearTint();
       });
     }
@@ -662,44 +713,73 @@ function makeGameScene() {
     private doPlay(playerIdx: number, card: string) {
       this.clearHighlights();
 
-      const { playCard } = this.engine;
-      const prevGs = this.gs;
-      this.gs = playCard(this.gs, playerIdx, card);
+      // Track led suit for this trick
+      if (this.trickCards.length === 0) {
+        this.trickLedSuit = this.engine.parseCard(card).suit;
+      }
+      // Track hearts broken
+      if (this.engine.parseCard(card).suit === 'H') this.heartsBroken = true;
 
-      // Animate card from hand to trick slot
+      // Record in engine state.
+      // directPlay() is used (bypassing guard checks) because:
+      //   • The trick leader's play has already been validated by getLegalPlays()
+      //   • Calling play() on the leader would trigger firstPlayerPlayConditions
+      //     from the wrong trick (player.played.suit mismatch) since we manage
+      //     turn indices manually across tricks.
+      // Non-leader plays are pre-validated by getLegalPlays() via checkAllowedPlay().
+      (this.game as any).directPlay([card], 'table');
+      this.trickCards.push({ card, playerIdx });
+
+      // Animate card from hand to trick area
       const handKey = `hand_${playerIdx}_${card}`;
       const img = this.cardObjects[handKey];
-      if (!img) { this.advanceTurn(); return; }
+      if (!img) { this.afterCardPlayed(playerIdx); return; }
 
-      // Flip face-up if bot
-      if (playerIdx !== 0) {
-        img.setTexture(card);
-      }
+      if (playerIdx !== 0) img.setTexture(card); // flip bot card face-up
 
       const targetPos = TRICK_POS[playerIdx];
-      img.setDepth(20 + this.gs.trickCards.length);
+      img.setDepth(20 + this.trickCards.length);
 
       this.tweens.add({
         targets: img,
-        x: targetPos.x, y: targetPos.y,
-        angle: 0,
+        x: targetPos.x, y: targetPos.y, angle: 0,
         displayWidth: CARD_W, displayHeight: CARD_H,
-        duration: 300,
-        ease: 'Quad.easeOut',
+        duration: 300, ease: 'Quad.easeOut',
         onComplete: () => {
           delete this.cardObjects[handKey];
           this.trickGroup.add(img);
           this.updateScoreDisplay();
-
-          // Rebuild that player's hand layout (shifted after card removed)
           this.rebuildHand(playerIdx);
-          this.advanceTurn();
+          this.afterCardPlayed(playerIdx);
         },
       });
     }
 
+    /**
+     * Called after each card play animation completes.
+     * Advances to the next player within a trick, or transitions to trick_end.
+     *
+     * We manually update the engine's currentPlayerIdx and turnIdx so that
+     * checkAllowedPlay() uses playerPlayConditions (follow-suit) for the next
+     * player rather than firstPlayerPlayConditions (2♣ rule).
+     */
+    private afterCardPlayed(playerIdx: number) {
+      if (this.trickCards.length === 4) {
+        this.gamePhase = 'trick_end';
+        this.advanceTurn();
+      } else {
+        const nextIdx = (playerIdx + 1) % 4;
+        this.curPlayerIdx = nextIdx;
+        // Keep engine in sync so checkAllowedPlay() sees the right current player
+        this.game.currentRound.currentPlayerIdx = nextIdx;
+        this.game.currentRound.turnIdx += 1;            // >0 → playerPlayConditions
+        this.game.currentRound.previousPlayerIdx.push(playerIdx);
+        this.gamePhase = 'playing';
+        this.advanceTurn();
+      }
+    }
+
     private rebuildHand(playerIdx: number) {
-      // Destroy old hand images for this player and redraw
       const prefix = `hand_${playerIdx}_`;
       Object.keys(this.cardObjects)
         .filter(k => k.startsWith(prefix))
@@ -710,39 +790,53 @@ function makeGameScene() {
     // ── Trick resolution ────────────────────────────────────────────────────
 
     private resolveTrick() {
-      // gs.phase is 'trick_end' — winner is currentPlayerIdx
-      const winnerIdx = this.gs.currentPlayerIdx; // set by engine to trick winner
+      // Our trickWinner() uses only the led suit (correct Hearts rule).
+      // The engine's built-in winConditions uses poker value across all suits,
+      // which is why we calculate the winner independently.
+      const winnerIdx = this.engine.trickWinner(this.trickCards, this.trickLedSuit);
 
-      // Highlight winning card briefly
-      const winnerEntry = this.gs.trickCards.find(
-        (tc: any) => tc.playerIdx === winnerIdx
+      // Score trick
+      const pts = this.trickCards.reduce(
+        (sum: number, tc: any) => sum + this.engine.cardPoints(tc.card), 0
       );
-      if (winnerEntry) {
+      this.handPoints[winnerIdx] += pts;
+
+      // Highlight winning card
+      const winEntry = this.trickCards.find((tc: any) => tc.playerIdx === winnerIdx);
+      if (winEntry) {
         const winImg = this.trickGroup.getChildren().find(
-          (img: any) => img.texture?.key === winnerEntry.card
+          (img: any) => img.texture?.key === winEntry.card
         );
         if (winImg) {
-          this.tweens.add({
-            targets: winImg, scale: 1.25, duration: 200, yoyo: true, repeat: 1,
-          });
+          this.tweens.add({ targets: winImg, scale: 1.25, duration: 200, yoyo: true, repeat: 1 });
         }
       }
 
-      // Collect trick cards to winner's pile
-      const wpos = PLAYER_POS[winnerIdx];
+      const wpos    = PLAYER_POS[winnerIdx];
       const targets = this.trickGroup.getChildren();
       this.time.delayedCall(500, () => {
         this.tweens.add({
           targets, x: wpos.x, y: wpos.y,
           displayWidth: CARD_W * 0.4, displayHeight: CARD_H * 0.4,
-          alpha: 0,
-          duration: 350, ease: 'Quad.easeIn',
+          alpha: 0, duration: 350, ease: 'Quad.easeIn',
           onComplete: () => {
             this.trickGroup.clear(true, true);
+            this.tricksInHand++;
+            this.trickCards    = [];
+            this.trickLedSuit  = null;
+
+            // Reset engine table and re-seat for next trick.
+            // turnIdx stays > 0 so playerPlayConditions (follow-suit) applies
+            // to all players; the leading restriction is handled by getLegalPlays().
+            this.game.currentRound.table             = [];
+            this.game.currentRound.currentPlayerIdx  = winnerIdx;
+            this.game.currentRound.firstPlayerIdx    = winnerIdx;
+            this.game.currentRound.turnIdx          += 1;
+            this.game.currentRound.previousPlayerIdx = [];
+            this.curPlayerIdx = winnerIdx;
+
             this.updateScoreDisplay();
-            // Advance to next trick
-            const { startNextTrick } = this.engine;
-            this.gs = startNextTrick(this.gs);
+            this.gamePhase = this.tricksInHand === 13 ? 'hand_end' : 'playing';
             this.advanceTurn();
           },
         });
@@ -752,53 +846,51 @@ function makeGameScene() {
     // ── Hand end ────────────────────────────────────────────────────────────
 
     private showHandEnd() {
-      const { startNewHand } = this.engine;
-      const pts = this.gs.handPoints;
-      const gamePts = this.gs.players.map((p: any) => p.gamePoints);
+      const { detectShootTheMoon, applyShootTheMoon } = this.engine;
 
-      // Check for shoot the moon
-      const moon = pts.indexOf(26);
-      const moonMsg = moon >= 0
-        ? `\n🌙 ${this.gs.players[moon].name} shot the moon!`
-        : '';
+      let pts = [...this.handPoints];
+      const shooter = detectShootTheMoon(pts);
+      const moonMsg = shooter !== null
+        ? `\n🌙 ${this.playerNames[shooter]} shot the moon!` : '';
+      if (shooter !== null) pts = applyShootTheMoon(pts, shooter);
 
-      const lines = this.gs.players.map((p: any, i: number) =>
-        `${p.name}: +${pts[i]} pts  (total: ${gamePts[i]})`
+      pts.forEach((p: number, i: number) => { this.gamePoints[i] += p; });
+
+      const lines = this.playerNames.map((name: string, i: number) =>
+        `${name}: +${pts[i]} pts  (total: ${this.gamePoints[i]})`
       ).join('\n');
 
-      this.showModal(
-        `Hand over!${moonMsg}`,
-        lines,
-        'Next Hand',
-        () => {
-          this.gs = startNewHand(this.gs);
-          this.dealAnimation(() => {
-            this.updateScoreDisplay();
-            if (this.gs.phase === 'passing') {
-              this.showPassPhase();
-            } else {
-              this.advanceTurn();
-            }
-          });
-        }
-      );
+      const maxPts = Math.max(...this.gamePoints);
+      if (maxPts >= 100) {
+        const minPts  = Math.min(...this.gamePoints);
+        this.winnerIdx = this.gamePoints.indexOf(minPts);
+        this.gamePhase = 'game_over';
+        this.showModal(`Hand over!${moonMsg}`, lines, 'See Results',
+          () => { this.hideModal(); this.advanceTurn(); }
+        );
+      } else {
+        this.showModal(`Hand over!${moonMsg}`, lines, 'Next Hand', () => {
+          this.hideModal();
+          this.handNumber++;
+          this.startNewHand();
+        });
+      }
     }
 
     // ── Game over ───────────────────────────────────────────────────────────
 
     private showGameOver() {
-      const winner = this.gs.players[this.gs.winnerIdx!];
-      const pts = this.gs.players.map((p: any) => `${p.name}: ${p.gamePoints} pts`).join('\n');
-      const humanWon = this.gs.winnerIdx === 0;
+      const winner   = this.playerNames[this.winnerIdx!];
+      const pts      = this.playerNames.map(
+        (name: string, i: number) => `${name}: ${this.gamePoints[i]} pts`
+      ).join('\n');
+      const humanWon = this.winnerIdx === 0;
 
       this.showModal(
-        humanWon ? '🎉 You Win!' : `${winner.name} Wins`,
+        humanWon ? '🎉 You Win!' : `${winner} Wins`,
         pts,
         'Play Again',
-        () => {
-          this.hideModal();
-          this.startNewGame();
-        }
+        () => { this.hideModal(); this.startNewGame(); }
       );
 
       const onGameEnd = this.registry.get('onGameEnd') as (won: boolean) => void;
@@ -811,32 +903,27 @@ function makeGameScene() {
       const setOverlay = this.registry.get('setOverlay');
       if (setOverlay) {
         setOverlay({
-          players: this.gs.players.map((p: any, i: number) => ({
-            name: p.name,
-            gamePoints: p.gamePoints,
-            handPoints: this.gs.handPoints[i],
-            isActive: this.gs.phase === 'playing' && this.gs.currentPlayerIdx === i,
+          players: this.playerNames.map((name: string, i: number) => ({
+            name,
+            gamePoints: this.gamePoints[i],
+            handPoints: this.handPoints[i],
+            isActive: this.gamePhase === 'playing' && this.curPlayerIdx === i,
           })),
-          phase: this.gs.phase,
-          passDirection: this.gs.passDirection,
-          heartsBroken: this.gs.heartsBroken,
-          trick: this.gs.trickCards,
+          phase:         this.gamePhase,
+          passDirection: this.engine.passDirectionForHand(this.handNumber),
+          heartsBroken:  this.heartsBroken,
+          trick:         this.trickCards,
         });
       }
-      this.gs.players.forEach((p: any, i: number) => {
-        if (this.scoreTexts[i]) {
-          this.scoreTexts[i].setText(`${p.gamePoints} pts`);
-        }
+      this.playerNames.forEach((_: string, i: number) => {
+        if (this.scoreTexts[i]) this.scoreTexts[i].setText(`${this.gamePoints[i]} pts`);
       });
     }
 
     // ── Modal overlay ───────────────────────────────────────────────────────
 
-    private modalGroup: any[] = [];
-
     private showModal(title: string, body: string, btnLabel: string, onBtn: () => void) {
       this.hideModal();
-      const Phaser = (window as any).Phaser;
 
       const bg = this.add.rectangle(W/2, H/2, W, H, 0x000000, 0.65).setDepth(50);
       const card = this.add.rectangle(W/2, H/2, 440, 300, 0x1e3a2f, 1)
@@ -858,8 +945,6 @@ function makeGameScene() {
       btnBg.on('pointerdown', onBtn);
 
       this.modalGroup = [bg, card, titleTxt, bodyTxt, btnBg, btnTxt];
-
-      // Entrance animation
       [card, titleTxt, bodyTxt, btnBg, btnTxt].forEach(o => {
         o.setAlpha(0);
         this.tweens.add({ targets: o, alpha: 1, duration: 300, delay: 50 });
@@ -873,12 +958,8 @@ function makeGameScene() {
 
     // ── Status text ─────────────────────────────────────────────────────────
 
-    private showStatus(msg: string) {
-      this.statusText.setText(msg).setVisible(true);
-    }
-    private hideStatus() {
-      this.statusText.setVisible(false);
-    }
+    private showStatus(msg: string) { this.statusText.setText(msg).setVisible(true); }
+    private hideStatus() { this.statusText.setVisible(false); }
   }
   return GameScene;
 }
