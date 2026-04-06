@@ -10,6 +10,7 @@ import {
 } from 'react';
 import { initScoresClient, type ScoresClient } from '../client';
 import { AuthModal } from './AuthModal';
+import { getAnonClient } from '@/lib/supabaseClient';
 
 // ── Context ──────────────────────────────────────────────────────────────────
 
@@ -40,6 +41,7 @@ export function AuthModalProvider({ children }: { children: ReactNode }) {
     clientRef.current = initScoresClient({
       supabaseUrl:     process.env.NEXT_PUBLIC_SUPABASE_URL!,
       supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      supabaseClient:  getAnonClient(),
       onAuthRequired,
     });
   }

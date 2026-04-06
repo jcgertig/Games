@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { createClient } from '@supabase/supabase-js';
+import { getAnonClient } from '@/lib/supabaseClient';
 import { useScoresClient } from '@/lib/scores/components/AuthModalProvider';
 import type { SeatInfo } from '../types';
 
@@ -16,15 +16,6 @@ interface RoomRow {
   max_seats:    number;
   created_at:   string;
   online_seats: SeatInfo[];
-}
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function makeBrowserClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  );
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -82,7 +73,7 @@ export function ActiveRoomsPage({
         return;
       }
 
-      const sb = makeBrowserClient();
+      const sb = getAnonClient();
       const { data, error: sbErr } = await sb
         .from('online_rooms')
         .select('id, code, status, max_seats, created_at, online_seats(*)')

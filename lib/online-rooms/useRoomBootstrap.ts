@@ -1,18 +1,9 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { getAnonClient } from '@/lib/supabaseClient';
 import { useScoresClient } from '@/lib/scores/components/AuthModalProvider';
 import type { RoomStatus, SeatInfo } from './types';
-
-// ── Internal browser client ───────────────────────────────────────────────────
-
-function makeBrowserClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  );
-}
 
 // ── Return type ───────────────────────────────────────────────────────────────
 
@@ -40,7 +31,7 @@ export function useRoomBootstrap<TState = unknown>(options: {
   const upperCode = code.toUpperCase();
 
   const scoresClient = useScoresClient();
-  const supabase     = useRef(makeBrowserClient());
+  const supabase     = useRef(getAnonClient());
 
   const [roomStatus, setRoomStatus] = useState<RoomStatus>('loading');
   const [mySeat,     setMySeat]     = useState<number | null>(null);
@@ -89,8 +80,8 @@ export function useRoomBootstrap<TState = unknown>(options: {
 
   // ── Bootstrap effect ───────────────────────────────────────────────────────
   useEffect(() => {
-    let stateChannel: ReturnType<ReturnType<typeof makeBrowserClient>['channel']> | undefined;
-    let roomChannel:  ReturnType<ReturnType<typeof makeBrowserClient>['channel']> | undefined;
+    let stateChannel: ReturnType<ReturnType<typeof getAnonClient>['channel']> | undefined;
+    let roomChannel:  ReturnType<ReturnType<typeof getAnonClient>['channel']> | undefined;
     let cancelled = false;
 
     (async () => {

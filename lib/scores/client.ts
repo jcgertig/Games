@@ -14,7 +14,8 @@ export class ScoresClient {
 
   constructor(config: ScoresClientConfig) {
     this.config = config;
-    this.supabase = createClient(config.supabaseUrl, config.supabaseAnonKey);
+    this.supabase = config.supabaseClient
+      ?? createClient(config.supabaseUrl, config.supabaseAnonKey);
   }
 
   // ── submitScore ──────────────────────────────────────────────────────────

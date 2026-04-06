@@ -79,6 +79,11 @@ export interface ScoresClientConfig {
   supabaseUrl: string;
   supabaseAnonKey: string;
   /**
+   * Optional pre-built Supabase client to reuse. When provided the constructor
+   * will NOT call createClient(), preventing duplicate GoTrueClient instances.
+   */
+  supabaseClient?: import('@supabase/supabase-js').SupabaseClient;
+  /**
    * Called when submitScore needs the user to authenticate.
    * Resolves to 'logged_in' when the user successfully authenticates,
    * or 'skipped' when the user dismisses the modal.
