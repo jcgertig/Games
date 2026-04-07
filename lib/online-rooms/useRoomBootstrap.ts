@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { getAnonClient } from '@/lib/supabaseClient';
 import { useScoresClient } from '@/lib/scores/components/AuthModalProvider';
 import type { RoomStatus, SeatInfo } from './types';
@@ -73,8 +73,23 @@ export function useRoomBootstrap<TState = unknown>(options: {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
     });
-    const json = await res.json();
-    if (!res.ok) setError(json.error ?? 'Failed to start');
+    if (!res.ok) {
+      // 409 = game already started in the DB but the client missed the Realtime
+      // delivery (common when the subscription hadn't finished setting up).
+      // Silently recover by fetching the current state directly.
+      if (res.status === 409) {
+        const { data: room } = await supabase.current
+          .from('online_rooms')
+          .select('id, online_game_state(state)')
+          .eq('code', upperCode)
+          .maybeSingle();
+        const state = (room as any)?.online_game_state?.state ?? null;
+        if (state) setGameState(state as TState);
+      } else {
+        const json = await res.json().catch(() => ({}));
+        setError(json.error ?? 'Failed to start');
+      }
+    }
     setStarting(false);
   }, [upperCode]);
 
@@ -117,12 +132,12 @@ export function useRoomBootstrap<TState = unknown>(options: {
       if (!room) { setError('Room not found'); setRoomStatus('error'); return; }
 
       const rId        = (room as any).id as string;
-      const currentUser = (await supabase.current.auth.getUser()).data.user;
-      setIsOwner((room as any).owner_id === currentUser?.id);
+      const { data: { session: mySession } } = await supabase.current.auth.getSession();
+      setIsOwner((room as any).owner_id === mySession?.user?.id);
       setSeats(((room as any).online_seats ?? []) as SeatInfo[]);
       setRoomStatus((room as any).status as RoomStatus);
 
-      const initialState = (room as any).online_game_state?.[0]?.state ?? null;
+      const initialState = (room as any).online_game_state?.state ?? null;
       if (initialState) setGameState(initialState as TState);
 
       // ── Realtime: game state updates (card plays, passes, etc.) ─────────────
@@ -182,5 +197,5 @@ export function useRoomBootstrap<TState = unknown>(options: {
     };
   }, [upperCode, gameSlug]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  return { roomStatus, mySeat, seats, isOwner, gameState, error, sendAction, startGame, starting };
+  return useMemo(() => ({ roomStatus, mySeat, seats, isOwner, gameState, error, sendAction, startGame, starting }), [ roomStatus, mySeat, seats, isOwner, gameState, error, sendAction, startGame, starting ]);
 }

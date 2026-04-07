@@ -89,7 +89,7 @@ function makePreloadScene() {
 
       // Load SVG sprite sheet as plain text so we can parse it
       this.load.text('cards-svg', '/cards/svg-cards.svg');
-      this.load.image('table-bg', '/cards/engin-akyurt-HEMIBJ8QQuA-unsplash.jpg');
+      // table-bg no longer needed — felt drawn in code
     }
 
     async create() {
@@ -347,38 +347,71 @@ function makeGameScene() {
     // ── Table background ────────────────────────────────────────────────────
 
     private drawTable() {
-      // Photo background
-      this.add.image(W/2, H/2, 'table-bg').setDisplaySize(W, H);
-      // Dark vignette overlay for depth
       const g = this.add.graphics();
-      g.fillStyle(0x000000, 0.45);
-      g.fillEllipse(W/2, H/2, 580, 400);
 
-      // Score readouts per player
-      ['','','',''].forEach((_, i) => {
-        const pos = PLAYER_POS[i];
-        const offset = [
-          { x: 0,    y: -70 },
-          { x: 55,   y: 0   },
-          { x: 0,    y: 70  },
-          { x: -55,  y: 0   },
-        ][i];
-        const st = this.add.text(pos.x + offset.x, pos.y + offset.y, '0 pts', {
-          fontSize: '13px', color: '#fde68a', fontFamily: 'sans-serif',
-        }).setOrigin(0.5);
-        this.scoreTexts.push(st);
+      // ── Wood frame background ──────────────────────────────────────────────
+      const FRAME = 30;
+      // Dark walnut base
+      g.fillStyle(0x3D1F0A);
+      g.fillRect(0, 0, W, H);
+      // Subtle plank bands
+      ([0x4A2610, 0x3D1F0A, 0x4E2B12, 0x3A1C08] as number[]).forEach((c, i) => {
+        g.fillStyle(c, 0.25);
+        g.fillRect(0, i * 80, W, 80);
+        g.fillRect(0, i * 80 + 320, W, 80);
+      });
+      // Raised frame rails (lighter wood)
+      g.fillStyle(0x6B3A1F);
+      g.fillRect(0, 0, W, FRAME);
+      g.fillRect(0, H - FRAME, W, FRAME);
+      g.fillRect(0, 0, FRAME, H);
+      g.fillRect(W - FRAME, 0, FRAME, H);
+      // Outer bevel highlight
+      g.lineStyle(2, 0xB07040, 0.8);
+      g.strokeRect(3, 3, W - 6, H - 6);
+      g.lineStyle(1, 0x7A4820, 0.5);
+      g.strokeRect(7, 7, W - 14, H - 14);
+      // Inner shadow line (felt edge)
+      g.lineStyle(3, 0x1A0A02, 0.9);
+      g.strokeRect(FRAME, FRAME, W - FRAME * 2, H - FRAME * 2);
+
+      // ── Green felt ─────────────────────────────────────────────────────────
+      const FX = FRAME + 2, FY = FRAME + 2;
+      const FW = W - (FRAME + 2) * 2, FH = H - (FRAME + 2) * 2;
+      const R  = 44;
+      g.fillStyle(0x1a5c2a);
+      g.fillRoundedRect(FX, FY, FW, FH, R);
+      // Felt border shadow
+      g.lineStyle(2, 0x0f3a1a, 1.0);
+      g.strokeRoundedRect(FX, FY, FW, FH, R);
+      // Felt inner highlight
+      g.lineStyle(1, 0x2e7d40, 0.35);
+      g.strokeRoundedRect(FX + 6, FY + 6, FW - 12, FH - 12, R - 4);
+
+      // ── Score readouts per player ─────────────────────────────────────────
+      const offsets = [
+        { x: 0,   y: -70 }, { x: 58,  y: 0  },
+        { x: 0,   y: 70  }, { x: -58, y: 0  },
+      ];
+      PLAYER_POS.forEach((pos, i) => {
+        const off = offsets[i];
+        this.scoreTexts.push(
+          this.add.text(pos.x + off.x, pos.y + off.y, '0 pts', {
+            fontSize: '13px', color: '#fde68a', fontFamily: 'sans-serif',
+          }).setOrigin(0.5),
+        );
       });
 
-      // Status bar
+      // ── Status bar ─────────────────────────────────────────────────────────
       this.statusText = this.add.text(W/2, H/2, '', {
         fontSize: '18px', color: '#ffffff', fontFamily: 'sans-serif',
         backgroundColor: '#00000088', padding: { x: 12, y: 6 },
       }).setOrigin(0.5).setDepth(10).setVisible(false);
 
-      // Trick area outline
+      // ── Trick area outline (subtle) ────────────────────────────────────────
       const trickOutline = this.add.graphics();
-      trickOutline.lineStyle(1, 0x4ade80, 0.2);
-      trickOutline.strokeEllipse(W/2, H/2, 340, 240);
+      trickOutline.lineStyle(1, 0x4ade80, 0.15);
+      trickOutline.strokeEllipse(W/2, H/2, 300, 220);
 
       this.trickGroup = this.add.group();
     }
@@ -1047,7 +1080,7 @@ export default function HeartsPage() {
         width:   W,
         height:  H,
         parent:  containerRef.current,
-        backgroundColor: '#000000',
+        backgroundColor: '#3D1F0A',
         scene:   [BootScene, PreloadScene, MenuScene, GameScene],
         scale: {
           mode:       (window as any).Phaser.Scale.FIT,

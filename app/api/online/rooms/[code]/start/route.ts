@@ -29,9 +29,17 @@ export async function POST(
     .eq('code', code.toUpperCase())
     .maybeSingle();
 
-  if (!room)                    return NextResponse.json({ error: 'Room not found' },         { status: 404 });
+  if (!room)                     return NextResponse.json({ error: 'Room not found' },         { status: 404 });
   if (room.owner_id !== user.id) return NextResponse.json({ error: 'Only the host can start' }, { status: 403 });
-  if (room.status !== 'waiting') return NextResponse.json({ error: 'Game already started' },    { status: 409 });
+
+  // Reject if the game is truly underway (phase advanced past 'waiting').
+  // Allow re-calling when the room is already 'playing' but cards haven't been
+  // dealt yet (phase === 'waiting') — this covers the "Ready / Deal Cards" case
+  // where roomStatus flipped to 'playing' before the owner clicked the deal button.
+  const alreadyPlaying = room.status === 'playing';
+  if (room.status !== 'waiting' && !alreadyPlaying) {
+    return NextResponse.json({ error: 'Game already started' }, { status: 409 });
+  }
 
   let config: ReturnType<typeof getGameConfig>;
   try { config = getGameConfig(room.game_slug); }
@@ -44,12 +52,21 @@ export async function POST(
     .single();
   if (!gs) return NextResponse.json({ error: 'Game state not found' }, { status: 500 });
 
+  // Guard: if the game state has already progressed past 'waiting', refuse.
+  const currentPhase = (gs.state as any)?.phase;
+  if (currentPhase && currentPhase !== 'waiting') {
+    return NextResponse.json({ error: 'Game already started' }, { status: 409 });
+  }
+
   try {
     const newState = config.startGame(gs.state);
     await sb.from('online_game_state')
       .update({ state: newState, updated_at: new Date().toISOString() })
       .eq('room_id', room.id);
-    await sb.from('online_rooms').update({ status: 'playing' }).eq('id', room.id);
+    // Only flip room status if it isn't already 'playing'.
+    if (!alreadyPlaying) {
+      await sb.from('online_rooms').update({ status: 'playing' }).eq('id', room.id);
+    }
     return NextResponse.json({ ok: true });
   } catch (e: any) {
     return NextResponse.json({ error: e.message ?? 'Failed to start game' }, { status: 500 });

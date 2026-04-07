@@ -50,7 +50,7 @@ function makePreloadScene() {
       });
       this.add.text(W/2, H/2-50, 'Loading cards…', { fontSize:'20px', color:'#ffffff', fontFamily:'sans-serif' }).setOrigin(0.5);
       this.load.text('cards-svg', '/cards/svg-cards.svg');
-      this.load.image('table-bg', '/cards/engin-akyurt-HEMIBJ8QQuA-unsplash.jpg');
+      // table-bg no longer needed — felt drawn in code
     }
     async create() {
       await this.buildTextures(this.cache.text.get('cards-svg'));
@@ -115,6 +115,10 @@ function makeOnlineGameScene(
 ) {
   class OnlineGameScene extends (window as any).Phaser.Scene {
     private currentState: HeartsRoomState | null = null;
+    private prevState:    HeartsRoomState | null = null;
+    private isAnimating   = false;
+    private pendingState: HeartsRoomState | null = null;
+    private currentTrickLedSuit: string | null = null;
     private cardObjects: Record<string, any> = {};
     private trickGroup!: any;
     private scoreTexts: any[] = [];
@@ -156,30 +160,262 @@ function makeOnlineGameScene(
     // ── Table ────────────────────────────────────────────────────────────────
 
     private drawTable() {
-      this.add.image(W/2, H/2, 'table-bg').setDisplaySize(W, H);
       const g = this.add.graphics();
-      g.fillStyle(0x000000, 0.45); g.fillEllipse(W/2, H/2, 580, 400);
-      ['','','',''].forEach((_, i) => {
-        const pos = PLAYER_POS[i];
-        const off = [{ x:0,y:-70 },{ x:55,y:0 },{ x:0,y:70 },{ x:-55,y:0 }][i];
-        this.scoreTexts.push(this.add.text(pos.x+off.x, pos.y+off.y, '0 pts', {
+
+      // ── Wood frame background ──────────────────────────────────────────────
+      const FRAME = 30;
+      g.fillStyle(0x3D1F0A);
+      g.fillRect(0, 0, W, H);
+      ([0x4A2610, 0x3D1F0A, 0x4E2B12, 0x3A1C08] as number[]).forEach((c, i) => {
+        g.fillStyle(c, 0.25);
+        g.fillRect(0, i * 80, W, 80);
+        g.fillRect(0, i * 80 + 320, W, 80);
+      });
+      g.fillStyle(0x6B3A1F);
+      g.fillRect(0, 0, W, FRAME);
+      g.fillRect(0, H - FRAME, W, FRAME);
+      g.fillRect(0, 0, FRAME, H);
+      g.fillRect(W - FRAME, 0, FRAME, H);
+      g.lineStyle(2, 0xB07040, 0.8); g.strokeRect(3, 3, W-6, H-6);
+      g.lineStyle(1, 0x7A4820, 0.5); g.strokeRect(7, 7, W-14, H-14);
+      g.lineStyle(3, 0x1A0A02, 0.9); g.strokeRect(FRAME, FRAME, W-FRAME*2, H-FRAME*2);
+
+      // ── Green felt ─────────────────────────────────────────────────────────
+      const FX = FRAME+2, FY = FRAME+2, FW = W-(FRAME+2)*2, FH = H-(FRAME+2)*2, R = 44;
+      g.fillStyle(0x1a5c2a); g.fillRoundedRect(FX, FY, FW, FH, R);
+      g.lineStyle(2, 0x0f3a1a, 1.0); g.strokeRoundedRect(FX, FY, FW, FH, R);
+      g.lineStyle(1, 0x2e7d40, 0.35); g.strokeRoundedRect(FX+6, FY+6, FW-12, FH-12, R-4);
+
+      // ── Scores ─────────────────────────────────────────────────────────────
+      const offs = [{ x:0,y:-70 },{ x:58,y:0 },{ x:0,y:70 },{ x:-58,y:0 }];
+      PLAYER_POS.forEach((pos, i) => {
+        this.scoreTexts.push(this.add.text(pos.x+offs[i].x, pos.y+offs[i].y, '0 pts', {
           fontSize:'13px', color:'#fde68a', fontFamily:'sans-serif',
         }).setOrigin(0.5));
       });
+
+      // ── Status text ────────────────────────────────────────────────────────
       this.statusText = this.add.text(W/2, H/2, '', {
         fontSize:'18px', color:'#fff', fontFamily:'sans-serif',
         backgroundColor:'#00000088', padding:{ x:12, y:6 },
       }).setOrigin(0.5).setDepth(10).setVisible(false);
+
+      // ── Trick area outline ─────────────────────────────────────────────────
       const tg = this.add.graphics();
-      tg.lineStyle(1, 0x4ade80, 0.2); tg.strokeEllipse(W/2, H/2, 340, 240);
+      tg.lineStyle(1, 0x4ade80, 0.15); tg.strokeEllipse(W/2, H/2, 300, 220);
       this.trickGroup = this.add.group();
     }
 
     // ── State update ─────────────────────────────────────────────────────────
 
     private onStateUpdate(state: HeartsRoomState) {
-      this.currentState = state;
-      this.redraw();
+      if (this.isAnimating) { this.pendingState = state; return; }
+      this.applyState(state);
+    }
+
+    private applyState(state: HeartsRoomState) {
+      const prev = this.currentState;
+
+      // A trick just resolved when tricksInHand increases (reliable regardless of
+      // whether trickCards was emptied in this snapshot or a previous one).
+      const trickJustResolved = prev != null && state.tricksInHand > prev.tricksInHand;
+
+      // A new hand started (or passes were applied and cards changed).
+      const isNewHand = state.phase !== 'waiting' && state.phase !== 'hand_end' && (
+        !prev ||
+        prev.phase === 'waiting' ||
+        prev.handNumber !== state.handNumber ||
+        (prev.phase === 'passing' && state.phase === 'playing')
+      );
+
+      if (trickJustResolved && !isNewHand) {
+        // Capture the led suit before updating state (needed for winner computation).
+        const ledSuit = prev!.trickLedSuit ?? this.currentTrickLedSuit;
+        this.isAnimating = true;
+        this.currentState = state;
+
+        // Detect bots who played AFTER the human in this trick.
+        // These cards were auto-played by advance() server-side and never
+        // appeared in trickGroup — diff the hands to find them.
+        const nextTrickKeys = new Set(state.trickCards.map(tc => tc.card));
+        const prevTrickKeys = new Set(prev!.trickCards.map(tc => tc.card));
+        const botsToAnimate: { card: string; seat: number }[] = [];
+        for (let seat = 0; seat < 4; seat++) {
+          if (seat === mySeat) continue;
+          const prevHand = prev!.hands[seat] ?? [];
+          const newHand  = state.hands[seat]  ?? [];
+          prevHand.forEach(card => {
+            if (!newHand.includes(card) && !nextTrickKeys.has(card) && !prevTrickKeys.has(card)) {
+              botsToAnimate.push({ card, seat });
+            }
+          });
+        }
+
+        const runResolution = () => this.runTrickAnimation(ledSuit, () => {
+          this.isAnimating = false;
+          this.prevState = state;
+          this.currentTrickLedSuit = state.trickLedSuit;
+          this.flushPending() || this.redraw();
+        });
+
+        if (botsToAnimate.length > 0) {
+          this.animateBotPlays(botsToAnimate, runResolution);
+        } else {
+          runResolution();
+        }
+      } else if (isNewHand) {
+        // Deal animation: pile jiggles, cards fly to seats.
+        this.isAnimating = true;
+        this.currentState = state;
+        this.runDealAnimation(() => {
+          this.isAnimating = false;
+          this.prevState = state;
+          this.flushPending();
+        });
+      } else {
+        this.currentState = state;
+        this.prevState = state;
+        this.redraw();
+      }
+    }
+
+    /** Apply any queued state. Returns true if a pending state was consumed. */
+    private flushPending(): boolean {
+      if (!this.pendingState) return false;
+      const next = this.pendingState;
+      this.pendingState = null;
+      this.applyState(next);
+      return true;
+    }
+
+    // ── Bot card-play animation ───────────────────────────────────────────────
+
+    /** Animate each bot card from its hand position to the trick area in sequence,
+     *  rebuilding the bot's hand display as each card leaves.  Calls onComplete
+     *  when all cards have landed so the trick-resolution animation can start. */
+    private animateBotPlays(plays: { card: string; seat: number }[], onComplete: () => void) {
+      if (plays.length === 0) { onComplete(); return; }
+      let idx = 0;
+      const playNext = () => {
+        if (idx >= plays.length) { onComplete(); return; }
+        const { card, seat } = plays[idx++];
+        const key = `hand_${seat}_${card}`;
+        const img = this.cardObjects[key];
+
+        if (img) {
+          delete this.cardObjects[key];
+          img.setTexture(card).setDepth(50).setData('seat', seat); // flip bot card face-up
+          this.tweens.add({
+            targets: img,
+            x: TRICK_POS[seat].x, y: TRICK_POS[seat].y,
+            angle: 0, displayWidth: CARD_W, displayHeight: CARD_H,
+            duration: 220, ease: 'Quad.easeOut',
+            onComplete: () => {
+              // Rebuild bot's remaining hand from the already-updated currentState
+              const pfx = `hand_${seat}_`;
+              Object.keys(this.cardObjects).filter(k => k.startsWith(pfx))
+                .forEach(k => { this.cardObjects[k].destroy(); delete this.cardObjects[k]; });
+              this.layoutHand(seat);
+              this.trickGroup.add(img);
+              this.time.delayedCall(60, playNext);
+            },
+          });
+        } else {
+          // Card object missing — place it directly and move on
+          const tImg = this.add.image(TRICK_POS[seat].x, TRICK_POS[seat].y, card)
+            .setDisplaySize(CARD_W, CARD_H).setDepth(20).setData('seat', seat);
+          this.trickGroup.add(tImg);
+          this.time.delayedCall(60, playNext);
+        }
+      };
+      playNext();
+    }
+
+    // ── Deal animation ────────────────────────────────────────────────────────
+
+    private runDealAnimation(onComplete: () => void) {
+      this.destroyCards();
+      this.trickGroup.clear(true, true);
+      const state = this.currentState!;
+
+      // Jiggling pile in the center, then cards fly out
+      const pile = this.add.image(W/2, H/2, 'back').setDisplaySize(CARD_W, CARD_H);
+      this.tweens.add({
+        targets: pile, x: W/2 + 8, duration: 80, yoyo: true, repeat: 3,
+        onComplete: () => {
+          pile.destroy();
+          [0,1,2,3].forEach(seat => {
+            this.layoutHand(seat, true, seat === 3 ? () => {
+              // Place any in-progress trick cards that arrived with the new state
+              state.trickCards.forEach(({ card, seat: s }) => {
+                const img = this.add.image(TRICK_POS[s].x, TRICK_POS[s].y, card)
+                  .setDisplaySize(CARD_W, CARD_H).setDepth(20).setData('seat', s);
+                this.trickGroup.add(img);
+              });
+              this.currentTrickLedSuit = state.trickLedSuit;
+              state.playerNames.forEach((_, i) => {
+                if (this.scoreTexts[i]) this.scoreTexts[i].setText(`${state.gamePoints[i]} pts`);
+              });
+              if (state.phase === 'passing') {
+                this.hideStatus(); this.showPassPhase();
+              } else if (state.phase === 'playing') {
+                this.hidePassPhase(); this.hideStatus();
+                if (state.curSeat === mySeat) this.highlightLegalPlays();
+              }
+              onComplete();
+            } : undefined);
+          });
+        },
+      });
+    }
+
+    // ── Trick resolution animation ────────────────────────────────────────────
+
+    /** Animate trickGroup children flying to the trick winner, then call onComplete.
+     *  Each image in trickGroup must have `seat` stored via img.setData('seat', n). */
+    private runTrickAnimation(ledSuit: string | null, onComplete: () => void) {
+      const children = this.trickGroup.getChildren() as any[];
+      if (children.length === 0) { onComplete(); return; }
+
+      // Reconstruct trick-card array from the images currently on the table
+      const trickCards = children.map((img: any) => ({
+        card: img.texture?.key as string,
+        seat: img.getData('seat') as number,
+      })).filter(tc => tc.card);
+
+      const winnerSeat = this.computeTrickWinner(trickCards, ledSuit);
+      const wpos = PLAYER_POS[winnerSeat];
+
+      // Pulse the winning card
+      const winImg = children.find((img: any) => img.getData('seat') === winnerSeat);
+      if (winImg) {
+        this.tweens.add({ targets: winImg, scale: 1.25, duration: 200, yoyo: true, repeat: 1 });
+      }
+
+      // After a short pause, shrink all trick cards toward the winner and fade out
+      this.time.delayedCall(500, () => {
+        this.tweens.add({
+          targets: children, x: wpos.x, y: wpos.y,
+          displayWidth: CARD_W * 0.4, displayHeight: CARD_H * 0.4,
+          alpha: 0, duration: 350, ease: 'Quad.easeIn',
+          onComplete: () => {
+            this.trickGroup.clear(true, true);
+            onComplete();
+          },
+        });
+      });
+    }
+
+    /** Return the seat that wins a trick given the trick cards and led suit. */
+    private computeTrickWinner(trickCards: { card: string; seat: number }[], ledSuit: string | null): number {
+      const RANKS = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
+      if (!ledSuit || trickCards.length === 0) return trickCards[0]?.seat ?? 0;
+      let best: { card: string; seat: number } | null = null;
+      for (const tc of trickCards) {
+        if (tc.card.slice(-1) !== ledSuit) continue;
+        if (!best || RANKS.indexOf(tc.card.slice(0,-1)) > RANKS.indexOf(best.card.slice(0,-1))) best = tc;
+      }
+      return best?.seat ?? trickCards[0].seat;
     }
 
     private redraw() {
@@ -194,11 +430,12 @@ function makeOnlineGameScene(
       s.trickCards.forEach(({ card, seat }) => {
         const pos = TRICK_POS[seat];
         const img = this.add.image(pos.x, pos.y, card)
-          .setDisplaySize(CARD_W, CARD_H).setAngle(0).setDepth(20);
+          .setDisplaySize(CARD_W, CARD_H).setAngle(0).setDepth(20).setData('seat', seat);
         this.trickGroup.add(img);
       });
+      this.currentTrickLedSuit = s.trickLedSuit;
 
-      s.playerNames.forEach((name, i) => {
+      s.playerNames.forEach((_, i) => {
         if (this.scoreTexts[i]) this.scoreTexts[i].setText(`${s.gamePoints[i]} pts`);
       });
 
@@ -217,13 +454,14 @@ function makeOnlineGameScene(
 
     // ── Hand layout ───────────────────────────────────────────────────────────
 
-    private layoutHand(seat: number) {
+    private layoutHand(seat: number, animate = false, onComplete?: () => void) {
       const faceUp = seat === mySeat;
       const isVert = seat === 1 || seat === 3;
       const pos = PLAYER_POS[seat];
       const hand = this.displayHand(seat);
       const overlap = seat === mySeat ? CARD_OVERLAP : BOT_OVERLAP;
       const span = (hand.length - 1) * overlap;
+      const count = hand.length;
 
       hand.forEach((card, idx) => {
         const key = `hand_${seat}_${card}`;
@@ -232,15 +470,32 @@ function makeOnlineGameScene(
         const ty = isVert ? pos.y + offset : pos.y;
         const angle = isVert ? 90 : 0;
 
-        const img = this.add.image(tx, ty, faceUp ? card : 'back')
-          .setDisplaySize(CARD_W, CARD_H).setAngle(angle).setDepth(idx+1);
-        this.cardObjects[key] = img;
+        if (!this.cardObjects[key]) {
+          const img = this.add.image(tx, ty, faceUp ? card : 'back')
+            .setDisplaySize(CARD_W, CARD_H).setAngle(angle).setDepth(idx+1);
+          this.cardObjects[key] = img;
+          if (animate) img.setPosition(W/2, H/2).setAlpha(0);
+        }
 
-        if (seat === mySeat) {
+        const img = this.cardObjects[key];
+
+        if (seat === mySeat && !img.input) {
           img.setInteractive({ cursor:'pointer' });
           img.on('pointerover', () => this.onHover(img, ty));
           img.on('pointerout',  () => this.onHoverOut(img, card, ty));
           img.on('pointerdown', () => this.onCardClick(card, img, ty));
+        }
+
+        if (animate) {
+          this.tweens.add({
+            targets: img, x: tx, y: ty, alpha: 1,
+            duration: 350,
+            delay: (seat * 13 + idx) * 45,
+            ease: 'Quad.easeOut',
+            onComplete: idx === count-1 && seat === 3 ? onComplete : undefined,
+          });
+        } else {
+          img.setPosition(tx, ty).setAlpha(1);
         }
       });
     }
@@ -281,9 +536,66 @@ function makeOnlineGameScene(
         this.tweens.add({ targets:img, x:img.x+8, duration:60, yoyo:true, repeat:2 });
         return;
       }
-      // Optimistic: dim card, then send to server
-      img.setAlpha(0.4);
+
+      // ── Optimistic card-play animation ─────────────────────────────────────
+      // Track the led suit now (before state updates) so the trick winner can be
+      // computed later even when the state snapshot has already cleared trickLedSuit.
+      if (s.trickCards.length === 0) this.currentTrickLedSuit = card.slice(-1);
+
+      this.isAnimating = true;
+      const key = `hand_${mySeat}_${card}`;
+      delete this.cardObjects[key];   // remove before rebuild so it isn't destroyed
+      img.setDepth(50).setData('seat', mySeat);
+
+      // Immediately rebuild the human's hand without the played card
+      const hPrefix = `hand_${mySeat}_`;
+      Object.keys(this.cardObjects).filter(k => k.startsWith(hPrefix))
+        .forEach(k => { this.cardObjects[k].destroy(); delete this.cardObjects[k]; });
+      this.rebuildHandExcluding(mySeat, card);
+
+      this.tweens.add({
+        targets: img,
+        x: TRICK_POS[mySeat].x, y: TRICK_POS[mySeat].y,
+        angle: 0, displayWidth: CARD_W, displayHeight: CARD_H,
+        duration: 300, ease: 'Quad.easeOut',
+        onComplete: () => {
+          this.trickGroup.add(img);
+          this.isAnimating = false;
+          this.flushPending();
+        },
+      });
+
       sendAction('play', { card });
+    }
+
+    /** Re-layout a seat's hand from the current state, skipping one specific card.
+     *  Used after the human plays so the fan closes up while the card animates out. */
+    private rebuildHandExcluding(seat: number, excludeCard: string) {
+      const faceUp = seat === mySeat;
+      const isVert = seat === 1 || seat === 3;
+      const pos = PLAYER_POS[seat];
+      const hand = this.displayHand(seat).filter(c => c !== excludeCard);
+      const overlap = seat === mySeat ? CARD_OVERLAP : BOT_OVERLAP;
+      const span = (hand.length - 1) * overlap;
+
+      hand.forEach((card, idx) => {
+        const key = `hand_${seat}_${card}`;
+        const offset = -span / 2 + idx * overlap;
+        const tx = isVert ? pos.x : pos.x + offset;
+        const ty = isVert ? pos.y + offset : pos.y;
+        const angle = isVert ? 90 : 0;
+
+        const img = this.add.image(tx, ty, faceUp ? card : 'back')
+          .setDisplaySize(CARD_W, CARD_H).setAngle(angle).setDepth(idx + 1);
+        this.cardObjects[key] = img;
+
+        if (seat === mySeat) {
+          img.setInteractive({ cursor: 'pointer' });
+          img.on('pointerover', () => this.onHover(img, ty));
+          img.on('pointerout',  () => this.onHoverOut(img, card, ty));
+          img.on('pointerdown', () => this.onCardClick(card, img, ty));
+        }
+      });
     }
 
     // ── Legal plays (client-side mirror of server logic for highlighting) ─────
@@ -459,7 +771,7 @@ export default function OnlineHeartsRoom() {
         type: (window as any).Phaser.AUTO,
         width: W, height: H,
         parent: containerRef.current,
-        backgroundColor: '#000000',
+        backgroundColor: '#3D1F0A',
         scene: [PreloadScene, OnlineGameScene],
         scale: {
           mode: (window as any).Phaser.Scale.FIT,
@@ -570,6 +882,30 @@ export default function OnlineHeartsRoom() {
     <div className="flex flex-col items-center min-h-screen bg-slate-950 pt-4">
       <div className="relative w-full max-w-[1024px]">
         <div ref={containerRef} className="w-full aspect-[1024/640]" />
+
+        {/* Deal Cards overlay — owner needs to initialise game state */}
+        {roomStatus === 'playing' && !gameState && isOwner && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/40 rounded">
+            <p className="text-white text-lg font-semibold drop-shadow">All players are in. Ready to deal?</p>
+            <button
+              onClick={startGame}
+              disabled={starting}
+              className="px-8 py-3 rounded-lg text-white font-bold text-lg shadow-lg transition-all
+                bg-green-700 hover:bg-green-600 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {starting ? 'Dealing…' : '🃏 Deal Cards'}
+            </button>
+          </div>
+        )}
+
+        {/* Non-owner waiting message */}
+        {roomStatus === 'playing' && !gameState && !isOwner && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <p className="text-white/70 text-base bg-black/50 rounded px-4 py-2">
+              Waiting for host to deal cards…
+            </p>
+          </div>
+        )}
 
         {/* Seat name tags */}
         {gameState && (
