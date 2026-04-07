@@ -50,7 +50,7 @@ function makePreloadScene() {
       });
       this.add.text(W/2, H/2-50, 'Loading cards…', { fontSize:'20px', color:'#ffffff', fontFamily:'sans-serif' }).setOrigin(0.5);
       this.load.text('cards-svg', '/cards/svg-cards.svg');
-      this.load.image('table-bg', '/cards/jon-moore-5fIoyoKlz7A-unsplash.jpg');
+      this.load.image('table-bg', '/cards/engin-akyurt-HEMIBJ8QQuA-unsplash.jpg');
     }
     async create() {
       await this.buildTextures(this.cache.text.get('cards-svg'));
@@ -112,7 +112,6 @@ function makePreloadScene() {
 function makeOnlineGameScene(
   mySeat: number,
   sendAction: (type: 'play' | 'pass', payload: any) => Promise<void>,
-  onSceneReady: () => void,
 ) {
   class OnlineGameScene extends (window as any).Phaser.Scene {
     private currentState: HeartsRoomState | null = null;
@@ -142,13 +141,16 @@ function makeOnlineGameScene(
 
     create() {
       this.drawTable();
-      // Register listener first, then tell React we're ready to receive state.
-      // This guarantees the initial-state emit from onSceneReady() is caught.
+      this.showStatus('Waiting for game to start…');
+      // Register the live-update listener.
       this.registry.events.on('stateUpdate', (state: HeartsRoomState) => {
         this.onStateUpdate(state);
       });
-      this.showStatus('Waiting for game to start…');
-      onSceneReady();
+      // Apply any state already stored in the registry by the React component.
+      // registry.set() is persistent storage, so this works regardless of
+      // whether the state arrived before or after this scene was created.
+      const stored = this.registry.get('latestState') as HeartsRoomState | undefined;
+      if (stored) this.onStateUpdate(stored);
     }
 
     // ── Table ────────────────────────────────────────────────────────────────
@@ -450,15 +452,8 @@ export default function OnlineHeartsRoom() {
 
       (window as any).Phaser = Phaser.default ?? Phaser;
 
-      // Called from OnlineGameScene.create() after its registry listener is
-      // registered — guarantees the emit is received by the scene.
-      const onSceneReady = () => {
-        const s = gameStateRef.current;
-        if (s) phaserRef.current?.registry.events.emit('stateUpdate', s);
-      };
-
       const PreloadScene     = makePreloadScene();
-      const OnlineGameScene  = makeOnlineGameScene(mySeat, sendAction, onSceneReady);
+      const OnlineGameScene  = makeOnlineGameScene(mySeat, sendAction);
 
       const game = new (window as any).Phaser.Game({
         type: (window as any).Phaser.AUTO,
@@ -472,6 +467,12 @@ export default function OnlineHeartsRoom() {
         },
       });
 
+      // Pre-store the latest known state so OnlineGameScene.create() can
+      // read it immediately via registry.get('latestState'), regardless of
+      // whether the Realtime state update arrived before or after this point.
+      if (gameStateRef.current) {
+        game.registry.set('latestState', gameStateRef.current);
+      }
       phaserRef.current = game;
       if (!cancelled) gameRef.current = game;
     });
@@ -493,9 +494,12 @@ export default function OnlineHeartsRoom() {
   }, []);
 
   // ── Push state into Phaser whenever it changes (Realtime updates) ────────────
+  // Also keep registry.latestState current so that OnlineGameScene.create()
+  // always has the latest state if it hasn't run yet.
 
   useEffect(() => {
     if (phaserRef.current && gameState) {
+      phaserRef.current.registry.set('latestState', gameState);
       phaserRef.current.registry.events.emit('stateUpdate', gameState);
     }
   }, [gameState]);

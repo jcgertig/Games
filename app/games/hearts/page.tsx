@@ -89,7 +89,7 @@ function makePreloadScene() {
 
       // Load SVG sprite sheet as plain text so we can parse it
       this.load.text('cards-svg', '/cards/svg-cards.svg');
-      this.load.image('table-bg', '/cards/jon-moore-5fIoyoKlz7A-unsplash.jpg');
+      this.load.image('table-bg', '/cards/engin-akyurt-HEMIBJ8QQuA-unsplash.jpg');
     }
 
     async create() {
