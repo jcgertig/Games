@@ -108,7 +108,11 @@ function makePreloadScene() {
 
 // ── Phaser Online Game Scene ──────────────────────────────────────────────────
 
-function makeOnlineGameScene(mySeat: number, sendAction: (type: 'play' | 'pass', payload: any) => Promise<void>) {
+function makeOnlineGameScene(
+  mySeat: number,
+  sendAction: (type: 'play' | 'pass', payload: any) => Promise<void>,
+  onSceneReady: () => void,
+) {
   class OnlineGameScene extends (window as any).Phaser.Scene {
     private currentState: HeartsRoomState | null = null;
     private cardObjects: Record<string, any> = {};
@@ -137,12 +141,13 @@ function makeOnlineGameScene(mySeat: number, sendAction: (type: 'play' | 'pass',
 
     create() {
       this.drawTable();
-      // Listen for state updates pushed from the React component
+      // Register listener first, then tell React we're ready to receive state.
+      // This guarantees the initial-state emit from onSceneReady() is caught.
       this.registry.events.on('stateUpdate', (state: HeartsRoomState) => {
         this.onStateUpdate(state);
       });
-      // Show waiting message until first state arrives
       this.showStatus('Waiting for game to start…');
+      onSceneReady();
     }
 
     // ── Table ────────────────────────────────────────────────────────────────
@@ -423,12 +428,19 @@ export default function OnlineHeartsRoom() {
     gameSlug: 'hearts',
   });
 
+  // Always-current ref so async Phaser callbacks see the latest gameState
+  // without needing to re-run the init effect on every state change.
+  const gameStateRef = useRef<HeartsRoomState | null>(null);
+  gameStateRef.current = gameState;
+
   // ── Start Phaser once mySeat is known and we're in 'playing' state ─────────
+  // gameState is intentionally NOT in the dep array — state updates are pushed
+  // via the registry effect below.  Including it would destroy+recreate Phaser
+  // on every card play.
 
   useEffect(() => {
     if (roomStatus !== 'playing' || mySeat === null || !containerRef.current) return;
     if (gameRef.current) return; // already started
-    if (!gameState) return;
 
     let cancelled = false;
 
@@ -437,8 +449,15 @@ export default function OnlineHeartsRoom() {
 
       (window as any).Phaser = Phaser.default ?? Phaser;
 
-      const PreloadScene = makePreloadScene();
-      const OnlineGameScene = makeOnlineGameScene(mySeat, sendAction);
+      // Called from OnlineGameScene.create() after its registry listener is
+      // registered — guarantees the emit is received by the scene.
+      const onSceneReady = () => {
+        const s = gameStateRef.current;
+        if (s) phaserRef.current?.registry.events.emit('stateUpdate', s);
+      };
+
+      const PreloadScene     = makePreloadScene();
+      const OnlineGameScene  = makeOnlineGameScene(mySeat, sendAction, onSceneReady);
 
       const game = new (window as any).Phaser.Game({
         type: (window as any).Phaser.AUTO,
@@ -452,24 +471,25 @@ export default function OnlineHeartsRoom() {
         },
       });
 
-      // Wait for OnlineGame scene to be ready, then send initial state
-      game.events.on('ready', () => {
-        if (gameState) {
-          game.registry.events.emit('stateUpdate', gameState);
-        }
-      });
-
       phaserRef.current = game;
       if (!cancelled) gameRef.current = game;
     });
 
+    // Only cancel the in-flight import; Phaser itself is destroyed on unmount.
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roomStatus, mySeat]);
+
+  // ── Destroy Phaser when the room page unmounts ────────────────────────────
+  // Kept separate so it never fires mid-game (e.g. when gameState updates).
+
+  useEffect(() => {
     return () => {
-      cancelled = true;
       gameRef.current?.destroy(true);
-      gameRef.current = null;
+      gameRef.current  = null;
       phaserRef.current = null;
     };
-  }, [roomStatus, mySeat, gameState, sendAction]);
+  }, []);
 
   // ── Push state into Phaser whenever it changes (Realtime updates) ────────────
 
