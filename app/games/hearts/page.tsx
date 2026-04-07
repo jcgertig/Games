@@ -89,6 +89,7 @@ function makePreloadScene() {
 
       // Load SVG sprite sheet as plain text so we can parse it
       this.load.text('cards-svg', '/cards/svg-cards.svg');
+      this.load.image('table-bg', '/cards/jon-moore-5fIoyoKlz7A-unsplash.jpg');
     }
 
     async create() {
@@ -346,11 +347,11 @@ function makeGameScene() {
     // ── Table background ────────────────────────────────────────────────────
 
     private drawTable() {
-      // Felt
-      this.add.rectangle(W/2, H/2, W, H, FELT_COLOR);
-      // Inner oval shadow
+      // Photo background
+      this.add.image(W/2, H/2, 'table-bg').setDisplaySize(W, H);
+      // Dark vignette overlay for depth
       const g = this.add.graphics();
-      g.fillStyle(FELT_DARK, 0.5);
+      g.fillStyle(0x000000, 0.45);
       g.fillEllipse(W/2, H/2, 580, 400);
 
       // Score readouts per player

@@ -50,6 +50,7 @@ function makePreloadScene() {
       });
       this.add.text(W/2, H/2-50, 'Loading cards…', { fontSize:'20px', color:'#ffffff', fontFamily:'sans-serif' }).setOrigin(0.5);
       this.load.text('cards-svg', '/cards/svg-cards.svg');
+      this.load.image('table-bg', '/cards/jon-moore-5fIoyoKlz7A-unsplash.jpg');
     }
     async create() {
       await this.buildTextures(this.cache.text.get('cards-svg'));
@@ -153,9 +154,9 @@ function makeOnlineGameScene(
     // ── Table ────────────────────────────────────────────────────────────────
 
     private drawTable() {
-      this.add.rectangle(W/2, H/2, W, H, FELT_COLOR);
+      this.add.image(W/2, H/2, 'table-bg').setDisplaySize(W, H);
       const g = this.add.graphics();
-      g.fillStyle(FELT_DARK, 0.5); g.fillEllipse(W/2, H/2, 580, 400);
+      g.fillStyle(0x000000, 0.45); g.fillEllipse(W/2, H/2, 580, 400);
       ['','','',''].forEach((_, i) => {
         const pos = PLAYER_POS[i];
         const off = [{ x:0,y:-70 },{ x:55,y:0 },{ x:0,y:70 },{ x:-55,y:0 }][i];
