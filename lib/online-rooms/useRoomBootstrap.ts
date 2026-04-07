@@ -152,9 +152,24 @@ export function useRoomBootstrap<TState = unknown>(options: {
             table: 'online_rooms',
             filter: `id=eq.${rId}`,
           },
-          (payload: any) => {
+          async (payload: any) => {
             if (cancelled) return;
-            setRoomStatus(payload.new.status as RoomStatus);
+            const newStatus = payload.new.status as RoomStatus;
+            setRoomStatus(newStatus);
+
+            // When transitioning to 'playing', always re-fetch the latest
+            // game state directly from the DB.  This is a guaranteed fallback
+            // for the case where the stateChannel subscription wasn't fully
+            // established when the UPDATE fired (Realtime subscriptions have
+            // a short setup window during which events can be silently missed).
+            if (newStatus === 'playing') {
+              const { data: gs } = await supabase.current
+                .from('online_game_state')
+                .select('state')
+                .eq('room_id', rId)
+                .single();
+              if (!cancelled && gs?.state) setGameState(gs.state as TState);
+            }
           },
         )
         .subscribe();
