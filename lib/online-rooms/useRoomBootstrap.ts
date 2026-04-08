@@ -9,6 +9,7 @@ import type { RoomStatus, SeatInfo, SpectatorInfo } from './types';
 
 export interface UseRoomBootstrapResult<TState> {
   roomStatus:   RoomStatus;
+  roomId:       string | null;
   mySeat:       number | null;
   seats:        SeatInfo[];
   spectators:   SpectatorInfo[];
@@ -46,6 +47,7 @@ export function useRoomBootstrap<TState = unknown>(options: {
   const supabase     = useRef(getAnonClient());
 
   const [roomStatus,   setRoomStatus]   = useState<RoomStatus>('loading');
+  const [roomId,       setRoomId]       = useState<string | null>(null);
   const [mySeat,       setMySeat]       = useState<number | null>(null);
   const [seats,        setSeats]        = useState<SeatInfo[]>([]);
   const [spectators,   setSpectators]   = useState<SpectatorInfo[]>([]);
@@ -189,6 +191,7 @@ export function useRoomBootstrap<TState = unknown>(options: {
       if (!room) { setError('Room not found'); setRoomStatus('error'); return; }
 
       const rId = (room as any).id as string;
+      setRoomId(rId);
       const { data: { session: mySession } } = await supabase.current.auth.getSession();
       setIsOwner((room as any).owner_id === mySession?.user?.id);
       setSeats(((room as any).online_seats ?? []) as SeatInfo[]);
@@ -271,12 +274,12 @@ export function useRoomBootstrap<TState = unknown>(options: {
 
   return useMemo(
     () => ({
-      roomStatus, mySeat, seats, spectators, isOwner, isSpectator,
+      roomStatus, roomId, mySeat, seats, spectators, isOwner, isSpectator,
       gameState, error, sendAction, startGame, starting,
       closeRoom, leaveRoom, claimSeat,
     }),
     [
-      roomStatus, mySeat, seats, spectators, isOwner, isSpectator,
+      roomStatus, roomId, mySeat, seats, spectators, isOwner, isSpectator,
       gameState, error, sendAction, startGame, starting,
       closeRoom, leaveRoom, claimSeat,
     ],

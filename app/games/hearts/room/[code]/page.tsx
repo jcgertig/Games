@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import type { HeartsRoomState } from '@/app/api/hearts/_game';
 import { useRoomBootstrap, RoomLobby } from '@/lib/online-rooms';
+import { ChatDrawer } from '@/lib/online-rooms/components/ChatDrawer';
+import 'lineicons/assets/icon-fonts/lineicons.css';
 import { useSubmitScore, useScoresClient } from '@/lib/scores';
 import type { SeatInfo } from '@/lib/online-rooms/types';
 
@@ -787,7 +789,7 @@ export default function OnlineHeartsRoom() {
   const client     = useScoresClient();
 
   const {
-    roomStatus, mySeat, seats, isOwner, isSpectator, gameState, error,
+    roomStatus, roomId, mySeat, seats, isOwner, isSpectator, gameState, error,
     sendAction, startGame, starting, closeRoom, leaveRoom, claimSeat,
   } = useRoomBootstrap<HeartsRoomState>({
     code:     (code as string) ?? '',
@@ -798,6 +800,7 @@ export default function OnlineHeartsRoom() {
   const [showCloseConfirm, setShowCloseConfirm]   = useState(false);
   const [showSeatClaimModal, setShowSeatClaimModal] = useState(false);
   const [seatClaimTaken, setSeatClaimTaken]        = useState(false);
+  const [chatOpen, setChatOpen]                   = useState(false);
 
   // Track previous seats to detect human→bot transitions for spectators
   const prevSeatsRef = useRef<SeatInfo[]>([]);
@@ -1125,8 +1128,28 @@ export default function OnlineHeartsRoom() {
               </div>
             </div>
           )}
+          {/* Chat toggle button — anchored to right edge of canvas */}
+          <button
+            onClick={() => setChatOpen(o => !o)}
+            aria-label={chatOpen ? 'Close chat' : 'Open chat'}
+            className="absolute right-0 top-1/2 -translate-y-1/2 z-20
+              flex items-center justify-center w-8 h-12
+              bg-slate-800/90 hover:bg-slate-700 border border-slate-600/60
+              rounded-l-lg text-slate-300 hover:text-white transition-colors"
+          >
+            <i className={chatOpen ? 'li li-xmark' : 'li li-chat-bubble-2'} style={{ fontSize: '16px' }} />
+          </button>
         </div>
       </div>
+
+      {roomId && (
+        <ChatDrawer
+          roomId={roomId}
+          roomCode={(code as string).toUpperCase()}
+          open={chatOpen}
+          onClose={() => setChatOpen(false)}
+        />
+      )}
 
       {/* Confirm dialogs (playing phase) */}
       <ConfirmDialog

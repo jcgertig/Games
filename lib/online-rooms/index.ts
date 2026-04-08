@@ -9,3 +9,5 @@ export type { UseRoomBootstrapResult } from './useRoomBootstrap';
 export { RoomLobby } from './components/RoomLobby';
 export { LobbyPage } from './components/LobbyPage';
 export { ActiveRoomsPage } from './components/ActiveRoomsPage';
+export { ChatDrawer } from './components/ChatDrawer';
+export type { ChatMessage, ChatDrawerProps } from './components/ChatDrawer';

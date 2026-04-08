@@ -32,6 +32,11 @@ export function buildChain(defaults: {
     update:      vi.fn(),
     delete:      vi.fn(),
     filter:      vi.fn(),
+    gte:         vi.fn(),
+    lte:         vi.fn(),
+    lt:          vi.fn(),
+    gt:          vi.fn(),
+    limit:       vi.fn(),
   };
 
   chain.select.mockReturnValue(chain);
@@ -43,6 +48,11 @@ export function buildChain(defaults: {
   chain.filter.mockReturnValue(chain);
   chain.update.mockReturnValue(chain);
   chain.delete.mockReturnValue(chain);
+  chain.gte.mockReturnValue(chain);
+  chain.lte.mockReturnValue(chain);
+  chain.lt.mockReturnValue(chain);
+  chain.gt.mockReturnValue(chain);
+  chain.limit.mockReturnValue(chain);
 
   chain.single.mockResolvedValue(
     defaults.single ?? { data: null, error: null }
