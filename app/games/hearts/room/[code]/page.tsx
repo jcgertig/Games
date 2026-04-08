@@ -828,6 +828,15 @@ export default function OnlineHeartsRoom() {
   useEffect(() => {
     // Allow spectators (mySeat === null but isSpectator) to watch
     if (roomStatus !== 'playing' || (mySeat === null && !isSpectator) || !containerRef.current) return;
+
+    // If the user just transitioned from player to spectator, restart Phaser with mySeat=null
+    // so the scene renders all hands face-down and has no interactivity.
+    if (isSpectator && mySeat === null && gameRef.current) {
+      gameRef.current.destroy(true);
+      gameRef.current = null;
+      phaserRef.current = null;
+    }
+
     if (gameRef.current) return; // already started
 
     let cancelled = false;
@@ -1021,9 +1030,21 @@ export default function OnlineHeartsRoom() {
               </>
             )}
             {isSpectator && (
-              <div className="text-xs px-3 py-1 rounded bg-black/50 text-slate-400 border border-slate-700/40">
-                Watching
-              </div>
+              seats.some(s => s.is_bot) ? (
+                <button
+                  onClick={async () => {
+                    const result = await claimSeat();
+                    if (result === 'taken') setSeatClaimTaken(true);
+                  }}
+                  className="text-xs px-3 py-1 rounded border border-green-700/60 text-green-400 hover:text-green-300 bg-black/50 hover:bg-black/70 transition-colors"
+                >
+                  Join Game
+                </button>
+              ) : (
+                <div className="text-xs px-3 py-1 rounded bg-black/50 text-slate-400 border border-slate-700/40">
+                  Watching
+                </div>
+              )
             )}
           </div>
 
