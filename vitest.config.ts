@@ -13,15 +13,10 @@ export default defineConfig({
       // Global minimums — kept low so vitest never blocks CI on its own.
       // Per-file minimums for the new online room routes are set below.
       thresholds: {
-        lines:      70,
-        functions:  65,
-        branches:   65,
-        statements: 70,
-        'app/api/online/rooms/*/close/route.ts':      { lines: 80, functions: 80, branches: 80, statements: 80 },
-        'app/api/online/rooms/*/leave/route.ts':      { lines: 80, functions: 80, branches: 80, statements: 80 },
-        'app/api/online/rooms/*/claim-seat/route.ts': { lines: 80, functions: 80, branches: 80, statements: 80 },
-        'app/api/online/rooms/*/join/route.ts':       { lines: 80, functions: 80, branches: 80, statements: 80 },
-      },
+        lines:      80,
+        functions:  80,
+        branches:   80,
+        statements: 80,},
       include: [
         'app/api/**/*.ts',
         'lib/scores/client.ts',
