@@ -186,13 +186,17 @@ function makeOnlineGameScene(
       g.lineStyle(2, 0x0f3a1a, 1.0); g.strokeRoundedRect(FX, FY, FW, FH, R);
       g.lineStyle(1, 0x2e7d40, 0.35); g.strokeRoundedRect(FX+6, FY+6, FW-12, FH-12, R-4);
 
-      // ── Scores ─────────────────────────────────────────────────────────────
-      const offs = [{ x:0,y:-70 },{ x:58,y:0 },{ x:0,y:70 },{ x:-58,y:0 }];
-      PLAYER_POS.forEach((pos, i) => {
-        this.scoreTexts.push(this.add.text(pos.x+offs[i].x, pos.y+offs[i].y, '0 pts', {
+      // ── Scores — positioned at each seat's rotated visual location ───────────
+      const scoreOffs = [{ x:0,y:-70 },{ x:58,y:0 },{ x:0,y:70 },{ x:-58,y:0 }];
+      this.scoreTexts = new Array(4);
+      for (let seat = 0; seat < 4; seat++) {
+        const dp  = (seat - mySeat + 4) % 4;
+        const pos = PLAYER_POS[dp];
+        const off = scoreOffs[dp];
+        this.scoreTexts[seat] = this.add.text(pos.x + off.x, pos.y + off.y, '0 pts', {
           fontSize:'13px', color:'#fde68a', fontFamily:'sans-serif',
-        }).setOrigin(0.5));
-      });
+        }).setOrigin(0.5);
+      }
 
       // ── Status text ────────────────────────────────────────────────────────
       this.statusText = this.add.text(W/2, H/2, '', {
@@ -305,9 +309,10 @@ function makeOnlineGameScene(
         if (img) {
           delete this.cardObjects[key];
           img.setTexture(card).setDepth(50).setData('seat', seat); // flip bot card face-up
+          const btp = TRICK_POS[this.seatToDisplayPos(seat)];
           this.tweens.add({
             targets: img,
-            x: TRICK_POS[seat].x, y: TRICK_POS[seat].y,
+            x: btp.x, y: btp.y,
             angle: 0, displayWidth: CARD_W, displayHeight: CARD_H,
             duration: 220, ease: 'Quad.easeOut',
             onComplete: () => {
@@ -322,7 +327,8 @@ function makeOnlineGameScene(
           });
         } else {
           // Card object missing — place it directly and move on
-          const tImg = this.add.image(TRICK_POS[seat].x, TRICK_POS[seat].y, card)
+          const ftp  = TRICK_POS[this.seatToDisplayPos(seat)];
+          const tImg = this.add.image(ftp.x, ftp.y, card)
             .setDisplaySize(CARD_W, CARD_H).setDepth(20).setData('seat', seat);
           this.trickGroup.add(tImg);
           this.time.delayedCall(60, playNext);
@@ -348,7 +354,8 @@ function makeOnlineGameScene(
             this.layoutHand(seat, true, seat === 3 ? () => {
               // Place any in-progress trick cards that arrived with the new state
               state.trickCards.forEach(({ card, seat: s }) => {
-                const img = this.add.image(TRICK_POS[s].x, TRICK_POS[s].y, card)
+                const dtp = TRICK_POS[(s - mySeat + 4) % 4];
+                const img = this.add.image(dtp.x, dtp.y, card)
                   .setDisplaySize(CARD_W, CARD_H).setDepth(20).setData('seat', s);
                 this.trickGroup.add(img);
               });
@@ -384,7 +391,7 @@ function makeOnlineGameScene(
       })).filter(tc => tc.card);
 
       const winnerSeat = this.computeTrickWinner(trickCards, ledSuit);
-      const wpos = PLAYER_POS[winnerSeat];
+      const wpos = PLAYER_POS[this.seatToDisplayPos(winnerSeat)];
 
       // Pulse the winning card
       const winImg = children.find((img: any) => img.getData('seat') === winnerSeat);
@@ -428,7 +435,7 @@ function makeOnlineGameScene(
       [0,1,2,3].forEach(seat => this.layoutHand(seat));
 
       s.trickCards.forEach(({ card, seat }) => {
-        const pos = TRICK_POS[seat];
+        const pos = TRICK_POS[this.seatToDisplayPos(seat)];
         const img = this.add.image(pos.x, pos.y, card)
           .setDisplaySize(CARD_W, CARD_H).setAngle(0).setDepth(20).setData('seat', seat);
         this.trickGroup.add(img);
@@ -454,10 +461,16 @@ function makeOnlineGameScene(
 
     // ── Hand layout ───────────────────────────────────────────────────────────
 
+    /** Map an actual server seat (0-3) to its visual display position (0=bottom … 3=right). */
+    private seatToDisplayPos(seat: number): number {
+      return (seat - mySeat + 4) % 4;
+    }
+
     private layoutHand(seat: number, animate = false, onComplete?: () => void) {
       const faceUp = seat === mySeat;
-      const isVert = seat === 1 || seat === 3;
-      const pos = PLAYER_POS[seat];
+      const dp     = this.seatToDisplayPos(seat);
+      const pos    = PLAYER_POS[dp];
+      const isVert = dp === 1 || dp === 3;
       const hand = this.displayHand(seat);
       const overlap = seat === mySeat ? CARD_OVERLAP : BOT_OVERLAP;
       const span = (hand.length - 1) * overlap;
@@ -555,7 +568,7 @@ function makeOnlineGameScene(
 
       this.tweens.add({
         targets: img,
-        x: TRICK_POS[mySeat].x, y: TRICK_POS[mySeat].y,
+        x: TRICK_POS[0].x, y: TRICK_POS[0].y,
         angle: 0, displayWidth: CARD_W, displayHeight: CARD_H,
         duration: 300, ease: 'Quad.easeOut',
         onComplete: () => {
@@ -572,8 +585,9 @@ function makeOnlineGameScene(
      *  Used after the human plays so the fan closes up while the card animates out. */
     private rebuildHandExcluding(seat: number, excludeCard: string) {
       const faceUp = seat === mySeat;
-      const isVert = seat === 1 || seat === 3;
-      const pos = PLAYER_POS[seat];
+      const dp     = this.seatToDisplayPos(seat);
+      const pos    = PLAYER_POS[dp];
+      const isVert = dp === 1 || dp === 3;
       const hand = this.displayHand(seat).filter(c => c !== excludeCard);
       const overlap = seat === mySeat ? CARD_OVERLAP : BOT_OVERLAP;
       const span = (hand.length - 1) * overlap;
