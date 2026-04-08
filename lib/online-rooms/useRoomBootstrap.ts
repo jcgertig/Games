@@ -3,22 +3,34 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { getAnonClient } from '@/lib/supabaseClient';
 import { useScoresClient } from '@/lib/scores/components/AuthModalProvider';
-import type { RoomStatus, SeatInfo } from './types';
+import type { RoomStatus, SeatInfo, SpectatorInfo } from './types';
 
 // ── Return type ───────────────────────────────────────────────────────────────
 
 export interface UseRoomBootstrapResult<TState> {
-  roomStatus: RoomStatus;
-  mySeat:     number | null;
-  seats:      SeatInfo[];
-  isOwner:    boolean;
-  gameState:  TState | null;
-  error:      string;
+  roomStatus:   RoomStatus;
+  mySeat:       number | null;
+  seats:        SeatInfo[];
+  spectators:   SpectatorInfo[];
+  isOwner:      boolean;
+  isSpectator:  boolean;
+  gameState:    TState | null;
+  error:        string;
   /** Stable callback — safe to pass into a Phaser scene factory. */
-  sendAction: (type: string, payload?: unknown) => Promise<void>;
+  sendAction:   (type: string, payload?: unknown) => Promise<void>;
   /** Trigger the start API call (owner only). */
-  startGame:  () => Promise<void>;
-  starting:   boolean;
+  startGame:    () => Promise<void>;
+  starting:     boolean;
+  /** Owner only — delete the room and broadcast to all clients. */
+  closeRoom:    () => Promise<void>;
+  /**
+   * Non-owner only — leave the room.
+   * spectate=true: seat → bot but stay as standby viewer.
+   * spectate=false (default): leave entirely; caller should redirect.
+   */
+  leaveRoom:    (opts?: { spectate?: boolean }) => Promise<void>;
+  /** Spectator only — claim an open bot seat. Reloads the page on success. */
+  claimSeat:    () => Promise<'ok' | 'taken'>;
 }
 
 // ── Hook ──────────────────────────────────────────────────────────────────────
@@ -33,17 +45,17 @@ export function useRoomBootstrap<TState = unknown>(options: {
   const scoresClient = useScoresClient();
   const supabase     = useRef(getAnonClient());
 
-  const [roomStatus, setRoomStatus] = useState<RoomStatus>('loading');
-  const [mySeat,     setMySeat]     = useState<number | null>(null);
-  const [seats,      setSeats]      = useState<SeatInfo[]>([]);
-  const [isOwner,    setIsOwner]    = useState(false);
-  const [error,      setError]      = useState('');
-  const [gameState,  setGameState]  = useState<TState | null>(null);
-  const [starting,   setStarting]   = useState(false);
+  const [roomStatus,   setRoomStatus]   = useState<RoomStatus>('loading');
+  const [mySeat,       setMySeat]       = useState<number | null>(null);
+  const [seats,        setSeats]        = useState<SeatInfo[]>([]);
+  const [spectators,   setSpectators]   = useState<SpectatorInfo[]>([]);
+  const [isOwner,      setIsOwner]      = useState(false);
+  const [isSpectator,  setIsSpectator]  = useState(false);
+  const [error,        setError]        = useState('');
+  const [gameState,    setGameState]    = useState<TState | null>(null);
+  const [starting,     setStarting]     = useState(false);
 
   // ── Token acquisition ───────────────────────────────────────────────────────
-  // Stable ref keeps the token getter out of sendAction's dep array so the
-  // callback identity stays constant across renders.
   const getTokenRef = useRef<() => Promise<string | null>>(async () => null);
   getTokenRef.current = async () => {
     const { data: { session } } = await supabase.current.auth.getSession();
@@ -62,21 +74,18 @@ export function useRoomBootstrap<TState = unknown>(options: {
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ type, payload }),
     });
-  }, [upperCode]); // upperCode is derived from the stable `code` prop
+  }, [upperCode]);
 
   // ── startGame ──────────────────────────────────────────────────────────────
   const startGame = useCallback(async () => {
     const token = await getTokenRef.current();
     if (!token) return;
     setStarting(true);
-    const res  = await fetch(`/api/online/rooms/${upperCode}/start`, {
+    const res = await fetch(`/api/online/rooms/${upperCode}/start`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) {
-      // 409 = game already started in the DB but the client missed the Realtime
-      // delivery (common when the subscription hadn't finished setting up).
-      // Silently recover by fetching the current state directly.
       if (res.status === 409) {
         const { data: room } = await supabase.current
           .from('online_rooms')
@@ -93,16 +102,63 @@ export function useRoomBootstrap<TState = unknown>(options: {
     setStarting(false);
   }, [upperCode]);
 
+  // ── closeRoom ──────────────────────────────────────────────────────────────
+  const closeRoom = useCallback(async () => {
+    const token = await getTokenRef.current();
+    if (!token) return;
+    await fetch(`/api/online/rooms/${upperCode}/close`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    // Realtime DELETE event will update roomStatus; no need to set it here
+  }, [upperCode]);
+
+  // ── leaveRoom ──────────────────────────────────────────────────────────────
+  const leaveRoom = useCallback(async (opts?: { spectate?: boolean }) => {
+    const token = await getTokenRef.current();
+    if (!token) return;
+    const res = await fetch(`/api/online/rooms/${upperCode}/leave`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ spectate: opts?.spectate ?? false }),
+    });
+    if (res.ok) {
+      const json = await res.json().catch(() => ({}));
+      if (json.isSpectator) {
+        setIsSpectator(true);
+        setMySeat(null);
+      }
+    }
+  }, [upperCode]);
+
+  // ── claimSeat ──────────────────────────────────────────────────────────────
+  const claimSeat = useCallback(async (): Promise<'ok' | 'taken'> => {
+    const token = await getTokenRef.current();
+    if (!token) return 'taken';
+    const res = await fetch(`/api/online/rooms/${upperCode}/claim-seat`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const json = await res.json().catch(() => ({}));
+    if (json.error === 'seat_taken') return 'taken';
+    if (res.ok && json.yourSeat !== undefined) {
+      // Reload the page so Phaser re-initialises with the new seat
+      window.location.reload();
+      return 'ok';
+    }
+    return 'taken';
+  }, [upperCode]);
+
   // ── Bootstrap effect ───────────────────────────────────────────────────────
   useEffect(() => {
     let stateChannel: ReturnType<ReturnType<typeof getAnonClient>['channel']> | undefined;
     let roomChannel:  ReturnType<ReturnType<typeof getAnonClient>['channel']> | undefined;
+    let seatsChannel: ReturnType<ReturnType<typeof getAnonClient>['channel']> | undefined;
     let cancelled = false;
 
     (async () => {
       const token = await getTokenRef.current();
 
-      // Join the room (idempotent — returns existing seat if already seated)
       if (!token) {
         if (!cancelled) { setError('Sign in to join a room'); setRoomStatus('error'); }
         return;
@@ -119,11 +175,12 @@ export function useRoomBootstrap<TState = unknown>(options: {
         return;
       }
       setMySeat(joinJson.yourSeat ?? null);
+      setIsSpectator(joinJson.spectator ?? false);
 
-      // Fetch room + seats + initial state via RLS-restricted direct query
+      // Fetch room + seats + initial state
       const { data: room } = await supabase.current
         .from('online_rooms')
-        .select('id, status, owner_id, online_seats(*), online_game_state(state)')
+        .select('id, status, owner_id, spectators, online_seats(*), online_game_state(state)')
         .eq('code', upperCode)
         .eq('game_slug', gameSlug)
         .maybeSingle();
@@ -131,25 +188,22 @@ export function useRoomBootstrap<TState = unknown>(options: {
       if (cancelled) return;
       if (!room) { setError('Room not found'); setRoomStatus('error'); return; }
 
-      const rId        = (room as any).id as string;
+      const rId = (room as any).id as string;
       const { data: { session: mySession } } = await supabase.current.auth.getSession();
       setIsOwner((room as any).owner_id === mySession?.user?.id);
       setSeats(((room as any).online_seats ?? []) as SeatInfo[]);
+      setSpectators(((room as any).spectators ?? []) as SpectatorInfo[]);
       setRoomStatus((room as any).status as RoomStatus);
 
       const initialState = (room as any).online_game_state?.state ?? null;
       if (initialState) setGameState(initialState as TState);
 
-      // ── Realtime: game state updates (card plays, passes, etc.) ─────────────
+      // ── Realtime: game state updates ─────────────────────────────────────
       stateChannel = supabase.current
         .channel(`online-state:${rId}`)
         .on(
           'postgres_changes',
-          {
-            event: 'UPDATE', schema: 'public',
-            table: 'online_game_state',
-            filter: `room_id=eq.${rId}`,
-          },
+          { event: 'UPDATE', schema: 'public', table: 'online_game_state', filter: `room_id=eq.${rId}` },
           (payload: any) => {
             if (cancelled) return;
             setGameState(payload.new.state as TState);
@@ -157,26 +211,18 @@ export function useRoomBootstrap<TState = unknown>(options: {
         )
         .subscribe();
 
-      // ── Realtime: room status changes (waiting → playing → done) ────────────
+      // ── Realtime: room status / spectators / DELETE ───────────────────────
       roomChannel = supabase.current
         .channel(`online-room:${rId}`)
         .on(
           'postgres_changes',
-          {
-            event: 'UPDATE', schema: 'public',
-            table: 'online_rooms',
-            filter: `id=eq.${rId}`,
-          },
+          { event: 'UPDATE', schema: 'public', table: 'online_rooms', filter: `id=eq.${rId}` },
           async (payload: any) => {
             if (cancelled) return;
             const newStatus = payload.new.status as RoomStatus;
             setRoomStatus(newStatus);
+            setSpectators((payload.new.spectators ?? []) as SpectatorInfo[]);
 
-            // When transitioning to 'playing', always re-fetch the latest
-            // game state directly from the DB.  This is a guaranteed fallback
-            // for the case where the stateChannel subscription wasn't fully
-            // established when the UPDATE fired (Realtime subscriptions have
-            // a short setup window during which events can be silently missed).
             if (newStatus === 'playing') {
               const { data: gs } = await supabase.current
                 .from('online_game_state')
@@ -187,6 +233,31 @@ export function useRoomBootstrap<TState = unknown>(options: {
             }
           },
         )
+        .on(
+          'postgres_changes',
+          { event: 'DELETE', schema: 'public', table: 'online_rooms', filter: `id=eq.${rId}` },
+          () => {
+            if (cancelled) return;
+            setRoomStatus('done');
+          },
+        )
+        .subscribe();
+
+      // ── Realtime: seat changes (joins, leaves, claim-seat) ────────────────
+      seatsChannel = supabase.current
+        .channel(`online-seats:${rId}`)
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'online_seats', filter: `room_id=eq.${rId}` },
+          async () => {
+            if (cancelled) return;
+            const { data: updatedSeats } = await supabase.current
+              .from('online_seats')
+              .select('seat, display_name, is_bot, user_id')
+              .eq('room_id', rId);
+            if (!cancelled && updatedSeats) setSeats(updatedSeats as SeatInfo[]);
+          },
+        )
         .subscribe();
     })();
 
@@ -194,8 +265,20 @@ export function useRoomBootstrap<TState = unknown>(options: {
       cancelled = true;
       stateChannel?.unsubscribe();
       roomChannel?.unsubscribe();
+      seatsChannel?.unsubscribe();
     };
   }, [upperCode, gameSlug]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  return useMemo(() => ({ roomStatus, mySeat, seats, isOwner, gameState, error, sendAction, startGame, starting }), [ roomStatus, mySeat, seats, isOwner, gameState, error, sendAction, startGame, starting ]);
+  return useMemo(
+    () => ({
+      roomStatus, mySeat, seats, spectators, isOwner, isSpectator,
+      gameState, error, sendAction, startGame, starting,
+      closeRoom, leaveRoom, claimSeat,
+    }),
+    [
+      roomStatus, mySeat, seats, spectators, isOwner, isSpectator,
+      gameState, error, sendAction, startGame, starting,
+      closeRoom, leaveRoom, claimSeat,
+    ],
+  );
 }

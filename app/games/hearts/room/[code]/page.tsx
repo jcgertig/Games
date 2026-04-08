@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import type { HeartsRoomState } from '@/app/api/hearts/_game';
 import { useRoomBootstrap, RoomLobby } from '@/lib/online-rooms';
 import { useSubmitScore, useScoresClient } from '@/lib/scores';
+import type { SeatInfo } from '@/lib/online-rooms/types';
 
 // ── Layout / visual constants (same as solo game) ─────────────────────────────
 
@@ -110,7 +111,7 @@ function makePreloadScene() {
 // ── Phaser Online Game Scene ──────────────────────────────────────────────────
 
 function makeOnlineGameScene(
-  mySeat: number,
+  mySeat: number | null,
   sendAction: (type: 'play' | 'pass', payload: any) => Promise<void>,
 ) {
   class OnlineGameScene extends (window as any).Phaser.Scene {
@@ -190,7 +191,7 @@ function makeOnlineGameScene(
       const scoreOffs = [{ x:0,y:-70 },{ x:58,y:0 },{ x:0,y:70 },{ x:-58,y:0 }];
       this.scoreTexts = new Array(4);
       for (let seat = 0; seat < 4; seat++) {
-        const dp  = (seat - mySeat + 4) % 4;
+        const dp  = (seat - (mySeat ?? 0) + 4) % 4;
         const pos = PLAYER_POS[dp];
         const off = scoreOffs[dp];
         this.scoreTexts[seat] = this.add.text(pos.x + off.x, pos.y + off.y, '0 pts', {
@@ -354,7 +355,7 @@ function makeOnlineGameScene(
             this.layoutHand(seat, true, seat === 3 ? () => {
               // Place any in-progress trick cards that arrived with the new state
               state.trickCards.forEach(({ card, seat: s }) => {
-                const dtp = TRICK_POS[(s - mySeat + 4) % 4];
+                const dtp = TRICK_POS[(s - (mySeat ?? 0) + 4) % 4];
                 const img = this.add.image(dtp.x, dtp.y, card)
                   .setDisplaySize(CARD_W, CARD_H).setDepth(20).setData('seat', s);
                 this.trickGroup.add(img);
@@ -463,7 +464,7 @@ function makeOnlineGameScene(
 
     /** Map an actual server seat (0-3) to its visual display position (0=bottom … 3=right). */
     private seatToDisplayPos(seat: number): number {
-      return (seat - mySeat + 4) % 4;
+      return (seat - (mySeat ?? 0) + 4) % 4;
     }
 
     private layoutHand(seat: number, animate = false, onComplete?: () => void) {
@@ -616,6 +617,7 @@ function makeOnlineGameScene(
 
     private getLegalPlays(): string[] {
       const s = this.currentState!;
+      if (mySeat === null) return [];
       const hand = s.hands[mySeat];
       if (s.trickCards.length === 0) {
         if (s.tricksInHand === 0) return hand.includes('2C') ? ['2C'] : hand;
@@ -631,6 +633,7 @@ function makeOnlineGameScene(
     }
 
     private highlightLegalPlays() {
+      if (mySeat === null) return;
       const legal = this.getLegalPlays();
       const hand = this.displayHand(mySeat);
       hand.forEach(card => {
@@ -646,7 +649,7 @@ function makeOnlineGameScene(
     private showPassPhase() {
       if (this.passIndicator) return; // already shown
       const s = this.currentState!;
-      if (s.passSelections[mySeat] !== null) {
+      if (mySeat === null || s.passSelections[mySeat] !== null) {
         this.showStatus('Waiting for others to pass…');
         return;
       }
@@ -736,6 +739,40 @@ function makeOnlineGameScene(
   return OnlineGameScene;
 }
 
+// ── Shared dialog component ───────────────────────────────────────────────────
+
+function ConfirmDialog({
+  open, title, body, confirmLabel, confirmClass, onCancel, onConfirm,
+}: {
+  open: boolean;
+  title: string;
+  body: string;
+  confirmLabel: string;
+  confirmClass: string;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 flex items-center justify-center bg-black/70 z-50">
+      <div className="bg-slate-800 border border-slate-600 rounded-2xl p-6 max-w-sm w-full mx-4 flex flex-col gap-4">
+        <p className="text-white font-semibold text-center">{title}</p>
+        <p className="text-slate-400 text-sm text-center">{body}</p>
+        <div className="flex gap-3 justify-center">
+          <button onClick={onCancel}
+            className="px-5 py-2 rounded-lg border border-slate-600 text-slate-300 hover:text-white transition-colors">
+            Cancel
+          </button>
+          <button onClick={onConfirm}
+            className={`px-5 py-2 rounded-lg text-white font-bold transition-colors ${confirmClass}`}>
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── React page ────────────────────────────────────────────────────────────────
 
 export default function OnlineHeartsRoom() {
@@ -750,12 +787,33 @@ export default function OnlineHeartsRoom() {
   const client     = useScoresClient();
 
   const {
-    roomStatus, mySeat, seats, isOwner, gameState, error,
-    sendAction, startGame, starting,
+    roomStatus, mySeat, seats, isOwner, isSpectator, gameState, error,
+    sendAction, startGame, starting, closeRoom, leaveRoom, claimSeat,
   } = useRoomBootstrap<HeartsRoomState>({
     code:     (code as string) ?? '',
     gameSlug: 'hearts',
   });
+
+  const [showLeaveConfirm, setShowLeaveConfirm]   = useState(false);
+  const [showCloseConfirm, setShowCloseConfirm]   = useState(false);
+  const [showSeatClaimModal, setShowSeatClaimModal] = useState(false);
+  const [seatClaimTaken, setSeatClaimTaken]        = useState(false);
+
+  // Track previous seats to detect human→bot transitions for spectators
+  const prevSeatsRef = useRef<SeatInfo[]>([]);
+  useEffect(() => {
+    if (isSpectator) {
+      const prev = prevSeatsRef.current;
+      const seatJustOpened = seats.some(s =>
+        s.is_bot && prev.find(p => p.seat === s.seat && !p.is_bot),
+      );
+      if (seatJustOpened) {
+        setShowSeatClaimModal(true);
+        setSeatClaimTaken(false);
+      }
+    }
+    prevSeatsRef.current = seats;
+  }, [seats, isSpectator]);
 
   // Always-current ref so async Phaser callbacks see the latest gameState
   // without needing to re-run the init effect on every state change.
@@ -768,7 +826,8 @@ export default function OnlineHeartsRoom() {
   // on every card play.
 
   useEffect(() => {
-    if (roomStatus !== 'playing' || mySeat === null || !containerRef.current) return;
+    // Allow spectators (mySeat === null but isSpectator) to watch
+    if (roomStatus !== 'playing' || (mySeat === null && !isSpectator) || !containerRef.current) return;
     if (gameRef.current) return; // already started
 
     let cancelled = false;
@@ -806,7 +865,7 @@ export default function OnlineHeartsRoom() {
     // Only cancel the in-flight import; Phaser itself is destroyed on unmount.
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roomStatus, mySeat]);
+  }, [roomStatus, mySeat, isSpectator]);
 
   // ── Destroy Phaser when the room page unmounts ────────────────────────────
   // Kept separate so it never fires mid-game (e.g. when gameState updates).
@@ -874,76 +933,199 @@ export default function OnlineHeartsRoom() {
   // Lobby view — waiting for players
   if (roomStatus === 'waiting') {
     return (
-      <RoomLobby
-        code={(code as string).toUpperCase()}
-        seats={seats}
-        mySeat={mySeat}
-        maxSeats={4}
-        isOwner={isOwner}
-        starting={starting}
-        onStart={startGame}
-        error={error}
-        icon="♥"
-        title="Hearts Online"
-        backPath="/games/hearts/lobby"
-        onBack={() => router.push('/games/hearts/lobby')}
-      />
+      <>
+        <RoomLobby
+          code={(code as string).toUpperCase()}
+          seats={seats}
+          mySeat={mySeat}
+          maxSeats={4}
+          isOwner={isOwner}
+          starting={starting}
+          onStart={startGame}
+          onClose={isOwner ? () => setShowCloseConfirm(true) : undefined}
+          onLeave={!isOwner ? () => setShowLeaveConfirm(true) : undefined}
+          error={error}
+          icon="♥"
+          title="Hearts Online"
+          backPath="/games/hearts/lobby"
+          onBack={() => router.push('/games/hearts/lobby')}
+        />
+        <ConfirmDialog
+          open={showCloseConfirm}
+          title="Close this room?"
+          body="This will remove the room for all players."
+          confirmLabel="Close Room"
+          confirmClass="bg-red-700 hover:bg-red-600"
+          onCancel={() => setShowCloseConfirm(false)}
+          onConfirm={async () => { setShowCloseConfirm(false); await closeRoom(); router.push('/games/hearts/lobby'); }}
+        />
+        <ConfirmDialog
+          open={showLeaveConfirm}
+          title="Leave this room?"
+          body="A bot will take your seat."
+          confirmLabel="Leave"
+          confirmClass="bg-slate-600 hover:bg-slate-500"
+          onCancel={() => setShowLeaveConfirm(false)}
+          onConfirm={async () => { setShowLeaveConfirm(false); await leaveRoom(); router.push('/games/hearts/lobby'); }}
+        />
+      </>
+    );
+  }
+
+  // Room-closed overlay (shown when room was deleted while client was on the game view)
+  if (roomStatus === 'done' && gameState?.phase !== 'game_over') {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center gap-6">
+        <p className="text-white text-2xl font-semibold">Room closed</p>
+        <button
+          onClick={() => router.push('/games/hearts/lobby')}
+          className="px-6 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white transition-colors"
+        >
+          Back to Lobby
+        </button>
+      </div>
     );
   }
 
   // Game view — Phaser canvas
   return (
-    <div className="flex flex-col items-center min-h-screen bg-slate-950 pt-4">
-      <div className="relative w-full max-w-[1024px]">
-        <div ref={containerRef} className="w-full aspect-[1024/640]" />
+    <>
+      <div className="flex flex-col items-center min-h-screen bg-slate-950 pt-4">
+        <div className="relative w-full max-w-[1024px]">
+          <div ref={containerRef} className="w-full aspect-[1024/640]" />
 
-        {/* Deal Cards overlay — owner needs to initialise game state */}
-        {roomStatus === 'playing' && !gameState && isOwner && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/40 rounded">
-            <p className="text-white text-lg font-semibold drop-shadow">All players are in. Ready to deal?</p>
-            <button
-              onClick={startGame}
-              disabled={starting}
-              className="px-8 py-3 rounded-lg text-white font-bold text-lg shadow-lg transition-all
-                bg-green-700 hover:bg-green-600 disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              {starting ? 'Dealing…' : '🃏 Deal Cards'}
-            </button>
-          </div>
-        )}
-
-        {/* Non-owner waiting message */}
-        {roomStatus === 'playing' && !gameState && !isOwner && (
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <p className="text-white/70 text-base bg-black/50 rounded px-4 py-2">
-              Waiting for host to deal cards…
-            </p>
-          </div>
-        )}
-
-        {/* Seat name tags */}
-        {gameState && (
-          <div className="absolute top-2 right-2 flex flex-col gap-1 pointer-events-none">
-            {gameState.playerNames.map((name, i) => (
-              <div key={i} className={`rounded px-3 py-1 text-xs font-mono flex items-center gap-2
-                ${gameState.curSeat === i && gameState.phase === 'playing'
-                  ? 'bg-green-700/90 text-white ring-1 ring-green-400'
-                  : 'bg-black/60 text-slate-300'}`}>
-                <span className="font-bold w-20 truncate">{name}{i === mySeat ? ' ★' : ''}</span>
-                <span>{gameState.gamePoints[i]} pts</span>
-                {gameState.handPoints[i] > 0 && (
-                  <span className="text-red-400">+{gameState.handPoints[i]}</span>
-                )}
-              </div>
-            ))}
-            {gameState.heartsBroken && (
-              <div className="text-center text-red-400 text-xs font-mono bg-black/60 rounded px-2 py-0.5">
-                ♥ broken
+          {/* Corner action buttons */}
+          <div className="absolute top-2 left-2 flex gap-2 z-20">
+            {isOwner && (
+              <button
+                onClick={() => setShowCloseConfirm(true)}
+                className="text-xs px-3 py-1 rounded border border-red-800/60 text-red-400 hover:text-red-300 bg-black/50 hover:bg-black/70 transition-colors"
+              >
+                Close Game
+              </button>
+            )}
+            {!isOwner && !isSpectator && (
+              <>
+                <button
+                  onClick={() => setShowLeaveConfirm(true)}
+                  className="text-xs px-3 py-1 rounded border border-slate-700/60 text-slate-400 hover:text-slate-200 bg-black/50 hover:bg-black/70 transition-colors"
+                >
+                  Leave
+                </button>
+                <button
+                  onClick={() => leaveRoom({ spectate: true })}
+                  className="text-xs px-3 py-1 rounded border border-slate-700/60 text-slate-400 hover:text-slate-200 bg-black/50 hover:bg-black/70 transition-colors"
+                >
+                  Watch Only
+                </button>
+              </>
+            )}
+            {isSpectator && (
+              <div className="text-xs px-3 py-1 rounded bg-black/50 text-slate-400 border border-slate-700/40">
+                Watching
               </div>
             )}
           </div>
-        )}
+
+          {/* Deal Cards overlay — owner needs to initialise game state */}
+          {roomStatus === 'playing' && !gameState && isOwner && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/40 rounded">
+              <p className="text-white text-lg font-semibold drop-shadow">All players are in. Ready to deal?</p>
+              <button
+                onClick={startGame}
+                disabled={starting}
+                className="px-8 py-3 rounded-lg text-white font-bold text-lg shadow-lg transition-all
+                  bg-green-700 hover:bg-green-600 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {starting ? 'Dealing…' : '🃏 Deal Cards'}
+              </button>
+            </div>
+          )}
+
+          {/* Non-owner waiting message */}
+          {roomStatus === 'playing' && !gameState && !isOwner && !isSpectator && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <p className="text-white/70 text-base bg-black/50 rounded px-4 py-2">
+                Waiting for host to deal cards…
+              </p>
+            </div>
+          )}
+
+          {/* Seat name tags */}
+          {gameState && (
+            <div className="absolute top-2 right-2 flex flex-col gap-1 pointer-events-none">
+              {gameState.playerNames.map((name, i) => (
+                <div key={i} className={`rounded px-3 py-1 text-xs font-mono flex items-center gap-2
+                  ${gameState.curSeat === i && gameState.phase === 'playing'
+                    ? 'bg-green-700/90 text-white ring-1 ring-green-400'
+                    : 'bg-black/60 text-slate-300'}`}>
+                  <span className="font-bold w-20 truncate">{name}{i === mySeat ? ' ★' : ''}</span>
+                  <span>{gameState.gamePoints[i]} pts</span>
+                  {gameState.handPoints[i] > 0 && (
+                    <span className="text-red-400">+{gameState.handPoints[i]}</span>
+                  )}
+                </div>
+              ))}
+              {gameState.heartsBroken && (
+                <div className="text-center text-red-400 text-xs font-mono bg-black/60 rounded px-2 py-0.5">
+                  ♥ broken
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Seat-claim modal for spectators */}
+          {showSeatClaimModal && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/60 z-30">
+              <div className="bg-slate-800 border border-slate-600 rounded-2xl p-6 max-w-xs w-full mx-4 flex flex-col gap-4">
+                <p className="text-white font-semibold text-center">A seat just opened!</p>
+                <p className="text-slate-400 text-sm text-center">Do you want to join the game?</p>
+                {seatClaimTaken && (
+                  <p className="text-red-400 text-xs text-center">Seat was taken by someone else.</p>
+                )}
+                <div className="flex gap-3 justify-center">
+                  <button
+                    onClick={() => setShowSeatClaimModal(false)}
+                    className="px-4 py-2 rounded-lg border border-slate-600 text-slate-300 hover:text-white transition-colors text-sm"
+                  >
+                    Stay Watching
+                  </button>
+                  <button
+                    onClick={async () => {
+                      const result = await claimSeat();
+                      if (result === 'taken') setSeatClaimTaken(true);
+                      else setShowSeatClaimModal(false);
+                    }}
+                    className="px-4 py-2 rounded-lg bg-green-700 hover:bg-green-600 text-white font-bold transition-colors text-sm"
+                  >
+                    Join Game
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+
+      {/* Confirm dialogs (playing phase) */}
+      <ConfirmDialog
+        open={showCloseConfirm}
+        title="Close this game?"
+        body="This will end the game for all players."
+        confirmLabel="Close Game"
+        confirmClass="bg-red-700 hover:bg-red-600"
+        onCancel={() => setShowCloseConfirm(false)}
+        onConfirm={async () => { setShowCloseConfirm(false); await closeRoom(); }}
+      />
+      <ConfirmDialog
+        open={showLeaveConfirm}
+        title="Leave this game?"
+        body="A bot will take your seat and continue playing."
+        confirmLabel="Leave"
+        confirmClass="bg-slate-600 hover:bg-slate-500"
+        onCancel={() => setShowLeaveConfirm(false)}
+        onConfirm={async () => { setShowLeaveConfirm(false); await leaveRoom(); router.push('/games/hearts/lobby'); }}
+      />
+    </>
   );
 }

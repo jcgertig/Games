@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 import { getGameConfig } from '../../../_registry';
+import type { SpectatorInfo } from '@/lib/online-rooms/types';
 
 function serviceClient() {
   return createClient(
@@ -10,7 +11,7 @@ function serviceClient() {
   );
 }
 
-/** POST /api/online/rooms/[code]/join — join an open bot seat, or rejoin existing seat. */
+/** POST /api/online/rooms/[code]/join — join an open bot seat, rejoin existing seat, or become a spectator. */
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ code: string }> },
@@ -25,12 +26,14 @@ export async function POST(
 
   const { data: room } = await sb
     .from('online_rooms')
-    .select('id, game_slug, status')
+    .select('id, game_slug, status, spectators')
     .eq('code', code.toUpperCase())
     .maybeSingle();
 
   if (!room) return NextResponse.json({ error: 'Room not found' }, { status: 404 });
   if (room.status === 'done') return NextResponse.json({ error: 'Game is over' }, { status: 409 });
+
+  const spectators: SpectatorInfo[] = (room as any).spectators ?? [];
 
   // Check existing seat first — always allow rejoining regardless of game status
   const { data: existing } = await sb
@@ -39,11 +42,14 @@ export async function POST(
     .eq('room_id', room.id)
     .eq('user_id', user.id)
     .maybeSingle();
-  if (existing) return NextResponse.json({ yourSeat: existing.seat });
+  if (existing) return NextResponse.json({ yourSeat: existing.seat, spectator: false });
 
-  // Only allow claiming a new seat while the game hasn't started
-  if (room.status !== 'waiting')
-    return NextResponse.json({ error: 'Game already started' }, { status: 409 });
+  // Check if already a spectator (e.g. after "Watch Only")
+  if (spectators.some(s => s.user_id === user.id))
+    return NextResponse.json({ yourSeat: null, spectator: true });
+
+  const displayName: string =
+    user.user_metadata?.display_name ?? user.email?.split('@')[0] ?? 'Player';
 
   // Find the first open bot seat
   const { data: seats } = await sb
@@ -52,11 +58,23 @@ export async function POST(
     .eq('room_id', room.id)
     .order('seat');
   const openSeat = seats?.find(s => s.is_bot)?.seat;
-  if (openSeat === undefined)
-    return NextResponse.json({ error: 'Room is full' }, { status: 409 });
 
-  const displayName: string =
-    user.user_metadata?.display_name ?? user.email?.split('@')[0] ?? 'Player';
+  if (openSeat === undefined) {
+    if (room.status !== 'waiting') {
+      // Game in progress, no bot seats — become a spectator
+      const newSpectators: SpectatorInfo[] = [
+        ...spectators,
+        { user_id: user.id, display_name: displayName },
+      ];
+      await sb.from('online_rooms').update({ spectators: newSpectators }).eq('id', room.id);
+      return NextResponse.json({ yourSeat: null, spectator: true });
+    }
+    return NextResponse.json({ error: 'Room is full' }, { status: 409 });
+  }
+
+  if (room.status !== 'waiting' && room.status !== 'playing') {
+    return NextResponse.json({ error: 'Cannot join at this stage' }, { status: 409 });
+  }
 
   // Claim the bot seat
   await sb
@@ -74,12 +92,15 @@ export async function POST(
   if (gs?.state) {
     try {
       const config = getGameConfig(room.game_slug);
-      const newState = config.patchPlayerName(gs.state, openSeat, displayName);
+      const patchFn = room.status === 'playing' && config.restoreHuman
+        ? (s: unknown, seat: number, name: string) => config.restoreHuman!(s as any, seat, name)
+        : (s: unknown, seat: number, name: string) => config.patchPlayerName(s as any, seat, name);
+      const newState = patchFn(gs.state, openSeat, displayName);
       await sb.from('online_game_state').update({ state: newState }).eq('room_id', room.id);
     } catch {
       // Non-fatal: game can still proceed with stale player name
     }
   }
 
-  return NextResponse.json({ yourSeat: openSeat });
+  return NextResponse.json({ yourSeat: openSeat, spectator: false });
 }

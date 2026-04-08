@@ -10,6 +10,8 @@ interface Props {
   isOwner:  boolean;
   starting: boolean;
   onStart:  () => void;
+  onClose?: () => void;
+  onLeave?: () => void;
   error:    string;
   icon?:    string;
   title?:   string;
@@ -18,12 +20,12 @@ interface Props {
 }
 
 /**
- * Pure waiting-room UI — seat list + start button.
+ * Pure waiting-room UI — seat list + start/close/leave buttons.
  * No API calls or effects; all data flows in via props from useRoomBootstrap.
  */
 export function RoomLobby({
   code, seats, mySeat, maxSeats, isOwner, starting, onStart,
-  error, icon = '🃏', title, backPath, onBack,
+  onClose, onLeave, error, icon = '🃏', title, backPath, onBack,
 }: Props) {
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 gap-8">
@@ -65,17 +67,40 @@ export function RoomLobby({
 
       {error && <p className="text-red-400 text-sm">{error}</p>}
 
-      {isOwner ? (
-        <button
-          onClick={onStart}
-          disabled={starting}
-          className="bg-green-600 hover:bg-green-500 disabled:opacity-50 text-white font-bold py-3 px-8 rounded-xl text-lg transition-colors"
-        >
-          {starting ? 'Starting…' : 'Start Game'}
-        </button>
-      ) : (
-        <p className="text-slate-400 text-sm animate-pulse">Waiting for host to start…</p>
-      )}
+      {/* Action buttons */}
+      <div className="flex flex-col items-center gap-3">
+        {isOwner ? (
+          <>
+            <button
+              onClick={onStart}
+              disabled={starting}
+              className="bg-green-600 hover:bg-green-500 disabled:opacity-50 text-white font-bold py-3 px-8 rounded-xl text-lg transition-colors"
+            >
+              {starting ? 'Starting…' : 'Start Game'}
+            </button>
+            {onClose && (
+              <button
+                onClick={onClose}
+                className="text-red-400 hover:text-red-300 text-sm transition-colors border border-red-800 hover:border-red-600 px-4 py-2 rounded-lg"
+              >
+                Close Room
+              </button>
+            )}
+          </>
+        ) : (
+          <>
+            <p className="text-slate-400 text-sm animate-pulse">Waiting for host to start…</p>
+            {onLeave && (
+              <button
+                onClick={onLeave}
+                className="text-slate-400 hover:text-slate-200 text-sm transition-colors border border-slate-700 hover:border-slate-500 px-4 py-2 rounded-lg"
+              >
+                Leave Room
+              </button>
+            )}
+          </>
+        )}
+      </div>
 
       {onBack ? (
         <button onClick={onBack} className="text-slate-500 hover:text-slate-300 text-sm transition-colors">

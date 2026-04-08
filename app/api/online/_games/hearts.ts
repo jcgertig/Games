@@ -13,6 +13,7 @@ import {
   startGame,
   humanPlay,
   humanPass,
+  advance,
 } from '@/app/api/hearts/_game';
 
 export const heartsConfig: OnlineGameConfig<HeartsRoomState> = {
@@ -39,6 +40,18 @@ export const heartsConfig: OnlineGameConfig<HeartsRoomState> = {
     const isBot       = [...state.isBot];
     playerNames[seat] = displayName;
     isBot[seat]       = false;
+    return { ...state, playerNames, isBot };
+  },
+
+  replaceWithBot(state: HeartsRoomState, seat: number, botName: string): HeartsRoomState {
+    const playerNames = [...state.playerNames]; playerNames[seat] = botName;
+    const isBot       = [...state.isBot];       isBot[seat]       = true;
+    return advance({ ...state, playerNames, isBot });
+  },
+
+  restoreHuman(state: HeartsRoomState, seat: number, displayName: string): HeartsRoomState {
+    const playerNames = [...state.playerNames]; playerNames[seat] = displayName;
+    const isBot       = [...state.isBot];       isBot[seat]       = false;
     return { ...state, playerNames, isBot };
   },
 };

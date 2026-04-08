@@ -58,6 +58,18 @@ export interface OnlineGameConfig<TState> {
    * claims a bot seat. Returns the patched state.
    */
   patchPlayerName(state: TState, seat: number, displayName: string): TState;
+
+  /**
+   * Replace a human player's seat with a bot mid-game (e.g. when they leave).
+   * Should flip isBot[seat] and advance() if it's now the bot's turn.
+   */
+  replaceWithBot?(state: TState, seat: number, botName: string): TState;
+
+  /**
+   * Restore a bot seat to a human (e.g. when a spectator claims a seat).
+   * Should flip isBot[seat] back to false and update the player name.
+   */
+  restoreHuman?(state: TState, seat: number, displayName: string): TState;
 }
 
 // ── Shared client-side types ──────────────────────────────────────────────────
@@ -69,4 +81,9 @@ export interface SeatInfo {
   display_name: string;
   is_bot: boolean;
   user_id: string | null;
+}
+
+export interface SpectatorInfo {
+  user_id: string;
+  display_name: string;
 }
