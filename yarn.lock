@@ -478,6 +478,25 @@
     "@jridgewell/resolve-uri" "^3.1.0"
     "@jridgewell/sourcemap-codec" "^1.4.14"
 
+"@lineiconshq/free-icons@^0.0.1":
+  version "0.0.1"
+  resolved "https://registry.npmjs.org/@lineiconshq/free-icons/-/free-icons-0.0.1.tgz"
+  integrity sha512-fnWSSjIv/4vojAKsBZXluhMRr1LIb5p85IzXK0Dh27KF9qXxz89HZJrnvXH71ZqMCP+NFzo/xh0dJsv8PT+3xg==
+
+"@lineiconshq/free-icons@^1.0.4":
+  version "1.0.4"
+  resolved "https://registry.npmjs.org/@lineiconshq/free-icons/-/free-icons-1.0.4.tgz"
+  integrity sha512-erFnjTHhiuXyQUM4c00gEC51vAyHPnMc6wKca5Qa7YV865bPsyngQQPkHSfPcLUxYGx+APLXxjBhYKfbmph0xw==
+  dependencies:
+    meilisearch "^0.53.0"
+
+"@lineiconshq/react-lineicons@^1.0.5":
+  version "1.0.5"
+  resolved "https://registry.npmjs.org/@lineiconshq/react-lineicons/-/react-lineicons-1.0.5.tgz"
+  integrity sha512-GfUBSMLoL7siDOmVwDTTGwGCREu7Q/g7PAzqoMII+SF6ZWQS3ZfTLupNcQkTx4R6+mTibz5OIoWHCseVF8WsMQ==
+  dependencies:
+    "@lineiconshq/free-icons" "^0.0.1"
+
 "@next/env@15.5.14":
   version "15.5.14"
   resolved "https://registry.npmjs.org/@next/env/-/env-15.5.14.tgz"
@@ -3512,6 +3531,11 @@ mdn-data@2.27.1:
   version "2.27.1"
   resolved "https://registry.npmjs.org/mdn-data/-/mdn-data-2.27.1.tgz"
   integrity sha512-9Yubnt3e8A0OKwxYSXyhLymGW4sCufcLG6VdiDdUGVkPhpqLxlvP5vl1983gQjJl3tqbrM731mjaZaP68AgosQ==
+
+meilisearch@^0.53.0:
+  version "0.53.0"
+  resolved "https://registry.npmjs.org/meilisearch/-/meilisearch-0.53.0.tgz"
+  integrity sha512-nG4VXbEOSzUmtbfsgOo+t6yX1ECEgXaT4hC0ap9MBpQGK5xwT+NWYDENYsKWR75cVaWaAqva+ok4zHlgtdXlLw==
 
 meow@^12.0.1:
   version "12.1.1"

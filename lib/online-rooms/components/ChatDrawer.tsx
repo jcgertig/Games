@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { getAnonClient } from '@/lib/supabaseClient';
+import { Lineicons } from '@lineiconshq/react-lineicons';
+import { Pencil1Stroke, Trash3Stroke, ChatBubble2Stroke, XmarkStroke } from '@lineiconshq/free-icons';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -107,14 +109,14 @@ function MessageRow({
             title="Edit"
             className="text-slate-400 hover:text-slate-200 text-xs w-5 h-5 flex items-center justify-center"
           >
-            <i className="li li-pencil-1" style={{ fontSize: '12px' }} />
+            <Lineicons icon={Pencil1Stroke} size={12} />
           </button>
           <button
             onClick={onDelete}
             title="Delete"
             className="text-slate-400 hover:text-red-400 text-xs w-5 h-5 flex items-center justify-center"
           >
-            <i className="li li-trash-3" style={{ fontSize: '12px' }} />
+            <Lineicons icon={Trash3Stroke} size={12} />
           </button>
         </div>
       )}
@@ -295,7 +297,7 @@ export function ChatDrawer({ roomId, roomCode, open, onClose }: ChatDrawerProps)
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700/60 shrink-0">
         <span className="text-sm font-semibold text-slate-200 flex items-center gap-2">
-          <i className="li li-chat-bubble-2" style={{ fontSize: '14px' }} />
+          <Lineicons icon={ChatBubble2Stroke} size={14} />
           Chat
         </span>
         <button
@@ -303,7 +305,7 @@ export function ChatDrawer({ roomId, roomCode, open, onClose }: ChatDrawerProps)
           aria-label="Close chat"
           className="text-slate-400 hover:text-white transition-colors w-6 h-6 flex items-center justify-center"
         >
-          <i className="li li-xmark" style={{ fontSize: '16px' }} />
+          <Lineicons icon={XmarkStroke} size={16} />
         </button>
       </div>
 

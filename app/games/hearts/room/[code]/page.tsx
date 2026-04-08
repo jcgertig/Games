@@ -3,11 +3,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import type { HeartsRoomState } from '@/app/api/hearts/_game';
-import { useRoomBootstrap, RoomLobby } from '@/lib/online-rooms';
-import { ChatDrawer } from '@/lib/online-rooms/components/ChatDrawer';
-import 'lineicons/assets/icon-fonts/lineicons.css';
+import { useRoomBootstrap, RoomLobby, ChatDrawer } from '@/lib/online-rooms';
+import type { SeatInfo } from '@/lib/online-rooms';
 import { useSubmitScore, useScoresClient } from '@/lib/scores';
-import type { SeatInfo } from '@/lib/online-rooms/types';
+import { Lineicons } from '@lineiconshq/react-lineicons';
+import { ChatBubble2Stroke, XmarkStroke } from '@lineiconshq/free-icons';
 
 // ── Layout / visual constants (same as solo game) ─────────────────────────────
 
@@ -1128,17 +1128,19 @@ export default function OnlineHeartsRoom() {
               </div>
             </div>
           )}
-          {/* Chat toggle button — anchored to right edge of canvas */}
-          <button
-            onClick={() => setChatOpen(o => !o)}
-            aria-label={chatOpen ? 'Close chat' : 'Open chat'}
-            className="absolute right-0 top-1/2 -translate-y-1/2 z-20
-              flex items-center justify-center w-8 h-12
-              bg-slate-800/90 hover:bg-slate-700 border border-slate-600/60
-              rounded-l-lg text-slate-300 hover:text-white transition-colors"
-          >
-            <i className={chatOpen ? 'li li-xmark' : 'li li-chat-bubble-2'} style={{ fontSize: '16px' }} />
-          </button>
+          {/* Chat toggle button — top-right of screen */}
+          <div className="fixed top-2 right-2 z-40">
+            <button
+              onClick={() => setChatOpen(o => !o)}
+              aria-label={chatOpen ? 'Close chat' : 'Open chat'}
+              className="flex items-center gap-1.5 text-xs px-3 py-1 rounded
+                border border-slate-700/60 text-slate-400 hover:text-slate-200
+                bg-black/50 hover:bg-black/70 transition-colors"
+            >
+              <Lineicons icon={chatOpen ? XmarkStroke : ChatBubble2Stroke} size={13} />
+              Chat
+            </button>
+          </div>
         </div>
       </div>
 
